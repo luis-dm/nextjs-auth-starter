@@ -188,12 +188,16 @@ export default function BIMEditPage() {
               try {
                 const historyJson = new TextDecoder().decode(historyData);
                 const { requests, undoneRequests } = JSON.parse(historyJson);
-                
+
                 // Restore edit history
                 if (requests && requests.length > 0) {
-                  await fragments.editor.edit(model.modelId, requests, { removeRedo: false });
-                  console.log(`Loaded ${requests.length} edit history requests`);
-                  
+                  await fragments.editor.edit(model.modelId, requests, {
+                    removeRedo: false,
+                  });
+                  console.log(
+                    `Loaded ${requests.length} edit history requests`,
+                  );
+
                   // Trigger history UI update after a short delay to ensure DOM is ready
                   setTimeout(() => {
                     fragments.editor.onEdit.trigger();
@@ -221,17 +225,18 @@ export default function BIMEditPage() {
           const exportModel = async () => {
             try {
               // Get edit history BEFORE saving (save clears the history)
-              const { requests, undoneRequests } = await fragments.editor.getModelRequests(model.modelId);
+              const { requests, undoneRequests } =
+                await fragments.editor.getModelRequests(model.modelId);
               const historyData = {
                 requests,
-                undoneRequests
+                undoneRequests,
               };
               const historyJson = JSON.stringify(historyData);
               const historyBytes = new TextEncoder().encode(historyJson);
 
-              console.log('Edit history before save:', { 
-                requestsCount: requests.length, 
-                undoneRequestsCount: undoneRequests.length 
+              console.log("Edit history before save:", {
+                requestsCount: requests.length,
+                undoneRequestsCount: undoneRequests.length,
               });
 
               // Save the edits to the model
@@ -257,7 +262,9 @@ export default function BIMEditPage() {
                 throw new Error("Failed to save fragment data to database");
               }
 
-              console.log("Fragment data and edit history saved to database successfully");
+              console.log(
+                "Fragment data and edit history saved to database successfully",
+              );
 
               // Navigate back to facility dashboard
               window.location.href = "/org/facility";
@@ -317,13 +324,13 @@ export default function BIMEditPage() {
 
             // Convert array back to ArrayBuffer
             const buffer = new Uint8Array(data.fragmentData).buffer;
-            
+
             // Load edit history if available
             let historyBuffer: ArrayBuffer | undefined;
             if (data.editHistory) {
               historyBuffer = new Uint8Array(data.editHistory).buffer;
             }
-            
+
             await loadModelAndInitializeEditor(
               buffer,
               data.ifcFileName || "facility_model",
