@@ -152,6 +152,15 @@ function FacilityList() {
     setIsModalOpen(false);
   };
 
+  const handleDeleteFacility = (facilityId: string) => {
+    setFacilities((prev) => prev.filter((f) => f.id !== facilityId));
+    setTotalPages(Math.ceil((facilities.length - 1) / itemsPerPage));
+  };
+
+  const handleEditFacility = (facilityId: string, facilityName: string) => {
+    window.location.href = `/org/facility/${facilityId}/editor`;
+  };
+
   return (
     <>
       {isLoading ? (
@@ -162,7 +171,7 @@ function FacilityList() {
       ) : (
         <>
           {/* Header */}
-          <div className="w-full max-w-7xl mb-6 flex items-center justify-between flex-shrink-0">
+          <div className="w-full max-w-7xl mb-6 flex items-center justify-between shrink-0">
             <h1 className="text-2xl font-bold text-gray-900">Facilities</h1>
 
             {/* Org Selector - Centered */}
@@ -242,13 +251,15 @@ function FacilityList() {
                   name={facility.name}
                   ifcFileName={facility.ifcFileName}
                   createdAt={facility.createdAt}
+                  onDelete={handleDeleteFacility}
+                  onEdit={handleEditFacility}
                 />
               ))}
             </div>
           )}
 
           {/* Pagination Controls */}
-          <div className="flex justify-center items-center gap-4 mt-6 flex-shrink-0">
+          <div className="flex justify-center items-center gap-4 mt-6 shrink-0">
             <button
               disabled={page <= 1}
               onClick={() => {

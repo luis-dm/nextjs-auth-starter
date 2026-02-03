@@ -31,7 +31,7 @@ export default function Header() {
   }, [isDropdownOpen]);
 
   return (
-    <header className="w-full bg-white shadow-md py-4 px-8">
+    <header className="w-full bg-white shadow-[0_2px_8px_rgba(0,0,0,0.1)] border-b border-gray-300 py-4 px-8">
       <nav className="flex justify-between items-center">
         <Link
           href="/"

@@ -95,32 +95,36 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Get user and check/create organization
+    const user = await prisma.user.findUnique({
+      where: { email: session.user.email },
+      include: {
+        organizationMembers: {
+          include: {
+            organization: true,
+          },
+        },
+      },
+    });
+
+    if (!user) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
     // For now, create a default organization if none exists
     let orgId = organizationId;
     if (!orgId) {
-      // Check if user has an organization
-      const user = await prisma.user.findUnique({
-        where: { email: session.user.email },
-        include: {
-          organizationMembers: {
-            include: {
-              organization: true,
-            },
-          },
-        },
-      });
-
-      if (user?.organizationMembers.length) {
+      if (user.organizationMembers.length) {
         // Use the first organization
         orgId = user.organizationMembers[0].organizationId;
       } else {
         // Create a default organization for the user
         const newOrg = await prisma.organization.create({
           data: {
-            name: `${user?.name || "User"}'s Organization`,
+            name: `${user.name || "User"}'s Organization`,
             members: {
               create: {
-                userId: user!.id,
+                userId: user.id,
                 role: "MANAGER",
               },
             },
@@ -133,6 +137,24 @@ export async function POST(req: NextRequest) {
     // Convert fragmentData array back to Buffer if it exists
     const fragmentBuffer = fragmentData ? Buffer.from(fragmentData) : null;
 
+    // Get all organization members to add them to the facility
+    const orgMembers = await prisma.organizationMember.findMany({
+      where: {
+        organizationId: orgId,
+      },
+      select: {
+        userId: true,
+      },
+    });
+
+    // Create facility members array: creator as MANAGER, others as MEMBER
+    const facilityMembers = orgMembers.map((member) => ({
+      userId: member.userId,
+      role: (member.userId === user.id ? "MANAGER" : "MEMBER") as
+        | "MANAGER"
+        | "MEMBER",
+    }));
+
     const facility = await prisma.facility.create({
       data: {
         name,
@@ -140,9 +162,17 @@ export async function POST(req: NextRequest) {
         ifcFileName,
         ifcFileSize,
         organizationId: orgId,
+        members: {
+          create: facilityMembers,
+        },
       },
       include: {
         organization: true,
+        members: {
+          include: {
+            user: true,
+          },
+        },
       },
     });
 

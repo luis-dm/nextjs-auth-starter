@@ -36,7 +36,7 @@ export function panelHandlers(
   leftWrapper.style.position = "absolute";
   leftWrapper.style.top = "20px";
   leftWrapper.style.left = "20px";
-  leftWrapper.style.zIndex = "1000";
+  leftWrapper.style.zIndex = "10";
   leftWrapper.style.width = "450px";
   leftWrapper.style.maxHeight = "calc(100% - 40px)";
   leftWrapper.style.overflowY = "auto";
@@ -50,7 +50,7 @@ export function panelHandlers(
   toolbarWrapper.style.bottom = "100px";
   toolbarWrapper.style.left = "50%";
   toolbarWrapper.style.transform = "translateX(-50%)";
-  toolbarWrapper.style.zIndex = "10000";
+  toolbarWrapper.style.zIndex = "10";
   toolbarWrapper.style.width = "750px";
 
   toolbarWrapper.appendChild(toolbarContainer);

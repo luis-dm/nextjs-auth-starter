@@ -1,11 +1,14 @@
 import Link from "next/link";
-import { Building2 } from "lucide-react";
+import { Building2, Trash2, Pencil } from "lucide-react";
+import { useState } from "react";
 
 interface FacilityCardProps {
   id: string;
   name: string;
   ifcFileName?: string | null;
   createdAt: string;
+  onDelete?: (id: string) => void;
+  onEdit?: (id: string, name: string) => void;
 }
 
 export default function FacilityCard({
@@ -13,7 +16,11 @@ export default function FacilityCard({
   name,
   ifcFileName,
   createdAt,
+  onDelete,
+  onEdit,
 }: FacilityCardProps) {
+  const [isDeleting, setIsDeleting] = useState(false);
+
   // Format the date
   const formattedDate = new Date(createdAt).toLocaleDateString("en-US", {
     year: "numeric",
@@ -23,11 +30,45 @@ export default function FacilityCard({
     minute: "2-digit",
   });
 
+  const handleDelete = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (!confirm(`Are you sure you want to delete "${name}"?`)) {
+      return;
+    }
+
+    setIsDeleting(true);
+    try {
+      const response = await fetch(`/api/facilities/${id}`, {
+        method: "DELETE",
+      });
+
+      if (response.ok) {
+        onDelete?.(id);
+      } else {
+        const error = await response.json();
+        alert(error.error || "Failed to delete facility");
+      }
+    } catch (error) {
+      console.error("Error deleting facility:", error);
+      alert("Error deleting facility");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handleEdit = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    onEdit?.(id, name);
+  };
+
   return (
     <Link href={`/org/facility/${id}/viewer`} className="group block">
       <div className="flex items-center gap-4 p-4 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 hover:shadow-md transition-all duration-200">
         {/* Icon/Thumbnail */}
-        <div className="flex-shrink-0 w-10 h-10 bg-gradient-to-br from-blue-100 to-blue-200 rounded flex items-center justify-center">
+        <div className="shrink-0 w-10 h-10 bg-linear-to-br from-blue-100 to-blue-200 rounded flex items-center justify-center">
           <Building2 className="w-6 h-6 text-blue-600" />
         </div>
 
@@ -42,9 +83,34 @@ export default function FacilityCard({
         </div>
 
         {/* Date */}
-        <div className="flex-shrink-0 text-xs text-gray-500">
-          {formattedDate}
-        </div>
+        <div className="shrink-0 text-xs text-gray-500">{formattedDate}</div>
+
+        {/* Edit Button */}
+        {onEdit && (
+          <button
+            onClick={handleEdit}
+            className="shrink-0 p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
+            title="Edit facility"
+          >
+            <Pencil className="w-4 h-4" />
+          </button>
+        )}
+
+        {/* Delete Button */}
+        {onDelete && (
+          <button
+            onClick={handleDelete}
+            disabled={isDeleting}
+            className="shrink-0 p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors disabled:opacity-50"
+            title="Delete facility"
+          >
+            {isDeleting ? (
+              <div className="w-4 h-4 border-2 border-red-500 border-t-transparent rounded-full animate-spin" />
+            ) : (
+              <Trash2 className="w-4 h-4" />
+            )}
+          </button>
+        )}
       </div>
     </Link>
   );

@@ -2,6 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { PropertiesButton } from "@/components/ui/PropertiesButton";
+import { BCFTopicsButton } from "@/components/ui/BCFTopicsButton";
 import { World, FragmentsManager } from "@/utils/raycastUtils";
 import styles from "./viewer.module.scss";
 
@@ -13,16 +14,33 @@ const PropertiesPanel = dynamic(
     })),
   { ssr: false },
 );
+
+// Dynamically import BCFPanel to avoid SSR issues with @thatopen/components
+const BCFPanel = dynamic(
+  () =>
+    import("@/components/ui/BCFPanel").then((mod) => ({
+      default: mod.BCFPanel,
+    })),
+  { ssr: false },
+);
 import { useEffect, useRef, useState } from "react";
 import { useParams } from "next/navigation";
+import { useSession } from "next-auth/react";
 
 // Types for the 3D components
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Components = any;
 
+interface FacilityUser {
+  id: string;
+  name: string | null;
+  email: string;
+}
+
 export default function ViewerPage() {
   const params = useParams();
   const facilityId = params.id as string;
+  const { data: session } = useSession();
   const initializedRef = useRef(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -33,7 +51,9 @@ export default function ViewerPage() {
 
   // State for properties panel
   const [isPropertiesOpen, setIsPropertiesOpen] = useState(false);
+  const [isBCFTopicsOpen, setIsBCFTopicsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [facilityUsers, setFacilityUsers] = useState<FacilityUser[]>([]);
 
   useEffect(() => {
     if (initializedRef.current) return;
@@ -72,7 +92,7 @@ export default function ViewerPage() {
       BUI.Manager.init();
 
       // SceneSetup.tsx
-      const { world, components, viewport } = createScene(container);
+      const { world, components, viewport } = await createScene(container);
 
       // Store references for raycasting
       worldRef.current = world;
@@ -159,6 +179,16 @@ export default function ViewerPage() {
             fragmentDataSize: facility.fragmentData?.length || 0,
           });
 
+          // Extract facility users from members
+          if (facility.members && Array.isArray(facility.members)) {
+            const users = facility.members.map((member: any) => ({
+              id: member.user.id,
+              name: member.user.name,
+              email: member.user.email,
+            }));
+            setFacilityUsers(users);
+          }
+
           if (facility.fragmentData && facility.fragmentData.length > 0) {
             // Convert array back to ArrayBuffer
             const fragmentArray = new Uint8Array(facility.fragmentData);
@@ -204,6 +234,16 @@ export default function ViewerPage() {
     setIsPropertiesOpen(false);
   };
 
+  // Handle BCF topics button click
+  const handleBCFTopics = () => {
+    setIsBCFTopicsOpen(true);
+  };
+
+  // Handle BCF topics panel close
+  const handleBCFTopicsClose = () => {
+    setIsBCFTopicsOpen(false);
+  };
+
   return (
     <div className={styles.pageContainer}>
       {isLoading && (
@@ -217,10 +257,20 @@ export default function ViewerPage() {
       <div className={styles.contentArea}>
         <div ref={containerRef} className={styles.viewerContainer} />
         <PropertiesButton onClick={handleProperties} />
+        <BCFTopicsButton onClick={handleBCFTopics} />
         <PropertiesPanel
           isOpen={isPropertiesOpen}
           onClose={handlePropertiesClose}
           components={componentsRef.current || undefined}
+        />
+        <BCFPanel
+          isOpen={isBCFTopicsOpen}
+          onClose={handleBCFTopicsClose}
+          components={componentsRef.current || undefined}
+          world={worldRef.current || undefined}
+          userEmail={session?.user?.email || undefined}
+          facilityUsers={facilityUsers}
+          facilityId={facilityId}
         />
       </div>
     </div>

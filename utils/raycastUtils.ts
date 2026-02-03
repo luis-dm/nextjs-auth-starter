@@ -1,54 +1,54 @@
-import * as THREE from 'three'
+import * as THREE from "three";
 
 // Type for BIM model objects
 export interface BIMModel {
   raycast?: (params: {
-    camera: THREE.Camera
-    mouse: THREE.Vector2
-    dom: HTMLElement
-  }) => Promise<RaycastResult | null>
+    camera: THREE.Camera;
+    mouse: THREE.Vector2;
+    dom: HTMLElement;
+  }) => Promise<RaycastResult | null>;
   getItemsData?: (
     ids: number[],
-    options: { attributesDefault: boolean; attributes: string[] }
-  ) => Promise<Array<{ Name?: { value: string } }>>
-  resetHighlight?: () => Promise<void>
-  highlight?: (ids: number[], material: HighlightMaterial) => Promise<void>
-  useCamera?: (camera: THREE.Camera) => void
+    options: { attributesDefault: boolean; attributes: string[] },
+  ) => Promise<Array<{ Name?: { value: string } }>>;
+  resetHighlight?: () => Promise<void>;
+  highlight?: (ids: number[], material: HighlightMaterial) => Promise<void>;
+  useCamera?: (camera: THREE.Camera) => void;
 }
 
 // Type for highlight material
 export interface HighlightMaterial {
-  color: THREE.Color
-  renderedFaces: number
-  opacity: number
-  transparent: boolean
+  color: THREE.Color;
+  renderedFaces: number;
+  opacity: number;
+  transparent: boolean;
 }
 
 // Type for fragments manager
 export interface FragmentsManager {
-  list: Map<string, unknown>
+  list: Map<string, unknown>;
   core?: {
-    update: (force?: boolean) => Promise<void>
-  }
+    update: (force?: boolean) => Promise<void>;
+  };
 }
 
 export interface RaycastResult {
-  point: THREE.Vector3
-  normal?: THREE.Vector3
-  distance: number
-  object?: THREE.Object3D
-  localId?: number
+  point: THREE.Vector3;
+  normal?: THREE.Vector3;
+  distance: number;
+  object?: THREE.Object3D;
+  localId?: number;
 }
 
 export interface RaycastEntry {
-  result: RaycastResult
-  model: BIMModel
+  result: RaycastResult;
+  model: BIMModel;
 }
 
 // Type for world object
 export interface World {
   camera?: {
-    three: THREE.Camera
+    three: THREE.Camera;
     controls?: {
       setLookAt: (
         px: number,
@@ -57,21 +57,21 @@ export interface World {
         tx: number,
         ty: number,
         tz: number,
-        enableTransition?: boolean
-      ) => void
-    }
-  }
+        enableTransition?: boolean,
+      ) => void;
+    };
+  };
   scene?: {
     three: THREE.Scene & {
-      parent?: THREE.Object3D | null
-    }
-  }
+      parent?: THREE.Object3D | null;
+    };
+  };
   renderer?: {
     three: {
-      domElement: HTMLElement
-      render?: (scene: THREE.Scene, camera: THREE.Camera) => void
-    }
-  } | null
+      domElement: HTMLElement;
+      render?: (scene: THREE.Scene, camera: THREE.Camera) => void;
+    };
+  } | null;
 }
 
 /**
@@ -93,57 +93,66 @@ export class RaycastUtils {
     clientY: number,
     camera: THREE.Camera,
     canvas: HTMLElement,
-    fragmentsManager: FragmentsManager
+    fragmentsManager: FragmentsManager,
   ): Promise<RaycastEntry | null> {
     if (!camera || !canvas || !fragmentsManager?.list) {
-      console.log('Missing requirements for raycast:', {
+      console.log("Missing requirements for raycast:", {
         camera: !!camera,
         canvas: !!canvas,
         fragments: !!fragmentsManager?.list,
-      })
-      return null
+      });
+      return null;
     }
 
     try {
       // Use direct screen coordinates
-      const mouse = new THREE.Vector2()
-      mouse.x = clientX
-      mouse.y = clientY
+      const mouse = new THREE.Vector2();
+      mouse.x = clientX;
+      mouse.y = clientY;
 
-      console.log('Raycast coordinates:', {
+      console.log("Raycast coordinates:", {
         screen: { x: clientX, y: clientY },
-      })
+      });
 
       // Get the first (and only) model since we only work with one model at a time
-      const modelEntries = Array.from(fragmentsManager.list)
+      const modelEntries = Array.from(fragmentsManager.list);
       if (modelEntries.length === 0) {
-        console.log('No models loaded for raycast')
-        return null
+        console.log("No models loaded for raycast");
+        return null;
       }
 
-      const [modelId, model] = modelEntries[0] as [string, BIMModel]
+      const [modelId, model] = modelEntries[0] as [string, BIMModel];
 
       if (!model.raycast) {
-        console.log('Model does not support raycast')
-        return null
+        console.log("Model does not support raycast");
+        return null;
       }
 
       const result = await model.raycast({
         camera,
         mouse,
         dom: canvas,
-      })
+      });
 
       if (result) {
-        console.log('Raycast hit from model:', { result, modelId })
-        return { result, model }
+        // Only log serializable properties to avoid THREE.js object serialization errors
+        console.log("Raycast hit from model:", {
+          localId: result.localId,
+          distance: result.distance,
+          point: result.point
+            ? { x: result.point.x, y: result.point.y, z: result.point.z }
+            : null,
+          hasNormal: !!result.normal,
+          modelId,
+        });
+        return { result, model };
       } else {
-        console.log('No raycast hits found')
-        return null
+        console.log("No raycast hits found");
+        return null;
       }
     } catch (error) {
-      console.error('Raycast failed:', error)
-      return null
+      console.error("Raycast failed:", error);
+      return null;
     }
   }
 
@@ -155,25 +164,25 @@ export class RaycastUtils {
    */
   static async getElementName(
     model: BIMModel,
-    localId: number
+    localId: number,
   ): Promise<string | null> {
     try {
       if (!model.getItemsData) {
-        console.log('Model does not support getItemsData')
-        return null
+        console.log("Model does not support getItemsData");
+        return null;
       }
 
       const [data] = await model.getItemsData([localId], {
         attributesDefault: false,
-        attributes: ['Name'],
-      })
+        attributes: ["Name"],
+      });
 
-      const Name = data?.Name
-      if (!(Name && 'value' in Name)) return null
-      return Name.value as string
+      const Name = data?.Name;
+      if (!(Name && "value" in Name)) return null;
+      return Name.value as string;
     } catch (error) {
-      console.error('Error getting element name:', error)
-      return null
+      console.error("Error getting element name:", error);
+      return null;
     }
   }
 
@@ -189,17 +198,17 @@ export class RaycastUtils {
     clientX: number,
     clientY: number,
     worldRef: React.RefObject<World | null>,
-    fragmentsRef: React.RefObject<FragmentsManager | null>
+    fragmentsRef: React.RefObject<FragmentsManager | null>,
   ): Promise<RaycastEntry | null> {
-    const world = worldRef.current
-    const fragments = fragmentsRef.current
+    const world = worldRef.current;
+    const fragments = fragmentsRef.current;
 
     if (
       !world?.camera?.three ||
       !world?.renderer?.three?.domElement ||
       !fragments
     ) {
-      return null
+      return null;
     }
 
     return this.performRaycast(
@@ -207,8 +216,8 @@ export class RaycastUtils {
       clientY,
       world.camera.three,
       world.renderer.three.domElement,
-      fragments
-    )
+      fragments,
+    );
   }
 
   /**
@@ -221,19 +230,19 @@ export class RaycastUtils {
   static async raycastFromCenter(
     camera: THREE.Camera,
     canvas: HTMLElement,
-    fragmentsManager: FragmentsManager
+    fragmentsManager: FragmentsManager,
   ): Promise<RaycastEntry | null> {
     // Get canvas dimensions
-    const rect = canvas.getBoundingClientRect()
-    const centerX = rect.width / 2
-    const centerY = rect.height / 2
+    const rect = canvas.getBoundingClientRect();
+    const centerX = rect.width / 2;
+    const centerY = rect.height / 2;
 
     return this.performRaycast(
       centerX,
       centerY,
       camera,
       canvas,
-      fragmentsManager
-    )
+      fragmentsManager,
+    );
   }
 }
