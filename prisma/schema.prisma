@@ -13,12 +13,93 @@ datasource db {
   provider = "postgresql"
 }
 
+enum OrganizationRole {
+  MANAGER
+  MEMBER
+}
+
+enum FacilityRole {
+  MANAGER
+  MEMBER
+}
+
 model User {
-  id       String  @id @default(cuid())
-  name     String?
-  email    String  @unique
-  password String
-  posts    Post[]
+  id                    String                 @id @default(cuid())
+  name                  String?
+  email                 String                 @unique
+  password              String
+  posts                 Post[]
+  organizationMembers   OrganizationMember[]
+  facilityMembers       FacilityMember[]
+  createdAt             DateTime               @default(now())
+  updatedAt             DateTime               @default(now()) @updatedAt
+}
+
+model Organization {
+  id          String                @id @default(cuid())
+  name        String
+  members     OrganizationMember[]
+  facilities  Facility[]
+  invites     OrganizationInvite[]
+  createdAt   DateTime              @default(now())
+  updatedAt   DateTime              @updatedAt
+}
+
+model OrganizationInvite {
+  id              String        @id @default(cuid())
+  email           String
+  organizationId  String
+  token           String        @unique
+  role            OrganizationRole @default(MEMBER)
+  organization    Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  expiresAt       DateTime
+  createdAt       DateTime      @default(now())
+  
+  @@index([token])
+  @@index([organizationId])
+}
+
+model OrganizationMember {
+  id              String            @id @default(cuid())
+  userId          String
+  organizationId  String
+  role            OrganizationRole  @default(MEMBER)
+  user            User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization    Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdAt       DateTime          @default(now())
+  
+  @@unique([userId, organizationId])
+  @@index([userId])
+  @@index([organizationId])
+}
+
+model Facility {
+  id              String            @id @default(cuid())
+  name            String
+  organizationId  String
+  fragmentData    Bytes?            // Binary fragment data
+  ifcFileName     String?           // Original IFC filename
+  ifcFileSize     Int?              // Size in bytes
+  organization    Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  members         FacilityMember[]
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  
+  @@index([organizationId])
+}
+
+model FacilityMember {
+  id          String        @id @default(cuid())
+  userId      String
+  facilityId  String
+  role        FacilityRole  @default(MEMBER)
+  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  facility    Facility      @relation(fields: [facilityId], references: [id], onDelete: Cascade)
+  createdAt   DateTime      @default(now())
+  
+  @@unique([userId, facilityId])
+  @@index([userId])
+  @@index([facilityId])
 }
 
 model Post {

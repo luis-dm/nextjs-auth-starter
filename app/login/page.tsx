@@ -23,7 +23,7 @@ export default function LoginPage() {
         return;
       }
 
-      router.push("/");
+      router.push("/org/facility");
       router.refresh();
     } catch {
       setError("An error occurred during login");

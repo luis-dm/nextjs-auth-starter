@@ -20,4 +20,4 @@ export async function createPost(formData: FormData) {
   });
 
   redirect("/posts");
-} 
+}
