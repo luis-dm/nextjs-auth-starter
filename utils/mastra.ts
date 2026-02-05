@@ -10,7 +10,7 @@ const openai = createOpenAI({
 
 const workspace = new Workspace({
   filesystem: new LocalFilesystem({
-    basePath: "./public/bim_data",
+    basePath: process.env.BIM_DATA_PATH || "./public/bim_data",
     readOnly: true,
   }),
   skills: ["./skills"],

@@ -3,18 +3,11 @@ import { mastra } from "@/utils/mastra";
 
 export async function POST(req: NextRequest) {
   try {
-    const { message, structure } = await req.json();
+    const { message } = await req.json();
 
     if (!message) {
       return NextResponse.json(
         { error: "No message provided" },
-        { status: 400 },
-      );
-    }
-
-    if (!structure) {
-      return NextResponse.json(
-        { error: "No BIM structure provided" },
         { status: 400 },
       );
     }
@@ -29,14 +22,8 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Create context with the structure data
-    const contextMessage = `Here is the BIM structure data:
-${JSON.stringify(structure, null, 2)}
-
-User question: ${message}`;
-
-    // Generate response from the agent
-    const result = await agent.generate(contextMessage, {
+    // Generate response from the agent (it will read from the filesystem)
+    const result = await agent.generate(message, {
       maxSteps: 10,
     });
 

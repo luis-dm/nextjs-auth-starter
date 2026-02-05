@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import fs from "fs";
 import path from "path";
+import { buildFilesystem } from "@/utils/build_bim_fs";
+import os from "os";
 
 export async function POST(req: NextRequest) {
   try {
@@ -17,53 +19,38 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    console.log(
-      "Structure received, size:",
-      JSON.stringify(structure).length,
-      "bytes",
-    );
+    console.log("Structure received, preparing to build filesystem");
 
-    // Save structure to the public/bim_data directory for the workspace
-    const dataDir = path.join(process.cwd(), "public", "bim_data");
+    // Get the base path from environment or use default
+    const basePath = process.env.BIM_DATA_PATH || "./public/bim_data";
 
-    // Ensure directory exists
-    if (!fs.existsSync(dataDir)) {
-      console.log("Creating directory:", dataDir);
-      fs.mkdirSync(dataDir, { recursive: true });
+    // Ensure base directory exists
+    if (!fs.existsSync(basePath)) {
+      console.log("Creating base directory:", basePath);
+      fs.mkdirSync(basePath, { recursive: true });
     }
 
-    // Write the enhanced structure with a custom replacer to handle circular references
-    const structureFile = path.join(dataDir, "enhanced_structure.json");
+    // Write the enhanced structure to a temporary file
+    const tempFile = path.join(os.tmpdir(), `enhanced_structure_${Date.now()}.json`);
+    fs.writeFileSync(tempFile, JSON.stringify(structure, null, 2));
+    console.log("Temporary structure file written:", tempFile);
 
-    const jsonString = JSON.stringify(
-      structure,
-      (key, value) => {
-        // Handle circular references and problematic objects
-        if (value && typeof value === "object") {
-          // Skip certain types that can't be serialized
-          if (
-            value.constructor &&
-            value.constructor.name &&
-            ["BufferGeometry", "Mesh", "Material", "Texture"].includes(
-              value.constructor.name,
-            )
-          ) {
-            return undefined;
-          }
-        }
-        return value;
-      },
-      2,
-    );
+    // Build the filesystem using the build_bim_fs utility
+    await buildFilesystem({
+      inputFile: tempFile,
+      outputDir: basePath,
+      force: true,
+      pretty: true,
+    });
 
-    fs.writeFileSync(structureFile, jsonString);
-
-    console.log("BIM structure saved successfully to:", structureFile);
+    // Clean up temp file
+    fs.unlinkSync(tempFile);
+    console.log("BIM filesystem built successfully at:", basePath);
 
     return NextResponse.json({
       success: true,
-      message: "BIM structure saved successfully",
-      dataPath: "/bim_data/enhanced_structure.json",
+      message: "BIM filesystem built successfully",
+      path: basePath,
     });
   } catch (error) {
     console.error("Error saving BIM structure:", error);

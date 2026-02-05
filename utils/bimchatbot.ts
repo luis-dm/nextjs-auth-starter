@@ -201,14 +201,36 @@ export class BimChatbot {
   }
 
   private async buildBimFilesystem(structure: IFCNode): Promise<void> {
-    // In production, we can't write to filesystem, so we'll just keep it in memory
-    // and pass it with each chat request
-    this.isFilesystemReady = true;
-    console.log("BIM structure loaded and ready for queries");
+    try {
+      // Call the API endpoint to build and save the filesystem structure
+      const response = await fetch("/api/bim/build-filesystem", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ structure }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error("Failed to build filesystem:", errorData);
+        // Still mark as ready so chat can work with structure in memory
+        this.isFilesystemReady = true;
+        return;
+      }
+
+      const result = await response.json();
+      console.log("BIM filesystem built successfully:", result);
+      this.isFilesystemReady = true;
+    } catch (error) {
+      console.error("Error building BIM filesystem:", error);
+      // Still mark as ready so chat can work with structure in memory
+      this.isFilesystemReady = true;
+    }
   }
 
   async sendMessage(message: string): Promise<string> {
-    if (!this.isFilesystemReady || !this.enhancedStructure) {
+    if (!this.isFilesystemReady) {
       return "Please wait for the model to finish loading...";
     }
 
@@ -218,10 +240,7 @@ export class BimChatbot {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          message,
-          structure: this.enhancedStructure,
-        }),
+        body: JSON.stringify({ message }),
       });
 
       if (!response.ok) {
