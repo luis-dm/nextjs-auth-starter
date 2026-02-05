@@ -724,7 +724,10 @@ async function main() {
   });
 }
 
-main().catch((err) => {
-  console.error("\n❌ Fatal error:", err.message);
-  process.exit(1);
-});
+// Only run main if this file is executed directly (not imported)
+if (require.main === module) {
+  main().catch((err) => {
+    console.error("\n❌ Fatal error:", err.message);
+    process.exit(1);
+  });
+}

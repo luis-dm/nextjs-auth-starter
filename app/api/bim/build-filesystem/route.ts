@@ -31,7 +31,10 @@ export async function POST(req: NextRequest) {
     }
 
     // Write the enhanced structure to a temporary file
-    const tempFile = path.join(os.tmpdir(), `enhanced_structure_${Date.now()}.json`);
+    const tempFile = path.join(
+      os.tmpdir(),
+      `enhanced_structure_${Date.now()}.json`,
+    );
     fs.writeFileSync(tempFile, JSON.stringify(structure, null, 2));
     console.log("Temporary structure file written:", tempFile);
 
