@@ -11,6 +11,7 @@ export class BimChatbot {
   private components: OBC.Components;
   private fragments: OBC.FragmentsManager;
   private spatialStructure: IFCNode | null = null;
+  private enhancedStructure: any = null;
   private isFilesystemReady: boolean = false;
 
   constructor(components: OBC.Components) {
@@ -187,48 +188,27 @@ export class BimChatbot {
     }
 
     // Create an enhanced version with properties for summary generation
-    const enhancedStructure = await this.enhanceSpatialStructureWithProperties(
+    this.enhancedStructure = await this.enhanceSpatialStructureWithProperties(
       this.spatialStructure as IFCNode,
     );
 
     // Build the BIM filesystem from the enhanced structure
-    await this.buildBimFilesystem(enhancedStructure);
+    await this.buildBimFilesystem(this.enhancedStructure);
 
     console.log("Enhanced spatial structure loaded and filesystem built");
 
-    return enhancedStructure;
+    return this.enhancedStructure;
   }
 
   private async buildBimFilesystem(structure: IFCNode): Promise<void> {
-    try {
-      // Call the API endpoint to save the structure
-      const response = await fetch("/api/bim/build-filesystem", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ structure }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(
-          `Failed to save structure: ${errorData.error || response.statusText}`,
-        );
-      }
-
-      const result = await response.json();
-      console.log("BIM structure saved:", result);
-      this.isFilesystemReady = true;
-    } catch (error) {
-      console.error("Error saving BIM structure:", error);
-      this.isFilesystemReady = false;
-      throw error;
-    }
+    // In production, we can't write to filesystem, so we'll just keep it in memory
+    // and pass it with each chat request
+    this.isFilesystemReady = true;
+    console.log("BIM structure loaded and ready for queries");
   }
 
   async sendMessage(message: string): Promise<string> {
-    if (!this.isFilesystemReady) {
+    if (!this.isFilesystemReady || !this.enhancedStructure) {
       return "Please wait for the model to finish loading...";
     }
 
@@ -238,7 +218,10 @@ export class BimChatbot {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ message }),
+        body: JSON.stringify({
+          message,
+          structure: this.enhancedStructure,
+        }),
       });
 
       if (!response.ok) {
