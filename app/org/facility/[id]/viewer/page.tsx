@@ -138,6 +138,15 @@ export default function ViewerPage() {
         // 4. Update the fragments core to render properly
         await fragments.core.update(true);
         console.log("Fragments core updated, model should be visible");
+
+        // 5. Load spatial structure after model is ready
+        try {
+          const { loadSpatialStructureAfterModel } =
+            await import("@/components/panels/panel-components/chatbotPanel");
+          await loadSpatialStructureAfterModel();
+        } catch (error) {
+          console.error("Failed to load spatial structure:", error);
+        }
       });
 
       // Set up camera projection change handler

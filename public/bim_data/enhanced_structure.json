@@ -1,0 +1,1711 @@
+{
+  "category": "IFCPROJECT",
+  "localId": null,
+  "children": [
+    {
+      "category": null,
+      "localId": 121,
+      "children": [
+        {
+          "category": "IFCSITE",
+          "localId": null,
+          "children": [
+            {
+              "category": null,
+              "localId": 150,
+              "children": [
+                {
+                  "category": "IFCBUILDING",
+                  "localId": null,
+                  "children": [
+                    {
+                      "category": null,
+                      "localId": 131,
+                      "children": [
+                        {
+                          "category": "IFCBUILDINGSTOREY",
+                          "localId": null,
+                          "children": [
+                            {
+                              "category": null,
+                              "localId": 140,
+                              "children": [
+                                {
+                                  "category": "IFCSPACE",
+                                  "localId": null,
+                                  "children": [
+                                    {
+                                      "category": null,
+                                      "localId": 203,
+                                      "children": [
+                                        {
+                                          "category": "IFCFURNISHINGELEMENT",
+                                          "localId": null,
+                                          "children": [
+                                            {
+                                              "category": null,
+                                              "localId": 23506,
+                                              "properties": {
+                                                "_category": "IFCFURNISHINGELEMENT",
+                                                "_localId": 23506,
+                                                "Name": "M_Desk:1525 x 762mm:356128",
+                                                "ObjectType": "M_Desk:1525 x 762mm",
+                                                "ContainedInStructure": "1"
+                                              }
+                                            },
+                                            {
+                                              "category": null,
+                                              "localId": 23568,
+                                              "properties": {
+                                                "_category": "IFCFURNISHINGELEMENT",
+                                                "_localId": 23568,
+                                                "Name": "M_Desk:1525 x 762mm:356199",
+                                                "ObjectType": "M_Desk:1525 x 762mm",
+                                                "ContainedInStructure": "1"
+                                              }
+                                            },
+                                            {
+                                              "category": null,
+                                              "localId": 23630,
+                                              "properties": {
+                                                "_category": "IFCFURNISHINGELEMENT",
+                                                "_localId": 23630,
+                                                "Name": "M_Desk:1525 x 762mm:356260",
+                                                "ObjectType": "M_Desk:1525 x 762mm",
+                                                "ContainedInStructure": "1"
+                                              }
+                                            }
+                                          ]
+                                        }
+                                      ],
+                                      "properties": {
+                                        "_category": "IFCSPACE",
+                                        "_localId": 203,
+                                        "Name": "1",
+                                        "LongName": "Room",
+                                        "InteriorOrExteriorSpace": "INTERNAL"
+                                      }
+                                    },
+                                    {
+                                      "category": null,
+                                      "localId": 326,
+                                      "children": [
+                                        {
+                                          "category": "IFCFURNISHINGELEMENT",
+                                          "localId": null,
+                                          "children": [
+                                            {
+                                              "category": null,
+                                              "localId": 23272,
+                                              "properties": {
+                                                "_category": "IFCFURNISHINGELEMENT",
+                                                "_localId": 23272,
+                                                "Name": "M_Desk:1525 x 762mm:355965",
+                                                "ObjectType": "M_Desk:1525 x 762mm",
+                                                "ContainedInStructure": "2"
+                                              }
+                                            },
+                                            {
+                                              "category": null,
+                                              "localId": 23381,
+                                              "properties": {
+                                                "_category": "IFCFURNISHINGELEMENT",
+                                                "_localId": 23381,
+                                                "Name": "M_Desk:1525 x 762mm:356056",
+                                                "ObjectType": "M_Desk:1525 x 762mm",
+                                                "ContainedInStructure": "2"
+                                              }
+                                            },
+                                            {
+                                              "category": null,
+                                              "localId": 23443,
+                                              "properties": {
+                                                "_category": "IFCFURNISHINGELEMENT",
+                                                "_localId": 23443,
+                                                "Name": "M_Desk:1525 x 762mm:356083",
+                                                "ObjectType": "M_Desk:1525 x 762mm",
+                                                "ContainedInStructure": "2"
+                                              }
+                                            }
+                                          ]
+                                        }
+                                      ],
+                                      "properties": {
+                                        "_category": "IFCSPACE",
+                                        "_localId": 326,
+                                        "Name": "2",
+                                        "LongName": "Room",
+                                        "InteriorOrExteriorSpace": "INTERNAL"
+                                      }
+                                    },
+                                    {
+                                      "category": null,
+                                      "localId": 432,
+                                      "properties": {
+                                        "_category": "IFCSPACE",
+                                        "_localId": 432,
+                                        "Name": "3",
+                                        "LongName": "Room",
+                                        "InteriorOrExteriorSpace": "INTERNAL"
+                                      }
+                                    },
+                                    {
+                                      "category": null,
+                                      "localId": 538,
+                                      "properties": {
+                                        "_category": "IFCSPACE",
+                                        "_localId": 538,
+                                        "Name": "4",
+                                        "LongName": "Room",
+                                        "InteriorOrExteriorSpace": "INTERNAL"
+                                      }
+                                    },
+                                    {
+                                      "category": null,
+                                      "localId": 644,
+                                      "children": [
+                                        {
+                                          "category": "IFCFURNISHINGELEMENT",
+                                          "localId": null,
+                                          "children": [
+                                            {
+                                              "category": null,
+                                              "localId": 23818,
+                                              "properties": {
+                                                "_category": "IFCFURNISHINGELEMENT",
+                                                "_localId": 23818,
+                                                "Name": "M_Desk:1525 x 762mm:356634",
+                                                "ObjectType": "M_Desk:1525 x 762mm",
+                                                "ContainedInStructure": "5"
+                                              }
+                                            },
+                                            {
+                                              "category": null,
+                                              "localId": 23880,
+                                              "properties": {
+                                                "_category": "IFCFURNISHINGELEMENT",
+                                                "_localId": 23880,
+                                                "Name": "M_Desk:1525 x 762mm:356679",
+                                                "ObjectType": "M_Desk:1525 x 762mm",
+                                                "ContainedInStructure": "5"
+                                              }
+                                            }
+                                          ]
+                                        }
+                                      ],
+                                      "properties": {
+                                        "_category": "IFCSPACE",
+                                        "_localId": 644,
+                                        "Name": "5",
+                                        "LongName": "Room",
+                                        "InteriorOrExteriorSpace": "INTERNAL"
+                                      }
+                                    },
+                                    {
+                                      "category": null,
+                                      "localId": 750,
+                                      "children": [
+                                        {
+                                          "category": "IFCFURNISHINGELEMENT",
+                                          "localId": null,
+                                          "children": [
+                                            {
+                                              "category": null,
+                                              "localId": 23693,
+                                              "properties": {
+                                                "_category": "IFCFURNISHINGELEMENT",
+                                                "_localId": 23693,
+                                                "Name": "M_Desk:1525 x 762mm:356413",
+                                                "ObjectType": "M_Desk:1525 x 762mm",
+                                                "ContainedInStructure": "6"
+                                              }
+                                            },
+                                            {
+                                              "category": null,
+                                              "localId": 23755,
+                                              "properties": {
+                                                "_category": "IFCFURNISHINGELEMENT",
+                                                "_localId": 23755,
+                                                "Name": "M_Desk:1525 x 762mm:356585",
+                                                "ObjectType": "M_Desk:1525 x 762mm",
+                                                "ContainedInStructure": "6"
+                                              }
+                                            }
+                                          ]
+                                        }
+                                      ],
+                                      "properties": {
+                                        "_category": "IFCSPACE",
+                                        "_localId": 750,
+                                        "Name": "6",
+                                        "LongName": "Room",
+                                        "InteriorOrExteriorSpace": "INTERNAL"
+                                      }
+                                    },
+                                    {
+                                      "category": null,
+                                      "localId": 856,
+                                      "children": [
+                                        {
+                                          "category": "IFCFURNISHINGELEMENT",
+                                          "localId": null,
+                                          "children": [
+                                            {
+                                              "category": null,
+                                              "localId": 23943,
+                                              "properties": {
+                                                "_category": "IFCFURNISHINGELEMENT",
+                                                "_localId": 23943,
+                                                "Name": "M_Desk:1525 x 762mm:356722",
+                                                "ObjectType": "M_Desk:1525 x 762mm",
+                                                "ContainedInStructure": "7"
+                                              }
+                                            },
+                                            {
+                                              "category": null,
+                                              "localId": 24005,
+                                              "properties": {
+                                                "_category": "IFCFURNISHINGELEMENT",
+                                                "_localId": 24005,
+                                                "Name": "M_Desk:1525 x 762mm:356765",
+                                                "ObjectType": "M_Desk:1525 x 762mm",
+                                                "ContainedInStructure": "7"
+                                              }
+                                            },
+                                            {
+                                              "category": null,
+                                              "localId": 24067,
+                                              "properties": {
+                                                "_category": "IFCFURNISHINGELEMENT",
+                                                "_localId": 24067,
+                                                "Name": "M_Desk:1525 x 762mm:356808",
+                                                "ObjectType": "M_Desk:1525 x 762mm",
+                                                "ContainedInStructure": "7"
+                                              }
+                                            }
+                                          ]
+                                        }
+                                      ],
+                                      "properties": {
+                                        "_category": "IFCSPACE",
+                                        "_localId": 856,
+                                        "Name": "7",
+                                        "LongName": "Room",
+                                        "InteriorOrExteriorSpace": "INTERNAL"
+                                      }
+                                    },
+                                    {
+                                      "category": null,
+                                      "localId": 962,
+                                      "children": [
+                                        {
+                                          "category": "IFCFURNISHINGELEMENT",
+                                          "localId": null,
+                                          "children": [
+                                            {
+                                              "category": null,
+                                              "localId": 24130,
+                                              "properties": {
+                                                "_category": "IFCFURNISHINGELEMENT",
+                                                "_localId": 24130,
+                                                "Name": "M_Desk:1525 x 762mm:356851",
+                                                "ObjectType": "M_Desk:1525 x 762mm",
+                                                "ContainedInStructure": "8"
+                                              }
+                                            }
+                                          ]
+                                        }
+                                      ],
+                                      "properties": {
+                                        "_category": "IFCSPACE",
+                                        "_localId": 962,
+                                        "Name": "8",
+                                        "LongName": "Room",
+                                        "InteriorOrExteriorSpace": "INTERNAL"
+                                      }
+                                    }
+                                  ]
+                                },
+                                {
+                                  "category": "IFCWALLSTANDARDCASE",
+                                  "localId": null,
+                                  "children": [
+                                    {
+                                      "category": null,
+                                      "localId": 1105,
+                                      "properties": {
+                                        "_category": "IFCWALLSTANDARDCASE",
+                                        "_localId": 1105,
+                                        "Name": "Basic Wall:Outside wall:346660",
+                                        "ObjectType": "Basic Wall:Outside wall",
+                                        "ContainedInStructure": "Level 1"
+                                      }
+                                    },
+                                    {
+                                      "category": null,
+                                      "localId": 2736,
+                                      "properties": {
+                                        "_category": "IFCWALLSTANDARDCASE",
+                                        "_localId": 2736,
+                                        "Name": "Basic Wall:Outside wall:352966",
+                                        "ObjectType": "Basic Wall:Outside wall",
+                                        "ContainedInStructure": "Level 1"
+                                      }
+                                    },
+                                    {
+                                      "category": null,
+                                      "localId": 2891,
+                                      "properties": {
+                                        "_category": "IFCWALLSTANDARDCASE",
+                                        "_localId": 2891,
+                                        "Name": "Basic Wall:Outside wall:353059",
+                                        "ObjectType": "Basic Wall:Outside wall",
+                                        "ContainedInStructure": "Level 1"
+                                      }
+                                    },
+                                    {
+                                      "category": null,
+                                      "localId": 3036,
+                                      "properties": {
+                                        "_category": "IFCWALLSTANDARDCASE",
+                                        "_localId": 3036,
+                                        "Name": "Basic Wall:Outside wall:353105",
+                                        "ObjectType": "Basic Wall:Outside wall",
+                                        "ContainedInStructure": "Level 1"
+                                      }
+                                    },
+                                    {
+                                      "category": null,
+                                      "localId": 3868,
+                                      "properties": {
+                                        "_category": "IFCWALLSTANDARDCASE",
+                                        "_localId": 3868,
+                                        "Name": "Basic Wall:Inside:353488",
+                                        "ObjectType": "Basic Wall:Inside",
+                                        "ContainedInStructure": "Level 1"
+                                      }
+                                    },
+                                    {
+                                      "category": null,
+                                      "localId": 4086,
+                                      "properties": {
+                                        "_category": "IFCWALLSTANDARDCASE",
+                                        "_localId": 4086,
+                                        "Name": "Basic Wall:Inside:353577",
+                                        "ObjectType": "Basic Wall:Inside",
+                                        "ContainedInStructure": "Level 1"
+                                      }
+                                    },
+                                    {
+                                      "category": null,
+                                      "localId": 4612,
+                                      "properties": {
+                                        "_category": "IFCWALLSTANDARDCASE",
+                                        "_localId": 4612,
+                                        "Name": "Basic Wall:Outside wall:353847",
+                                        "ObjectType": "Basic Wall:Outside wall",
+                                        "ContainedInStructure": "Level 1"
+                                      }
+                                    },
+                                    {
+                                      "category": null,
+                                      "localId": 17109,
+                                      "properties": {
+                                        "_category": "IFCWALLSTANDARDCASE",
+                                        "_localId": 17109,
+                                        "Name": "Basic Wall:Outside wall:355785",
+                                        "ObjectType": "Basic Wall:Outside wall",
+                                        "ContainedInStructure": "Level 1"
+                                      }
+                                    },
+                                    {
+                                      "category": null,
+                                      "localId": 18664,
+                                      "properties": {
+                                        "_category": "IFCWALLSTANDARDCASE",
+                                        "_localId": 18664,
+                                        "Name": "Basic Wall:Outside wall:355787",
+                                        "ObjectType": "Basic Wall:Outside wall",
+                                        "ContainedInStructure": "Level 1"
+                                      }
+                                    },
+                                    {
+                                      "category": null,
+                                      "localId": 18792,
+                                      "properties": {
+                                        "_category": "IFCWALLSTANDARDCASE",
+                                        "_localId": 18792,
+                                        "Name": "Basic Wall:Outside wall:355788",
+                                        "ObjectType": "Basic Wall:Outside wall",
+                                        "ContainedInStructure": "Level 1"
+                                      }
+                                    },
+                                    {
+                                      "category": null,
+                                      "localId": 18920,
+                                      "properties": {
+                                        "_category": "IFCWALLSTANDARDCASE",
+                                        "_localId": 18920,
+                                        "Name": "Basic Wall:Outside wall:355789",
+                                        "ObjectType": "Basic Wall:Outside wall",
+                                        "ContainedInStructure": "Level 1"
+                                      }
+                                    },
+                                    {
+                                      "category": null,
+                                      "localId": 19533,
+                                      "properties": {
+                                        "_category": "IFCWALLSTANDARDCASE",
+                                        "_localId": 19533,
+                                        "Name": "Basic Wall:Inside:355795",
+                                        "ObjectType": "Basic Wall:Inside",
+                                        "ContainedInStructure": "Level 1"
+                                      }
+                                    },
+                                    {
+                                      "category": null,
+                                      "localId": 19660,
+                                      "properties": {
+                                        "_category": "IFCWALLSTANDARDCASE",
+                                        "_localId": 19660,
+                                        "Name": "Basic Wall:Inside:355796",
+                                        "ObjectType": "Basic Wall:Inside",
+                                        "ContainedInStructure": "Level 1"
+                                      }
+                                    },
+                                    {
+                                      "category": null,
+                                      "localId": 20078,
+                                      "properties": {
+                                        "_category": "IFCWALLSTANDARDCASE",
+                                        "_localId": 20078,
+                                        "Name": "Basic Wall:Outside wall:355800",
+                                        "ObjectType": "Basic Wall:Outside wall",
+                                        "ContainedInStructure": "Level 1"
+                                      }
+                                    }
+                                  ]
+                                },
+                                {
+                                  "category": "IFCBUILDINGELEMENTPROXY",
+                                  "localId": null,
+                                  "children": [
+                                    {
+                                      "category": null,
+                                      "localId": 2581,
+                                      "properties": {
+                                        "_category": "IFCBUILDINGELEMENTPROXY",
+                                        "_localId": 2581,
+                                        "Name": "Model Text:600mm Arial:352583",
+                                        "ObjectType": "Model Text:600mm Arial",
+                                        "ContainedInStructure": "Level 1"
+                                      }
+                                    },
+                                    {
+                                      "category": null,
+                                      "localId": 18560,
+                                      "properties": {
+                                        "_category": "IFCBUILDINGELEMENTPROXY",
+                                        "_localId": 18560,
+                                        "Name": "Model Text:600mm Arial:355786",
+                                        "ObjectType": "Model Text:600mm Arial",
+                                        "ContainedInStructure": "Level 1"
+                                      }
+                                    },
+                                    {
+                                      "category": null,
+                                      "localId": 33747,
+                                      "properties": {
+                                        "_category": "IFCBUILDINGELEMENTPROXY",
+                                        "_localId": 33747,
+                                        "Name": "M_RPC Tree - Deciduous:Siberian Crab Apple - 6.1 Meters:356904",
+                                        "ObjectType": "M_RPC Tree - Deciduous:Siberian Crab Apple - 6.1 Meters",
+                                        "ContainedInStructure": "Level 1"
+                                      }
+                                    },
+                                    {
+                                      "category": null,
+                                      "localId": 33852,
+                                      "properties": {
+                                        "_category": "IFCBUILDINGELEMENTPROXY",
+                                        "_localId": 33852,
+                                        "Name": "M_RPC Tree - Deciduous:Siberian Crab Apple - 6.1 Meters:356961",
+                                        "ObjectType": "M_RPC Tree - Deciduous:Siberian Crab Apple - 6.1 Meters",
+                                        "ContainedInStructure": "Level 1"
+                                      }
+                                    },
+                                    {
+                                      "category": null,
+                                      "localId": 33911,
+                                      "properties": {
+                                        "_category": "IFCBUILDINGELEMENTPROXY",
+                                        "_localId": 33911,
+                                        "Name": "M_RPC Tree - Deciduous:Siberian Crab Apple - 6.1 Meters:357010",
+                                        "ObjectType": "M_RPC Tree - Deciduous:Siberian Crab Apple - 6.1 Meters",
+                                        "ContainedInStructure": "Level 1"
+                                      }
+                                    },
+                                    {
+                                      "category": null,
+                                      "localId": 33970,
+                                      "properties": {
+                                        "_category": "IFCBUILDINGELEMENTPROXY",
+                                        "_localId": 33970,
+                                        "Name": "M_RPC Tree - Deciduous:Siberian Crab Apple - 6.1 Meters:357067",
+                                        "ObjectType": "M_RPC Tree - Deciduous:Siberian Crab Apple - 6.1 Meters",
+                                        "ContainedInStructure": "Level 1"
+                                      }
+                                    },
+                                    {
+                                      "category": null,
+                                      "localId": 34029,
+                                      "properties": {
+                                        "_category": "IFCBUILDINGELEMENTPROXY",
+                                        "_localId": 34029,
+                                        "Name": "M_RPC Tree - Deciduous:Siberian Crab Apple - 6.1 Meters:357120",
+                                        "ObjectType": "M_RPC Tree - Deciduous:Siberian Crab Apple - 6.1 Meters",
+                                        "ContainedInStructure": "Level 1"
+                                      }
+                                    },
+                                    {
+                                      "category": null,
+                                      "localId": 34088,
+                                      "properties": {
+                                        "_category": "IFCBUILDINGELEMENTPROXY",
+                                        "_localId": 34088,
+                                        "Name": "M_RPC Tree - Deciduous:Siberian Crab Apple - 6.1 Meters:357169",
+                                        "ObjectType": "M_RPC Tree - Deciduous:Siberian Crab Apple - 6.1 Meters",
+                                        "ContainedInStructure": "Level 1"
+                                      }
+                                    },
+                                    {
+                                      "category": null,
+                                      "localId": 34147,
+                                      "properties": {
+                                        "_category": "IFCBUILDINGELEMENTPROXY",
+                                        "_localId": 34147,
+                                        "Name": "M_RPC Tree - Deciduous:Siberian Crab Apple - 6.1 Meters:357234",
+                                        "ObjectType": "M_RPC Tree - Deciduous:Siberian Crab Apple - 6.1 Meters",
+                                        "ContainedInStructure": "Level 1"
+                                      }
+                                    },
+                                    {
+                                      "category": null,
+                                      "localId": 34206,
+                                      "properties": {
+                                        "_category": "IFCBUILDINGELEMENTPROXY",
+                                        "_localId": 34206,
+                                        "Name": "M_RPC Tree - Deciduous:Siberian Crab Apple - 6.1 Meters:357275",
+                                        "ObjectType": "M_RPC Tree - Deciduous:Siberian Crab Apple - 6.1 Meters",
+                                        "ContainedInStructure": "Level 1"
+                                      }
+                                    },
+                                    {
+                                      "category": null,
+                                      "localId": 34265,
+                                      "properties": {
+                                        "_category": "IFCBUILDINGELEMENTPROXY",
+                                        "_localId": 34265,
+                                        "Name": "M_RPC Tree - Deciduous:Siberian Crab Apple - 6.1 Meters:357332",
+                                        "ObjectType": "M_RPC Tree - Deciduous:Siberian Crab Apple - 6.1 Meters",
+                                        "ContainedInStructure": "Level 1"
+                                      }
+                                    },
+                                    {
+                                      "category": null,
+                                      "localId": 34324,
+                                      "properties": {
+                                        "_category": "IFCBUILDINGELEMENTPROXY",
+                                        "_localId": 34324,
+                                        "Name": "M_RPC Tree - Deciduous:Siberian Crab Apple - 6.1 Meters:357369",
+                                        "ObjectType": "M_RPC Tree - Deciduous:Siberian Crab Apple - 6.1 Meters",
+                                        "ContainedInStructure": "Level 1"
+                                      }
+                                    },
+                                    {
+                                      "category": null,
+                                      "localId": 34383,
+                                      "properties": {
+                                        "_category": "IFCBUILDINGELEMENTPROXY",
+                                        "_localId": 34383,
+                                        "Name": "M_RPC Tree - Deciduous:Siberian Crab Apple - 6.1 Meters:357476",
+                                        "ObjectType": "M_RPC Tree - Deciduous:Siberian Crab Apple - 6.1 Meters",
+                                        "ContainedInStructure": "Level 1"
+                                      }
+                                    }
+                                  ]
+                                },
+                                {
+                                  "category": "IFCDOOR",
+                                  "localId": null,
+                                  "children": [
+                                    {
+                                      "category": null,
+                                      "localId": 3261,
+                                      "properties": {
+                                        "_category": "IFCDOOR",
+                                        "_localId": 3261,
+                                        "Name": "M_Single-Flush:Inside Door:353172",
+                                        "ObjectType": "M_Single-Flush:Inside Door",
+                                        "OverallHeight": 2134,
+                                        "OverallWidth": 915,
+                                        "ContainedInStructure": "Level 1"
+                                      }
+                                    },
+                                    {
+                                      "category": null,
+                                      "localId": 3449,
+                                      "properties": {
+                                        "_category": "IFCDOOR",
+                                        "_localId": 3449,
+                                        "Name": "M_Single-Flush:Inside Door:353248",
+                                        "ObjectType": "M_Single-Flush:Inside Door",
+                                        "OverallHeight": 2134,
+                                        "OverallWidth": 915,
+                                        "ContainedInStructure": "Level 1"
+                                      }
+                                    },
+                                    {
+                                      "category": null,
+                                      "localId": 3546,
+                                      "properties": {
+                                        "_category": "IFCDOOR",
+                                        "_localId": 3546,
+                                        "Name": "M_Single-Flush:Inside Door:353277",
+                                        "ObjectType": "M_Single-Flush:Inside Door",
+                                        "OverallHeight": 2134,
+                                        "OverallWidth": 915,
+                                        "ContainedInStructure": "Level 1"
+                                      }
+                                    },
+                                    {
+                                      "category": null,
+                                      "localId": 3643,
+                                      "properties": {
+                                        "_category": "IFCDOOR",
+                                        "_localId": 3643,
+                                        "Name": "M_Single-Flush:Inside Door:353300",
+                                        "ObjectType": "M_Single-Flush:Inside Door",
+                                        "OverallHeight": 2134,
+                                        "OverallWidth": 915,
+                                        "ContainedInStructure": "Level 1"
+                                      }
+                                    },
+                                    {
+                                      "category": null,
+                                      "localId": 3740,
+                                      "properties": {
+                                        "_category": "IFCDOOR",
+                                        "_localId": 3740,
+                                        "Name": "M_Single-Flush:Inside Door:353417",
+                                        "ObjectType": "M_Single-Flush:Inside Door",
+                                        "OverallHeight": 2134,
+                                        "OverallWidth": 915,
+                                        "ContainedInStructure": "Level 1"
+                                      }
+                                    },
+                                    {
+                                      "category": null,
+                                      "localId": 4276,
+                                      "properties": {
+                                        "_category": "IFCDOOR",
+                                        "_localId": 4276,
+                                        "Name": "M_Single-Flush:Inside Door:353615",
+                                        "ObjectType": "M_Single-Flush:Inside Door",
+                                        "OverallHeight": 2134,
+                                        "OverallWidth": 915,
+                                        "ContainedInStructure": "Level 1"
+                                      }
+                                    },
+                                    {
+                                      "category": null,
+                                      "localId": 4404,
+                                      "properties": {
+                                        "_category": "IFCDOOR",
+                                        "_localId": 4404,
+                                        "Name": "M_Single-Flush:Inside Door:353707",
+                                        "ObjectType": "M_Single-Flush:Inside Door",
+                                        "OverallHeight": 2134,
+                                        "OverallWidth": 915,
+                                        "ContainedInStructure": "Level 1"
+                                      }
+                                    },
+                                    {
+                                      "category": null,
+                                      "localId": 4501,
+                                      "properties": {
+                                        "_category": "IFCDOOR",
+                                        "_localId": 4501,
+                                        "Name": "M_Single-Flush:Inside Door:353730",
+                                        "ObjectType": "M_Single-Flush:Inside Door",
+                                        "OverallHeight": 2134,
+                                        "OverallWidth": 915,
+                                        "ContainedInStructure": "Level 1"
+                                      }
+                                    },
+                                    {
+                                      "category": null,
+                                      "localId": 12758,
+                                      "properties": {
+                                        "_category": "IFCDOOR",
+                                        "_localId": 12758,
+                                        "Name": "M_Door-Interior-Double-Full Glass-Wood:1500 x 2000mm:353875",
+                                        "ObjectType": "M_Door-Interior-Double-Full Glass-Wood:1500 x 2000mm",
+                                        "OverallHeight": 2025,
+                                        "OverallWidth": 1550,
+                                        "ContainedInStructure": "Level 1"
+                                      }
+                                    },
+                                    {
+                                      "category": null,
+                                      "localId": 19034,
+                                      "properties": {
+                                        "_category": "IFCDOOR",
+                                        "_localId": 19034,
+                                        "Name": "M_Single-Flush:Inside Door:355790",
+                                        "ObjectType": "M_Single-Flush:Inside Door",
+                                        "OverallHeight": 2134,
+                                        "OverallWidth": 915,
+                                        "ContainedInStructure": "Level 1"
+                                      }
+                                    },
+                                    {
+                                      "category": null,
+                                      "localId": 19131,
+                                      "properties": {
+                                        "_category": "IFCDOOR",
+                                        "_localId": 19131,
+                                        "Name": "M_Single-Flush:Inside Door:355791",
+                                        "ObjectType": "M_Single-Flush:Inside Door",
+                                        "OverallHeight": 2134,
+                                        "OverallWidth": 915,
+                                        "ContainedInStructure": "Level 1"
+                                      }
+                                    },
+                                    {
+                                      "category": null,
+                                      "localId": 19228,
+                                      "properties": {
+                                        "_category": "IFCDOOR",
+                                        "_localId": 19228,
+                                        "Name": "M_Single-Flush:Inside Door:355792",
+                                        "ObjectType": "M_Single-Flush:Inside Door",
+                                        "OverallHeight": 2134,
+                                        "OverallWidth": 915,
+                                        "ContainedInStructure": "Level 1"
+                                      }
+                                    },
+                                    {
+                                      "category": null,
+                                      "localId": 19325,
+                                      "properties": {
+                                        "_category": "IFCDOOR",
+                                        "_localId": 19325,
+                                        "Name": "M_Single-Flush:Inside Door:355793",
+                                        "ObjectType": "M_Single-Flush:Inside Door",
+                                        "OverallHeight": 2134,
+                                        "OverallWidth": 915,
+                                        "ContainedInStructure": "Level 1"
+                                      }
+                                    },
+                                    {
+                                      "category": null,
+                                      "localId": 19422,
+                                      "properties": {
+                                        "_category": "IFCDOOR",
+                                        "_localId": 19422,
+                                        "Name": "M_Single-Flush:Inside Door:355794",
+                                        "ObjectType": "M_Single-Flush:Inside Door",
+                                        "OverallHeight": 2134,
+                                        "OverallWidth": 915,
+                                        "ContainedInStructure": "Level 1"
+                                      }
+                                    },
+                                    {
+                                      "category": null,
+                                      "localId": 19773,
+                                      "properties": {
+                                        "_category": "IFCDOOR",
+                                        "_localId": 19773,
+                                        "Name": "M_Single-Flush:Inside Door:355797",
+                                        "ObjectType": "M_Single-Flush:Inside Door",
+                                        "OverallHeight": 2134,
+                                        "OverallWidth": 915,
+                                        "ContainedInStructure": "Level 1"
+                                      }
+                                    },
+                                    {
+                                      "category": null,
+                                      "localId": 19870,
+                                      "properties": {
+                                        "_category": "IFCDOOR",
+                                        "_localId": 19870,
+                                        "Name": "M_Single-Flush:Inside Door:355798",
+                                        "ObjectType": "M_Single-Flush:Inside Door",
+                                        "OverallHeight": 2134,
+                                        "OverallWidth": 915,
+                                        "ContainedInStructure": "Level 1"
+                                      }
+                                    },
+                                    {
+                                      "category": null,
+                                      "localId": 19967,
+                                      "properties": {
+                                        "_category": "IFCDOOR",
+                                        "_localId": 19967,
+                                        "Name": "M_Single-Flush:Inside Door:355799",
+                                        "ObjectType": "M_Single-Flush:Inside Door",
+                                        "OverallHeight": 2134,
+                                        "OverallWidth": 915,
+                                        "ContainedInStructure": "Level 1"
+                                      }
+                                    },
+                                    {
+                                      "category": null,
+                                      "localId": 20192,
+                                      "properties": {
+                                        "_category": "IFCDOOR",
+                                        "_localId": 20192,
+                                        "Name": "M_Door-Interior-Double-Full Glass-Wood:1500 x 2000mm:355801",
+                                        "ObjectType": "M_Door-Interior-Double-Full Glass-Wood:1500 x 2000mm",
+                                        "OverallHeight": 2025,
+                                        "OverallWidth": 1550,
+                                        "ContainedInStructure": "Level 1"
+                                      }
+                                    }
+                                  ]
+                                },
+                                {
+                                  "category": "IFCWINDOW",
+                                  "localId": null,
+                                  "children": [
+                                    {
+                                      "category": null,
+                                      "localId": 13067,
+                                      "properties": {
+                                        "_category": "IFCWINDOW",
+                                        "_localId": 13067,
+                                        "Name": "M_Fixed:0915 x 1830mm:353953",
+                                        "ObjectType": "M_Fixed:0915 x 1830mm",
+                                        "OverallHeight": 1830,
+                                        "OverallWidth": 914.999999999999,
+                                        "ContainedInStructure": "Level 1"
+                                      }
+                                    },
+                                    {
+                                      "category": null,
+                                      "localId": 13235,
+                                      "properties": {
+                                        "_category": "IFCWINDOW",
+                                        "_localId": 13235,
+                                        "Name": "M_Fixed:0915 x 1830mm:354004",
+                                        "ObjectType": "M_Fixed:0915 x 1830mm",
+                                        "OverallHeight": 1830,
+                                        "OverallWidth": 914.999999999999,
+                                        "ContainedInStructure": "Level 1"
+                                      }
+                                    },
+                                    {
+                                      "category": null,
+                                      "localId": 13327,
+                                      "properties": {
+                                        "_category": "IFCWINDOW",
+                                        "_localId": 13327,
+                                        "Name": "M_Fixed:0915 x 1830mm:354078",
+                                        "ObjectType": "M_Fixed:0915 x 1830mm",
+                                        "OverallHeight": 1830,
+                                        "OverallWidth": 914.999999999999,
+                                        "ContainedInStructure": "Level 1"
+                                      }
+                                    },
+                                    {
+                                      "category": null,
+                                      "localId": 13419,
+                                      "properties": {
+                                        "_category": "IFCWINDOW",
+                                        "_localId": 13419,
+                                        "Name": "M_Fixed:0915 x 1830mm:354140",
+                                        "ObjectType": "M_Fixed:0915 x 1830mm",
+                                        "OverallHeight": 1830,
+                                        "OverallWidth": 915,
+                                        "ContainedInStructure": "Level 1"
+                                      }
+                                    },
+                                    {
+                                      "category": null,
+                                      "localId": 13511,
+                                      "properties": {
+                                        "_category": "IFCWINDOW",
+                                        "_localId": 13511,
+                                        "Name": "M_Fixed:0915 x 1830mm:354198",
+                                        "ObjectType": "M_Fixed:0915 x 1830mm",
+                                        "OverallHeight": 1830,
+                                        "OverallWidth": 914.999999999999,
+                                        "ContainedInStructure": "Level 1"
+                                      }
+                                    },
+                                    {
+                                      "category": null,
+                                      "localId": 13603,
+                                      "properties": {
+                                        "_category": "IFCWINDOW",
+                                        "_localId": 13603,
+                                        "Name": "M_Fixed:0915 x 1830mm:354238",
+                                        "ObjectType": "M_Fixed:0915 x 1830mm",
+                                        "OverallHeight": 1830,
+                                        "OverallWidth": 915,
+                                        "ContainedInStructure": "Level 1"
+                                      }
+                                    },
+                                    {
+                                      "category": null,
+                                      "localId": 13695,
+                                      "properties": {
+                                        "_category": "IFCWINDOW",
+                                        "_localId": 13695,
+                                        "Name": "M_Fixed:0915 x 1830mm:354395",
+                                        "ObjectType": "M_Fixed:0915 x 1830mm",
+                                        "OverallHeight": 1830,
+                                        "OverallWidth": 915,
+                                        "ContainedInStructure": "Level 1"
+                                      }
+                                    },
+                                    {
+                                      "category": null,
+                                      "localId": 13787,
+                                      "properties": {
+                                        "_category": "IFCWINDOW",
+                                        "_localId": 13787,
+                                        "Name": "M_Fixed:0915 x 1830mm:354443",
+                                        "ObjectType": "M_Fixed:0915 x 1830mm",
+                                        "OverallHeight": 1830,
+                                        "OverallWidth": 915,
+                                        "ContainedInStructure": "Level 1"
+                                      }
+                                    },
+                                    {
+                                      "category": null,
+                                      "localId": 13879,
+                                      "properties": {
+                                        "_category": "IFCWINDOW",
+                                        "_localId": 13879,
+                                        "Name": "M_Fixed:0915 x 1830mm:354493",
+                                        "ObjectType": "M_Fixed:0915 x 1830mm",
+                                        "OverallHeight": 1830,
+                                        "OverallWidth": 915,
+                                        "ContainedInStructure": "Level 1"
+                                      }
+                                    },
+                                    {
+                                      "category": null,
+                                      "localId": 13971,
+                                      "properties": {
+                                        "_category": "IFCWINDOW",
+                                        "_localId": 13971,
+                                        "Name": "M_Fixed:0915 x 1830mm:354551",
+                                        "ObjectType": "M_Fixed:0915 x 1830mm",
+                                        "OverallHeight": 1830,
+                                        "OverallWidth": 914.999999999999,
+                                        "ContainedInStructure": "Level 1"
+                                      }
+                                    },
+                                    {
+                                      "category": null,
+                                      "localId": 14063,
+                                      "properties": {
+                                        "_category": "IFCWINDOW",
+                                        "_localId": 14063,
+                                        "Name": "M_Fixed:0915 x 1830mm:354583",
+                                        "ObjectType": "M_Fixed:0915 x 1830mm",
+                                        "OverallHeight": 1830,
+                                        "OverallWidth": 914.999999999999,
+                                        "ContainedInStructure": "Level 1"
+                                      }
+                                    },
+                                    {
+                                      "category": null,
+                                      "localId": 14155,
+                                      "properties": {
+                                        "_category": "IFCWINDOW",
+                                        "_localId": 14155,
+                                        "Name": "M_Fixed:0915 x 1830mm:354615",
+                                        "ObjectType": "M_Fixed:0915 x 1830mm",
+                                        "OverallHeight": 1830,
+                                        "OverallWidth": 915,
+                                        "ContainedInStructure": "Level 1"
+                                      }
+                                    },
+                                    {
+                                      "category": null,
+                                      "localId": 14247,
+                                      "properties": {
+                                        "_category": "IFCWINDOW",
+                                        "_localId": 14247,
+                                        "Name": "M_Fixed:0915 x 1830mm:354675",
+                                        "ObjectType": "M_Fixed:0915 x 1830mm",
+                                        "OverallHeight": 1830,
+                                        "OverallWidth": 915,
+                                        "ContainedInStructure": "Level 1"
+                                      }
+                                    },
+                                    {
+                                      "category": null,
+                                      "localId": 14339,
+                                      "properties": {
+                                        "_category": "IFCWINDOW",
+                                        "_localId": 14339,
+                                        "Name": "M_Fixed:0915 x 1830mm:354711",
+                                        "ObjectType": "M_Fixed:0915 x 1830mm",
+                                        "OverallHeight": 1830,
+                                        "OverallWidth": 915,
+                                        "ContainedInStructure": "Level 1"
+                                      }
+                                    },
+                                    {
+                                      "category": null,
+                                      "localId": 20291,
+                                      "properties": {
+                                        "_category": "IFCWINDOW",
+                                        "_localId": 20291,
+                                        "Name": "M_Fixed:0915 x 1830mm:355802",
+                                        "ObjectType": "M_Fixed:0915 x 1830mm",
+                                        "OverallHeight": 1830,
+                                        "OverallWidth": 915,
+                                        "ContainedInStructure": "Level 1"
+                                      }
+                                    },
+                                    {
+                                      "category": null,
+                                      "localId": 20383,
+                                      "properties": {
+                                        "_category": "IFCWINDOW",
+                                        "_localId": 20383,
+                                        "Name": "M_Fixed:0915 x 1830mm:355803",
+                                        "ObjectType": "M_Fixed:0915 x 1830mm",
+                                        "OverallHeight": 1830,
+                                        "OverallWidth": 915,
+                                        "ContainedInStructure": "Level 1"
+                                      }
+                                    },
+                                    {
+                                      "category": null,
+                                      "localId": 20475,
+                                      "properties": {
+                                        "_category": "IFCWINDOW",
+                                        "_localId": 20475,
+                                        "Name": "M_Fixed:0915 x 1830mm:355804",
+                                        "ObjectType": "M_Fixed:0915 x 1830mm",
+                                        "OverallHeight": 1830,
+                                        "OverallWidth": 915,
+                                        "ContainedInStructure": "Level 1"
+                                      }
+                                    },
+                                    {
+                                      "category": null,
+                                      "localId": 20567,
+                                      "properties": {
+                                        "_category": "IFCWINDOW",
+                                        "_localId": 20567,
+                                        "Name": "M_Fixed:0915 x 1830mm:355805",
+                                        "ObjectType": "M_Fixed:0915 x 1830mm",
+                                        "OverallHeight": 1830,
+                                        "OverallWidth": 915,
+                                        "ContainedInStructure": "Level 1"
+                                      }
+                                    },
+                                    {
+                                      "category": null,
+                                      "localId": 20659,
+                                      "properties": {
+                                        "_category": "IFCWINDOW",
+                                        "_localId": 20659,
+                                        "Name": "M_Fixed:0915 x 1830mm:355806",
+                                        "ObjectType": "M_Fixed:0915 x 1830mm",
+                                        "OverallHeight": 1830,
+                                        "OverallWidth": 915,
+                                        "ContainedInStructure": "Level 1"
+                                      }
+                                    },
+                                    {
+                                      "category": null,
+                                      "localId": 20751,
+                                      "properties": {
+                                        "_category": "IFCWINDOW",
+                                        "_localId": 20751,
+                                        "Name": "M_Fixed:0915 x 1830mm:355807",
+                                        "ObjectType": "M_Fixed:0915 x 1830mm",
+                                        "OverallHeight": 1830,
+                                        "OverallWidth": 915,
+                                        "ContainedInStructure": "Level 1"
+                                      }
+                                    },
+                                    {
+                                      "category": null,
+                                      "localId": 20843,
+                                      "properties": {
+                                        "_category": "IFCWINDOW",
+                                        "_localId": 20843,
+                                        "Name": "M_Fixed:0915 x 1830mm:355808",
+                                        "ObjectType": "M_Fixed:0915 x 1830mm",
+                                        "OverallHeight": 1830,
+                                        "OverallWidth": 914.999999999999,
+                                        "ContainedInStructure": "Level 1"
+                                      }
+                                    },
+                                    {
+                                      "category": null,
+                                      "localId": 20935,
+                                      "properties": {
+                                        "_category": "IFCWINDOW",
+                                        "_localId": 20935,
+                                        "Name": "M_Fixed:0915 x 1830mm:355809",
+                                        "ObjectType": "M_Fixed:0915 x 1830mm",
+                                        "OverallHeight": 1830,
+                                        "OverallWidth": 914.999999999999,
+                                        "ContainedInStructure": "Level 1"
+                                      }
+                                    },
+                                    {
+                                      "category": null,
+                                      "localId": 21027,
+                                      "properties": {
+                                        "_category": "IFCWINDOW",
+                                        "_localId": 21027,
+                                        "Name": "M_Fixed:0915 x 1830mm:355810",
+                                        "ObjectType": "M_Fixed:0915 x 1830mm",
+                                        "OverallHeight": 1830,
+                                        "OverallWidth": 915,
+                                        "ContainedInStructure": "Level 1"
+                                      }
+                                    },
+                                    {
+                                      "category": null,
+                                      "localId": 21119,
+                                      "properties": {
+                                        "_category": "IFCWINDOW",
+                                        "_localId": 21119,
+                                        "Name": "M_Fixed:0915 x 1830mm:355811",
+                                        "ObjectType": "M_Fixed:0915 x 1830mm",
+                                        "OverallHeight": 1830,
+                                        "OverallWidth": 915,
+                                        "ContainedInStructure": "Level 1"
+                                      }
+                                    },
+                                    {
+                                      "category": null,
+                                      "localId": 21211,
+                                      "properties": {
+                                        "_category": "IFCWINDOW",
+                                        "_localId": 21211,
+                                        "Name": "M_Fixed:0915 x 1830mm:355812",
+                                        "ObjectType": "M_Fixed:0915 x 1830mm",
+                                        "OverallHeight": 1830,
+                                        "OverallWidth": 915,
+                                        "ContainedInStructure": "Level 1"
+                                      }
+                                    },
+                                    {
+                                      "category": null,
+                                      "localId": 21303,
+                                      "properties": {
+                                        "_category": "IFCWINDOW",
+                                        "_localId": 21303,
+                                        "Name": "M_Fixed:0915 x 1830mm:355813",
+                                        "ObjectType": "M_Fixed:0915 x 1830mm",
+                                        "OverallHeight": 1830,
+                                        "OverallWidth": 914.999999999999,
+                                        "ContainedInStructure": "Level 1"
+                                      }
+                                    },
+                                    {
+                                      "category": null,
+                                      "localId": 21395,
+                                      "properties": {
+                                        "_category": "IFCWINDOW",
+                                        "_localId": 21395,
+                                        "Name": "M_Fixed:0915 x 1830mm:355814",
+                                        "ObjectType": "M_Fixed:0915 x 1830mm",
+                                        "OverallHeight": 1830,
+                                        "OverallWidth": 914.999999999999,
+                                        "ContainedInStructure": "Level 1"
+                                      }
+                                    },
+                                    {
+                                      "category": null,
+                                      "localId": 21487,
+                                      "properties": {
+                                        "_category": "IFCWINDOW",
+                                        "_localId": 21487,
+                                        "Name": "M_Fixed:0915 x 1830mm:355815",
+                                        "ObjectType": "M_Fixed:0915 x 1830mm",
+                                        "OverallHeight": 1830,
+                                        "OverallWidth": 914.999999999999,
+                                        "ContainedInStructure": "Level 1"
+                                      }
+                                    }
+                                  ]
+                                },
+                                {
+                                  "category": "IFCSLAB",
+                                  "localId": null,
+                                  "children": [
+                                    {
+                                      "category": null,
+                                      "localId": 14447,
+                                      "properties": {
+                                        "_category": "IFCSLAB",
+                                        "_localId": 14447,
+                                        "Name": "Floor:Generic 150mm:354788",
+                                        "ObjectType": "Floor:Generic 150mm",
+                                        "PredefinedType": "FLOOR",
+                                        "ContainedInStructure": "Level 1"
+                                      }
+                                    },
+                                    {
+                                      "category": null,
+                                      "localId": 21589,
+                                      "properties": {
+                                        "_category": "IFCSLAB",
+                                        "_localId": 21589,
+                                        "Name": "Floor:Generic 150mm:355818",
+                                        "ObjectType": "Floor:Generic 150mm",
+                                        "PredefinedType": "FLOOR",
+                                        "ContainedInStructure": "Level 1"
+                                      }
+                                    }
+                                  ]
+                                },
+                                {
+                                  "category": "IFCCOVERING",
+                                  "localId": null,
+                                  "children": [
+                                    {
+                                      "category": null,
+                                      "localId": 14614,
+                                      "properties": {
+                                        "_category": "IFCCOVERING",
+                                        "_localId": 14614,
+                                        "Name": "Compound Ceiling:Plain:354798",
+                                        "ObjectType": "Compound Ceiling:Plain",
+                                        "PredefinedType": "CEILING",
+                                        "ContainedInStructure": "Level 1"
+                                      }
+                                    },
+                                    {
+                                      "category": null,
+                                      "localId": 14774,
+                                      "properties": {
+                                        "_category": "IFCCOVERING",
+                                        "_localId": 14774,
+                                        "Name": "Compound Ceiling:Plain:354806",
+                                        "ObjectType": "Compound Ceiling:Plain",
+                                        "PredefinedType": "CEILING",
+                                        "ContainedInStructure": "Level 1"
+                                      }
+                                    },
+                                    {
+                                      "category": null,
+                                      "localId": 14874,
+                                      "properties": {
+                                        "_category": "IFCCOVERING",
+                                        "_localId": 14874,
+                                        "Name": "Compound Ceiling:Plain:354814",
+                                        "ObjectType": "Compound Ceiling:Plain",
+                                        "PredefinedType": "CEILING",
+                                        "ContainedInStructure": "Level 1"
+                                      }
+                                    },
+                                    {
+                                      "category": null,
+                                      "localId": 14974,
+                                      "properties": {
+                                        "_category": "IFCCOVERING",
+                                        "_localId": 14974,
+                                        "Name": "Compound Ceiling:Plain:354822",
+                                        "ObjectType": "Compound Ceiling:Plain",
+                                        "PredefinedType": "CEILING",
+                                        "ContainedInStructure": "Level 1"
+                                      }
+                                    }
+                                  ]
+                                }
+                              ],
+                              "properties": {
+                                "_category": "IFCBUILDINGSTOREY",
+                                "_localId": 140,
+                                "Name": "Level 1",
+                                "ObjectType": "Level:8mm Head",
+                                "LongName": "Level 1",
+                                "Elevation": 0
+                              }
+                            },
+                            {
+                              "category": null,
+                              "localId": 146,
+                              "children": [
+                                {
+                                  "category": "IFCSLAB",
+                                  "localId": null,
+                                  "children": [
+                                    {
+                                      "category": null,
+                                      "localId": 15077,
+                                      "properties": {
+                                        "_category": "IFCSLAB",
+                                        "_localId": 15077,
+                                        "Name": "Floor:Generic 150mm:354834",
+                                        "ObjectType": "Floor:Generic 150mm",
+                                        "PredefinedType": "FLOOR",
+                                        "ContainedInStructure": "Level 2"
+                                      }
+                                    }
+                                  ]
+                                },
+                                {
+                                  "category": "IFCWALLSTANDARDCASE",
+                                  "localId": null,
+                                  "children": [
+                                    {
+                                      "category": null,
+                                      "localId": 15204,
+                                      "properties": {
+                                        "_category": "IFCWALLSTANDARDCASE",
+                                        "_localId": 15204,
+                                        "Name": "Basic Wall:Outside wall:355148",
+                                        "ObjectType": "Basic Wall:Outside wall",
+                                        "ContainedInStructure": "Level 2"
+                                      }
+                                    },
+                                    {
+                                      "category": null,
+                                      "localId": 15334,
+                                      "properties": {
+                                        "_category": "IFCWALLSTANDARDCASE",
+                                        "_localId": 15334,
+                                        "Name": "Basic Wall:Outside wall:355149",
+                                        "ObjectType": "Basic Wall:Outside wall",
+                                        "ContainedInStructure": "Level 2"
+                                      }
+                                    },
+                                    {
+                                      "category": null,
+                                      "localId": 15463,
+                                      "properties": {
+                                        "_category": "IFCWALLSTANDARDCASE",
+                                        "_localId": 15463,
+                                        "Name": "Basic Wall:Outside wall:355150",
+                                        "ObjectType": "Basic Wall:Outside wall",
+                                        "ContainedInStructure": "Level 2"
+                                      }
+                                    },
+                                    {
+                                      "category": null,
+                                      "localId": 15592,
+                                      "properties": {
+                                        "_category": "IFCWALLSTANDARDCASE",
+                                        "_localId": 15592,
+                                        "Name": "Basic Wall:Outside wall:355151",
+                                        "ObjectType": "Basic Wall:Outside wall",
+                                        "ContainedInStructure": "Level 2"
+                                      }
+                                    }
+                                  ]
+                                },
+                                {
+                                  "category": "IFCWINDOW",
+                                  "localId": null,
+                                  "children": [
+                                    {
+                                      "category": null,
+                                      "localId": 15707,
+                                      "properties": {
+                                        "_category": "IFCWINDOW",
+                                        "_localId": 15707,
+                                        "Name": "M_Fixed:0915 x 1830mm:355157",
+                                        "ObjectType": "M_Fixed:0915 x 1830mm",
+                                        "OverallHeight": 1830,
+                                        "OverallWidth": 914.999999999999,
+                                        "ContainedInStructure": "Level 2"
+                                      }
+                                    },
+                                    {
+                                      "category": null,
+                                      "localId": 15799,
+                                      "properties": {
+                                        "_category": "IFCWINDOW",
+                                        "_localId": 15799,
+                                        "Name": "M_Fixed:0915 x 1830mm:355158",
+                                        "ObjectType": "M_Fixed:0915 x 1830mm",
+                                        "OverallHeight": 1830,
+                                        "OverallWidth": 914.999999999999,
+                                        "ContainedInStructure": "Level 2"
+                                      }
+                                    },
+                                    {
+                                      "category": null,
+                                      "localId": 15891,
+                                      "properties": {
+                                        "_category": "IFCWINDOW",
+                                        "_localId": 15891,
+                                        "Name": "M_Fixed:0915 x 1830mm:355159",
+                                        "ObjectType": "M_Fixed:0915 x 1830mm",
+                                        "OverallHeight": 1830,
+                                        "OverallWidth": 914.999999999999,
+                                        "ContainedInStructure": "Level 2"
+                                      }
+                                    },
+                                    {
+                                      "category": null,
+                                      "localId": 15983,
+                                      "properties": {
+                                        "_category": "IFCWINDOW",
+                                        "_localId": 15983,
+                                        "Name": "M_Fixed:0915 x 1830mm:355160",
+                                        "ObjectType": "M_Fixed:0915 x 1830mm",
+                                        "OverallHeight": 1830,
+                                        "OverallWidth": 915,
+                                        "ContainedInStructure": "Level 2"
+                                      }
+                                    },
+                                    {
+                                      "category": null,
+                                      "localId": 16075,
+                                      "properties": {
+                                        "_category": "IFCWINDOW",
+                                        "_localId": 16075,
+                                        "Name": "M_Fixed:0915 x 1830mm:355161",
+                                        "ObjectType": "M_Fixed:0915 x 1830mm",
+                                        "OverallHeight": 1830,
+                                        "OverallWidth": 914.999999999999,
+                                        "ContainedInStructure": "Level 2"
+                                      }
+                                    },
+                                    {
+                                      "category": null,
+                                      "localId": 16167,
+                                      "properties": {
+                                        "_category": "IFCWINDOW",
+                                        "_localId": 16167,
+                                        "Name": "M_Fixed:0915 x 1830mm:355162",
+                                        "ObjectType": "M_Fixed:0915 x 1830mm",
+                                        "OverallHeight": 1830,
+                                        "OverallWidth": 915,
+                                        "ContainedInStructure": "Level 2"
+                                      }
+                                    },
+                                    {
+                                      "category": null,
+                                      "localId": 16259,
+                                      "properties": {
+                                        "_category": "IFCWINDOW",
+                                        "_localId": 16259,
+                                        "Name": "M_Fixed:0915 x 1830mm:355163",
+                                        "ObjectType": "M_Fixed:0915 x 1830mm",
+                                        "OverallHeight": 1830,
+                                        "OverallWidth": 915,
+                                        "ContainedInStructure": "Level 2"
+                                      }
+                                    },
+                                    {
+                                      "category": null,
+                                      "localId": 16351,
+                                      "properties": {
+                                        "_category": "IFCWINDOW",
+                                        "_localId": 16351,
+                                        "Name": "M_Fixed:0915 x 1830mm:355164",
+                                        "ObjectType": "M_Fixed:0915 x 1830mm",
+                                        "OverallHeight": 1830,
+                                        "OverallWidth": 915,
+                                        "ContainedInStructure": "Level 2"
+                                      }
+                                    },
+                                    {
+                                      "category": null,
+                                      "localId": 16443,
+                                      "properties": {
+                                        "_category": "IFCWINDOW",
+                                        "_localId": 16443,
+                                        "Name": "M_Fixed:0915 x 1830mm:355165",
+                                        "ObjectType": "M_Fixed:0915 x 1830mm",
+                                        "OverallHeight": 1830,
+                                        "OverallWidth": 915,
+                                        "ContainedInStructure": "Level 2"
+                                      }
+                                    },
+                                    {
+                                      "category": null,
+                                      "localId": 16535,
+                                      "properties": {
+                                        "_category": "IFCWINDOW",
+                                        "_localId": 16535,
+                                        "Name": "M_Fixed:0915 x 1830mm:355166",
+                                        "ObjectType": "M_Fixed:0915 x 1830mm",
+                                        "OverallHeight": 1830,
+                                        "OverallWidth": 914.999999999999,
+                                        "ContainedInStructure": "Level 2"
+                                      }
+                                    },
+                                    {
+                                      "category": null,
+                                      "localId": 16627,
+                                      "properties": {
+                                        "_category": "IFCWINDOW",
+                                        "_localId": 16627,
+                                        "Name": "M_Fixed:0915 x 1830mm:355167",
+                                        "ObjectType": "M_Fixed:0915 x 1830mm",
+                                        "OverallHeight": 1830,
+                                        "OverallWidth": 914.999999999999,
+                                        "ContainedInStructure": "Level 2"
+                                      }
+                                    },
+                                    {
+                                      "category": null,
+                                      "localId": 16719,
+                                      "properties": {
+                                        "_category": "IFCWINDOW",
+                                        "_localId": 16719,
+                                        "Name": "M_Fixed:0915 x 1830mm:355168",
+                                        "ObjectType": "M_Fixed:0915 x 1830mm",
+                                        "OverallHeight": 1830,
+                                        "OverallWidth": 915,
+                                        "ContainedInStructure": "Level 2"
+                                      }
+                                    },
+                                    {
+                                      "category": null,
+                                      "localId": 16811,
+                                      "properties": {
+                                        "_category": "IFCWINDOW",
+                                        "_localId": 16811,
+                                        "Name": "M_Fixed:0915 x 1830mm:355169",
+                                        "ObjectType": "M_Fixed:0915 x 1830mm",
+                                        "OverallHeight": 1830,
+                                        "OverallWidth": 915,
+                                        "ContainedInStructure": "Level 2"
+                                      }
+                                    },
+                                    {
+                                      "category": null,
+                                      "localId": 16903,
+                                      "properties": {
+                                        "_category": "IFCWINDOW",
+                                        "_localId": 16903,
+                                        "Name": "M_Fixed:0915 x 1830mm:355170",
+                                        "ObjectType": "M_Fixed:0915 x 1830mm",
+                                        "OverallHeight": 1830,
+                                        "OverallWidth": 915,
+                                        "ContainedInStructure": "Level 2"
+                                      }
+                                    }
+                                  ]
+                                },
+                                {
+                                  "category": "IFCCOVERING",
+                                  "localId": null,
+                                  "children": [
+                                    {
+                                      "category": null,
+                                      "localId": 17003,
+                                      "properties": {
+                                        "_category": "IFCCOVERING",
+                                        "_localId": 17003,
+                                        "Name": "Compound Ceiling:Plain:355657",
+                                        "ObjectType": "Compound Ceiling:Plain",
+                                        "PredefinedType": "CEILING",
+                                        "ContainedInStructure": "Level 2"
+                                      }
+                                    }
+                                  ]
+                                },
+                                {
+                                  "category": "IFCROOF",
+                                  "localId": null,
+                                  "children": [
+                                    {
+                                      "category": null,
+                                      "localId": 21695,
+                                      "children": [
+                                        {
+                                          "category": "IFCSLAB",
+                                          "localId": null,
+                                          "children": [
+                                            {
+                                              "category": null,
+                                              "localId": 21724,
+                                              "properties": {
+                                                "_category": "IFCSLAB",
+                                                "_localId": 21724,
+                                                "Name": "Basic Roof:Generic - 400mm:355926",
+                                                "ObjectType": "Basic Roof:Generic - 400mm",
+                                                "PredefinedType": "NOTDEFINED"
+                                              }
+                                            }
+                                          ]
+                                        }
+                                      ],
+                                      "properties": {
+                                        "_category": "IFCROOF",
+                                        "_localId": 21695,
+                                        "Name": "Basic Roof:Generic - 400mm:355926",
+                                        "ObjectType": "Basic Roof:Generic - 400mm",
+                                        "ShapeType": "NOTDEFINED",
+                                        "ContainedInStructure": "Level 2"
+                                      }
+                                    }
+                                  ]
+                                }
+                              ],
+                              "properties": {
+                                "_category": "IFCBUILDINGSTOREY",
+                                "_localId": 146,
+                                "Name": "Level 2",
+                                "ObjectType": "Level:8mm Head",
+                                "LongName": "Level 2",
+                                "Elevation": 4
+                              }
+                            }
+                          ]
+                        }
+                      ],
+                      "properties": {
+                        "_category": "IFCBUILDING",
+                        "_localId": 131,
+                        "Name": "// BUILDING/NAME //",
+                        "LongName": "// BUILDING/NAME //"
+                      }
+                    }
+                  ]
+                }
+              ],
+              "properties": {
+                "_category": "IFCSITE",
+                "_localId": 150,
+                "Name": "Default",
+                "RefLatitude": [
+                  42,
+                  21,
+                  31,
+                  181945
+                ],
+                "RefLongitude": [
+                  -71,
+                  -3,
+                  -24,
+                  -263305
+                ],
+                "RefElevation": 0
+              }
+            }
+          ]
+        }
+      ],
+      "properties": {
+        "_category": "IFCPROJECT",
+        "_localId": 121,
+        "Name": "// PROJECT/NUMBER //",
+        "LongName": "// PROJECT/NAME //",
+        "Phase": "// PROJECT/STATUS //"
+      }
+    }
+  ]
+}

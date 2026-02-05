@@ -1,13 +1,13 @@
-import React from 'react'
+import React from "react";
 
 interface PropertiesButtonProps {
-  onClick?: () => void
+  onClick?: () => void;
 }
 
 export function PropertiesButton({ onClick }: PropertiesButtonProps) {
   return (
     <button
-      className="fixed top-24 right-4 w-[50px] h-[50px] rounded-full bg-stone-800 border-none cursor-pointer shadow-[0_4px_16px_rgba(0,0,0,0.1),0_2px_8px_rgba(0,0,0,0.05)] transition-all duration-200 ease-in-out flex items-center justify-center z-[100]"
+      className="fixed top-24 right-4 w-[50px] h-[50px] rounded-full bg-stone-800 border-none cursor-pointer shadow-[0_4px_16px_rgba(0,0,0,0.1),0_2px_8px_rgba(0,0,0,0.05)] transition-all duration-200 ease-in-out flex items-center justify-center z-9"
       onClick={onClick}
       title="Properties tools"
     >
@@ -15,5 +15,5 @@ export function PropertiesButton({ onClick }: PropertiesButtonProps) {
         home_repair_service
       </span>
     </button>
-  )
+  );
 }

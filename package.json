@@ -10,6 +10,7 @@
     "postinstall": "npx prisma generate"
   },
   "dependencies": {
+    "@mastra/core": "^1.1.0",
     "@prisma/adapter-pg": "^7.0.0",
     "@prisma/client": "7.0.0",
     "@thatopen/components": "^3.3.1",

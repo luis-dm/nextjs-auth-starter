@@ -4,7 +4,7 @@ import React from "react";
 import * as OBC from "@thatopen/components";
 import * as BUI from "@thatopen/ui";
 import { spatialTreePanelTemplate } from "./panel-components/spatialPanel";
-// import { chatbotPanelTemplate } from "./panel-components/chatbotPanel";
+import { chatbotPanelTemplate } from "./panel-components/chatbotPanel";
 import ToolbarPanel from "./panel-components/TooolbarPanel";
 import { createRoot } from "react-dom/client";
 
@@ -16,14 +16,20 @@ export function panelHandlers(
   // Models panel removed - fragments loaded directly from facility data
 
   const spatialPanel = BUI.Component.create(() =>
-    spatialTreePanelTemplate({ components, world }, () => ({
-      components,
-      world,
-    })),
+    spatialTreePanelTemplate(
+      {
+        components,
+        world,
+      },
+      () => ({
+        components,
+        world,
+      }),
+    ),
   );
-  // const chatbotPanel = BUI.Component.create(() =>
-  //   chatbotPanelTemplate({ components }, () => ({ components })),
-  // );
+  const chatbotPanel = BUI.Component.create(() =>
+    chatbotPanelTemplate({ components }, () => ({ components })),
+  );
 
   // Create a div element for the React toolbar component
   const toolbarContainer = document.createElement("div");
@@ -64,7 +70,7 @@ export function panelHandlers(
   const chatbotWrapper = document.createElement("div");
   chatbotWrapper.style.width = "350px";
   chatbotWrapper.style.margin = "0";
-  // chatbotWrapper.appendChild(chatbotPanel);
+  chatbotWrapper.appendChild(chatbotPanel);
 
   if (container) {
     // Add main wrappers to container

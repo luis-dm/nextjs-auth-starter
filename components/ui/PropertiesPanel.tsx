@@ -4,6 +4,12 @@ import React, { useState, useEffect, useRef } from "react";
 import * as CUI from "@thatopen/ui-obc";
 import * as OBC from "@thatopen/components";
 import * as OBF from "@thatopen/components-front";
+import {
+  listenToVisibilityChanges,
+  type VisibilityChangedDetail,
+  listenToIsolationChanges,
+  type IsolationChangedDetail,
+} from "@/utils/visibility-events";
 
 interface PropertiesPanelProps {
   isOpen: boolean;
@@ -105,7 +111,7 @@ export function PropertiesPanel({
     <>
       {/* Panel */}
       <div
-        className={`absolute top-0 right-0 w-[30%] h-full bg-white shadow-[-4px_0_20px_rgba(0,0,0,0.15)] z-[99999999] flex flex-col transition-all duration-300 cubic-bezier(0.4,0,0.2,1) ${
+        className={`absolute top-0 right-0 w-[30%] h-full bg-white shadow-[-4px_0_20px_rgba(0,0,0,0.15)] z-10 flex flex-col transition-all duration-300 cubic-bezier(0.4,0,0.2,1) ${
           isOpen
             ? "transform translate-x-0 pointer-events-auto visible"
             : "transform translate-x-full pointer-events-none invisible"
@@ -113,7 +119,7 @@ export function PropertiesPanel({
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between p-[10px_24px] border-b border-gray-200 flex-shrink-0">
+        <div className="flex items-center justify-between p-[10px_24px] border-b border-gray-200 shrink-0">
           <div className="flex items-center gap-3">
             <span className="material-icons text-[32px] text-[#1c1b1f]">
               home_repair_service
@@ -131,7 +137,7 @@ export function PropertiesPanel({
         </div>
 
         {/* Search and Controls */}
-        <div className="p-[10px] border-b border-gray-200 bg-[#f7f8fa] flex-shrink-0">
+        <div className="p-2.5 border-b border-gray-200 bg-[#f7f8fa] shrink-0">
           <div className="flex gap-2 items-center">
             <div className="relative flex items-center flex-1">
               <input
@@ -149,14 +155,14 @@ export function PropertiesPanel({
               </button>
             </div>
             <button
-              className="flex items-center justify-center w-9 h-9 border border-gray-200 bg-white rounded-[20px] cursor-pointer text-gray-500 transition-all duration-200 ease-in-out flex-shrink-0 hover:bg-gray-100 hover:border-gray-300 hover:text-gray-700"
+              className="flex items-center justify-center w-9 h-9 border border-gray-200 bg-white rounded-[20px] cursor-pointer text-gray-500 transition-all duration-200 ease-in-out shrink-0 hover:bg-gray-100 hover:border-gray-300 hover:text-gray-700"
               onClick={handleToggleExpanded}
               title="Collapse"
             >
               <span className="material-icons text-lg">unfold_more</span>
             </button>
             <button
-              className="flex items-center justify-center w-9 h-9 border border-gray-200 bg-white rounded-[20px] cursor-pointer text-gray-500 transition-all duration-200 ease-in-out flex-shrink-0 hover:bg-gray-100 hover:border-gray-300 hover:text-gray-700"
+              className="flex items-center justify-center w-9 h-9 border border-gray-200 bg-white rounded-[20px] cursor-pointer text-gray-500 transition-all duration-200 ease-in-out shrink-0 hover:bg-gray-100 hover:border-gray-300 hover:text-gray-700"
               onClick={handleExport}
               title="Export Data"
             >

@@ -1,6 +1,11 @@
 import * as BUI from "@thatopen/ui";
 import * as CUI from "@thatopen/ui-obc";
 import * as OBC from "@thatopen/components";
+import {
+  dispatchVisibilityChanged,
+  listenToVisibilityChanges,
+  type VisibilityChangedDetail,
+} from "@/utils/visibility-events";
 
 export interface SpatialTreePanelState {
   components: OBC.Components;
@@ -38,8 +43,69 @@ export const spatialTreePanelTemplate: BUI.StatefullComponent<
   // Track visibility state locally for instant UI updates
   const elementVisibility = new Map<string | number, boolean>();
 
+  // Track icon elements by localId
+  const iconElements = new Map<number, HTMLElement>();
+
+  // Track category icon elements by category key
+  const categoryIconElements = new Map<string, HTMLElement>();
+
+  // Track which elements belong to which categories
+  const elementToCategory = new Map<number, string>();
+
+  // Category key == set of child element IDs
+  const categoryToElements = new Map<string, Set<number>>();
+
   // Track collapsible panel state
   let isExpanded = false;
+
+  // Helper function to update category icon based on children visibility
+  const updateCategoryIcon = (categoryKey: string) => {
+    const categoryIcon = categoryIconElements.get(categoryKey);
+    if (!categoryIcon) return;
+
+    const childrenIds = categoryToElements.get(categoryKey);
+    if (!childrenIds || childrenIds.size === 0) return;
+
+    const allHidden = Array.from(childrenIds).every(
+      (id) => elementVisibility.get(id) === false,
+    );
+
+    if (allHidden) {
+      categoryIcon.textContent = "visibility_off";
+      categoryIcon.style.opacity = "0.5";
+      elementVisibility.set(categoryKey, false);
+    } else {
+      categoryIcon.textContent = "visibility";
+      categoryIcon.style.opacity = "1";
+      elementVisibility.set(categoryKey, true);
+    }
+  };
+
+  // Listen to global visibility changes
+  listenToVisibilityChanges((detail: VisibilityChangedDetail) => {
+    if (detail.source === "spatial-panel") return;
+
+    const affectedCategories = new Set<string>();
+
+    detail.elementIds.forEach((localId) => {
+      elementVisibility.set(localId, detail.visible);
+      const iconElement = iconElements.get(localId);
+      if (iconElement) {
+        iconElement.textContent = detail.visible
+          ? "visibility"
+          : "visibility_off";
+        iconElement.style.opacity = detail.visible ? "1" : "0.5";
+      }
+
+      const category = elementToCategory.get(localId);
+      if (category) {
+        affectedCategories.add(category);
+      }
+    });
+
+    // Update category icons based on their children's visibility
+    affectedCategories.forEach(updateCategoryIcon);
+  });
 
   const togglePanel = () => {
     isExpanded = !isExpanded;
@@ -70,10 +136,6 @@ export const spatialTreePanelTemplate: BUI.StatefullComponent<
           : [];
 
       if (elementIds.length > 0) {
-        console.log(
-          `🔍 Expanding ${elementIds.length} elements with their children for model ${modelId}`,
-        );
-
         try {
           // Get all children recursively using the same logic as the other function
           const expandedIds = await getAllElementsRecursively(
@@ -81,10 +143,6 @@ export const spatialTreePanelTemplate: BUI.StatefullComponent<
             components,
           );
           expandedMap[modelId] = new Set(expandedIds);
-
-          console.log(
-            `Expanded to ${expandedIds.length} total elements (including children)`,
-          );
         } catch (error) {
           console.warn(
             `Failed to expand children for model ${modelId}:`,
@@ -175,7 +233,11 @@ export const spatialTreePanelTemplate: BUI.StatefullComponent<
             .split(",")
             .map((id: string) => parseInt(id.trim()))
             .filter((id: number) => !isNaN(id));
-          toggleKey = rowData.Name || "category"; // Use category name as key
+          // Create category key using first child ID
+          toggleKey =
+            elementIds.length > 0
+              ? `${rowData.Name}:${elementIds[0]}`
+              : rowData.Name || "category";
         } catch (parseError) {
           console.warn("Failed to parse children:", parseError);
           return;
@@ -184,12 +246,6 @@ export const spatialTreePanelTemplate: BUI.StatefullComponent<
         console.warn("Row has neither localId nor children:", rowData);
         return;
       }
-
-      console.log(
-        `Toggling visibility for ${elementIds.length} elements:`,
-        elementIds,
-        rowData,
-      );
 
       // Toggle visibility state immediately for instant UI feedback
       const currentVisibility = elementVisibility.get(toggleKey) ?? true;
@@ -221,6 +277,8 @@ export const spatialTreePanelTemplate: BUI.StatefullComponent<
         break; // In single-model setup, just use the first model
       }
 
+      const allAffectedIds: number[] = [];
+
       if (Object.keys(modelIdMap).length > 0) {
         // Expand the selection to include children elements
         const expandedModelIdMap = await expandWithChildren(modelIdMap);
@@ -236,8 +294,19 @@ export const spatialTreePanelTemplate: BUI.StatefullComponent<
         // Update visibility state for all affected elements
         for (const [, elementSet] of Object.entries(expandedModelIdMap)) {
           const elements = Array.from(elementSet as Set<number>);
+
           elements.forEach((id) => {
             elementVisibility.set(id, newVisibility);
+            allAffectedIds.push(id);
+
+            // Update the icon directly if we have a reference to it
+            const iconElement = iconElements.get(id);
+            if (iconElement) {
+              iconElement.textContent = newVisibility
+                ? "visibility"
+                : "visibility_off";
+              iconElement.style.opacity = newVisibility ? "1" : "0.5";
+            }
           });
         }
 
@@ -245,7 +314,24 @@ export const spatialTreePanelTemplate: BUI.StatefullComponent<
         if (typeof toggleKey === "string") {
           elementVisibility.set(toggleKey, newVisibility);
         }
+
+        // Update affected category icons
+        const affectedCategories = new Set<string>();
+        allAffectedIds.forEach((id) => {
+          const category = elementToCategory.get(id);
+          if (category) {
+            affectedCategories.add(category);
+          }
+        });
+
+        affectedCategories.forEach(updateCategoryIcon);
       }
+
+      dispatchVisibilityChanged({
+        elementIds: allAffectedIds,
+        visible: newVisibility,
+        source: "spatial-panel",
+      });
     } catch (error) {
       console.error("Failed to toggle visibility:", error);
     }
@@ -263,8 +349,12 @@ export const spatialTreePanelTemplate: BUI.StatefullComponent<
         toggleKey = rowData.localId;
         isVisible = elementVisibility.get(toggleKey) ?? true;
       } else if (rowData.children) {
-        // Category - use category name as key
-        toggleKey = rowData.Name || "category";
+        // Get the first child ID from the children string, and use it along the category name as key.
+        const childrenStr = (rowData.children as string).replace(/[\[\]]/g, "");
+        const firstChildId = parseInt(childrenStr.split(",")[0]?.trim());
+        toggleKey = !isNaN(firstChildId)
+          ? `${rowData.Name}:${firstChildId}`
+          : rowData.Name || "category";
         isVisible = elementVisibility.get(toggleKey) ?? true;
       } else {
         // Fallback
@@ -274,7 +364,61 @@ export const spatialTreePanelTemplate: BUI.StatefullComponent<
 
       const elementName = value || rowData.expressID || "Unnamed";
 
+      // if (elementName === facilityId) {
+      //   return BUI.html`
+      //       <div style="display: flex; align-items: center; width: 100%; position: relative;">
+      //         <span style="
+      //           font-size: 11px;
+      //           line-height: 1.2;
+      //           overflow: hidden;
+      //           text-overflow: ellipsis;
+      //           white-space: nowrap;
+      //           padding-right: 30px;
+      //           cursor: pointer;
+      //         ">${elementName}</span>
+
+      //       </div>
+      //     `;
+      // }
+
       // Show visibility icon for all elements (including IFC categories)
+      const iconRef = (el: Element | undefined) => {
+        if (el) {
+          if (rowData.localId) {
+            // Individual element
+            iconElements.set(rowData.localId, el as HTMLElement);
+            if (rowData.children) {
+              const categoryKey = `${rowData.Name}:${rowData.localId}`;
+              categoryIconElements.set(categoryKey, el as HTMLElement);
+            }
+          } else if (rowData.children && rowData.Name) {
+            // Category
+            const categoryName = rowData.Name as string;
+
+            const childrenStr = (rowData.children as string).replace(
+              /[\[\]]/g,
+              "",
+            );
+            const childIds = childrenStr
+              .split(",")
+              .map((id: string) => parseInt(id.trim()))
+              .filter((id: number) => !isNaN(id));
+
+            if (childIds.length > 0) {
+              const categoryKey = `${categoryName}:${childIds[0]}`;
+              categoryIconElements.set(categoryKey, el as HTMLElement);
+
+              const childSet = new Set<number>(childIds);
+              categoryToElements.set(categoryKey, childSet);
+
+              childIds.forEach((childId) => {
+                elementToCategory.set(childId, categoryKey);
+              });
+            }
+          }
+        }
+      };
+
       return BUI.html`
         <div style="display: flex; align-items: center; width: 100%; position: relative;">
           <span style="
@@ -287,6 +431,7 @@ export const spatialTreePanelTemplate: BUI.StatefullComponent<
             cursor: pointer;
           ">${elementName}</span>
           <span 
+            ${BUI.ref(iconRef)}
             class="material-icons"
             style="
               font-family: 'Material Icons';
@@ -320,18 +465,20 @@ export const spatialTreePanelTemplate: BUI.StatefullComponent<
     <div @click=${togglePanel} class="flex items-center p-3 bg-white border-b border-gray-200 cursor-pointer select-none transition-colors duration-200 ease-in-out">
       <span class="material-icons mr-2 text-xl text-gray-800">account_tree</span>
       
-      <span class="flex-1 text-sm font-medium text-gray-800">${"Spatial Tree"}</span>
+      <span class="flex-1 text-sm font-medium text-gray-800">
+        Spatial Tree
+      </span>
       
       <span class="material-icons toggle-icon text-xl text-gray-800 transition-transform duration-200 ease-in-out">keyboard_arrow_down</span>
     </div>
     
     <!-- Collapsible Content -->
-    <div class="panel-content hidden flex-col max-h-[300px]">
+    <div class="panel-content hidden flex-col max-h-60">
       <textarea
         @input=${onSearch}
-        placeholder=${"Search"}
+        placeholder='search'
         debounce="200"
-        class="h-8 min-h-8 max-h-8 resize-none overflow-hidden flex-shrink-0 mx-4 mt-3 rounded bg-gray-50 border border-gray-200 px-3 py-2 text-sm font-sans outline-none box-border flex items-center"
+        class="h-8 min-h-8 max-h-8 resize-none overflow-hidden shrink-0 mx-4 mt-3 rounded bg-gray-50 border border-gray-200 px-3 py-2 text-sm font-sans outline-none box-border flex items-center"
         style="line-height: 1rem;"
       ></textarea>
       

@@ -19,7 +19,14 @@ import {
   EyeOff,
   Eye,
 } from "lucide-react";
-// import { useTranslations } from 'use-intl';
+import {
+  dispatchVisibilityChanged,
+  listenToVisibilityChanges,
+  type VisibilityChangedDetail,
+  dispatchIsolationChanged,
+  listenToIsolationChanges,
+  type IsolationChangedDetail,
+} from "@/utils/visibility-events";
 
 export interface ViewerToolbarState {
   components: OBC.Components;
@@ -133,6 +140,77 @@ export default function ToolbarPanel({ components, world }: ToolbarPanelProps) {
     if (!clipper.enabled) {
       clipper.enabled = false;
     }
+
+    const cleanup = listenToVisibilityChanges(
+      (detail: VisibilityChangedDetail) => {
+        if (detail.source === "toolbar") return; // Ignore own events
+
+        setToolbarState((prevState) => {
+          const newHiddenSet = { ...prevState.hiddenSet };
+
+          if (!detail.visible) {
+            const fragments = components.get(OBC.FragmentsManager);
+            for (const [modelId] of fragments.list) {
+              if (!newHiddenSet[modelId]) {
+                newHiddenSet[modelId] = new Set();
+              }
+              detail.elementIds.forEach((id) => {
+                newHiddenSet[modelId].add(id);
+              });
+            }
+          } else {
+            for (const modelId in newHiddenSet) {
+              detail.elementIds.forEach((id) => {
+                newHiddenSet[modelId]?.delete(id);
+              });
+            }
+          }
+
+          return {
+            ...prevState,
+            hiddenSet: newHiddenSet,
+          };
+        });
+      },
+    );
+
+    const cleanupIsolation = listenToIsolationChanges(
+      (detail: IsolationChangedDetail) => {
+        if (detail.source === "toolbar") return; // Ignore own events
+
+        setToolbarState((prevState) => {
+          if (detail.isIsolated) {
+            // Add to isolated set
+            const newIsolatedSet = { ...prevState.isolatedSet };
+            for (const [modelId, elementSet] of Object.entries(
+              detail.modelIdMap,
+            )) {
+              if (!newIsolatedSet[modelId]) {
+                newIsolatedSet[modelId] = new Set();
+              }
+              elementSet.forEach((id) => {
+                newIsolatedSet[modelId].add(id);
+              });
+            }
+            return {
+              ...prevState,
+              isolatedSet: newIsolatedSet,
+            };
+          } else {
+            // Unisolate - clear isolated set
+            return {
+              ...prevState,
+              isolatedSet: {} as OBC.ModelIdMap,
+            };
+          }
+        });
+      },
+    );
+
+    return () => {
+      cleanup();
+      cleanupIsolation();
+    };
   }, [components, world]);
 
   const applyVisibilityRules = useCallback(
@@ -355,8 +433,6 @@ export default function ToolbarPanel({ components, world }: ToolbarPanelProps) {
       if (OBC.ModelIdMapUtils.isEmpty(selection)) return;
       button.classList.add("loading");
 
-      console.log("onHide - adding to hiddenSet:", selection);
-
       const newHiddenSet = { ...toolbarState.hiddenSet };
       OBC.ModelIdMapUtils.add(newHiddenSet, selection);
 
@@ -367,8 +443,18 @@ export default function ToolbarPanel({ components, world }: ToolbarPanelProps) {
 
       await applyVisibilityRules(hider, newHiddenSet, toolbarState.isolatedSet);
 
+      const elementIds: number[] = [];
+      for (const [, elementSet] of Object.entries(selection)) {
+        elementIds.push(...Array.from(elementSet));
+      }
+
+      dispatchVisibilityChanged({
+        elementIds,
+        visible: false,
+        source: "toolbar",
+      });
+
       button.classList.remove("loading");
-      console.log("onHide - triggering update");
       triggerUpdate();
     },
     [
@@ -391,8 +477,6 @@ export default function ToolbarPanel({ components, world }: ToolbarPanelProps) {
       if (OBC.ModelIdMapUtils.isEmpty(selection)) return;
       button.classList.add("loading");
 
-      console.log("onIsolate - adding to isolatedSet:", selection);
-
       const newIsolatedSet = { ...toolbarState.isolatedSet };
       OBC.ModelIdMapUtils.add(newIsolatedSet, selection);
 
@@ -403,8 +487,13 @@ export default function ToolbarPanel({ components, world }: ToolbarPanelProps) {
 
       await applyVisibilityRules(hider, toolbarState.hiddenSet, newIsolatedSet);
 
+      dispatchIsolationChanged({
+        modelIdMap: selection,
+        isIsolated: true,
+        source: "toolbar",
+      });
+
       button.classList.remove("loading");
-      console.log("onIsolate - triggering update");
       triggerUpdate();
     },
     [
@@ -424,6 +513,11 @@ export default function ToolbarPanel({ components, world }: ToolbarPanelProps) {
       const hider = components.get(OBC.Hider);
       const button = event.currentTarget as HTMLElement;
       button.classList.add("loading");
+
+      const elementIds: number[] = [];
+      for (const [, elementSet] of Object.entries(toolbarState.hiddenSet)) {
+        elementIds.push(...Array.from(elementSet));
+      }
 
       const emptyHiddenSet = {} as OBC.ModelIdMap;
       const emptyIsolatedSet = {} as OBC.ModelIdMap;
@@ -445,10 +539,25 @@ export default function ToolbarPanel({ components, world }: ToolbarPanelProps) {
       if (world.camera instanceof OBC.SimpleCamera) {
         await world.camera.fitToItems(undefined);
       }
+
+      if (elementIds.length > 0) {
+        dispatchVisibilityChanged({
+          elementIds,
+          visible: true,
+          source: "toolbar",
+        });
+      }
+
       button.classList.remove("loading");
       triggerUpdate();
     },
-    [components, world, applyVisibilityRules, triggerUpdate],
+    [
+      components,
+      world,
+      applyVisibilityRules,
+      triggerUpdate,
+      toolbarState.hiddenSet,
+    ],
   );
 
   const onUnhide = useCallback(
@@ -460,6 +569,12 @@ export default function ToolbarPanel({ components, world }: ToolbarPanelProps) {
 
       button.classList.add("loading");
 
+      // Extract all previously hidden element IDs
+      const elementIds: number[] = [];
+      for (const [, elementSet] of Object.entries(toolbarState.hiddenSet)) {
+        elementIds.push(...Array.from(elementSet));
+      }
+
       const newHiddenSet = {} as OBC.ModelIdMap;
 
       setToolbarState((prevState) => ({
@@ -468,10 +583,23 @@ export default function ToolbarPanel({ components, world }: ToolbarPanelProps) {
       }));
 
       await applyVisibilityRules(hider, newHiddenSet, toolbarState.isolatedSet);
+
+      dispatchVisibilityChanged({
+        elementIds,
+        visible: true,
+        source: "toolbar",
+      });
+
       button.classList.remove("loading");
       triggerUpdate();
     },
-    [components, applyVisibilityRules, triggerUpdate, toolbarState.isolatedSet],
+    [
+      components,
+      applyVisibilityRules,
+      triggerUpdate,
+      toolbarState.isolatedSet,
+      toolbarState.hiddenSet,
+    ],
   );
 
   const onUnisolate = useCallback(
@@ -508,13 +636,6 @@ export default function ToolbarPanel({ components, world }: ToolbarPanelProps) {
   const shouldShowUnhide = !OBC.ModelIdMapUtils.isEmpty(toolbarState.hiddenSet);
   const shouldShowUnisolate = !OBC.ModelIdMapUtils.isEmpty(
     toolbarState.isolatedSet,
-  );
-
-  console.log(
-    "React component render - shouldShowUnhide:",
-    shouldShowUnhide,
-    "shouldShowUnisolate:",
-    shouldShowUnisolate,
   );
 
   return (
