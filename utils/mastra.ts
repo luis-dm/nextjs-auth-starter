@@ -3,54 +3,64 @@ import { Workspace, LocalFilesystem } from "@mastra/core/workspace";
 import { Mastra } from "@mastra/core";
 import { createOpenAI } from "@ai-sdk/openai";
 import * as readline from "readline";
-import path from "path";
 
 const openai = createOpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
 const basePath = process.env.BIM_DATA_PATH || "./public/bim_data";
-const skillsPath = path.join(__dirname, "skills");
 console.log("Mastra workspace basePath:", basePath);
-console.log("Mastra skills path:", skillsPath);
 
 const workspace = new Workspace({
   filesystem: new LocalFilesystem({
     basePath,
     readOnly: true,
   }),
-  skills: [skillsPath],
+  skills: ["./skills"],
 });
 
 const bimAgent = new Agent({
   id: "bimAgent",
   name: "BIM Query Assistant",
   model: openai("gpt-4o"),
-  instructions: `You are a helpful BIM (Building Information Modeling) assistant.
+  instructions: `You are a helpful BIM (Building Information Modeling) assistant with access to organized IFC model data.
 
-IMPORTANT: You must ACTIVATE and USE the available skills to query BIM data. Do NOT try to read files directly.
+## Available Data Structure
 
-Available skills to activate:
-- query-by-category-storey
-- query-by-name
-- count-elements
-- get-element-properties
-- query-by-property
-- compute-property
-- describe-selection
+The BIM filesystem is organized as follows:
 
-When a user asks a query:
-1. Activate the appropriate skill
-2. Read the skill's parameters and description to understand what information it needs
-3. Call the skill's execute function from index.ts with the required parameters
-4. Return the results to the user
+### Schema Files (metadata about the building)
+- schema/categories.json - List of all IFC element types (IFCDOOR, IFCWINDOW, IFCWALL, etc.)
+- schema/storeys.json - Building levels with names, slugs, and aliases (e.g., "Nivel 1" = "nivel_1")
 
-Examples:
-- "ids of doors" → Activate query-by-category-storey skill, call with category="IFCDOOR"
-- "how many windows" → Activate count-elements skill, call with category="IFCWINDOW"
-- "properties of element 123" → Activate get-element-properties skill, call with ids=["123"]
+### Index Files (quick lookup)
+- index/by_category/{CATEGORY}.jsonl - All elements of a specific type
+  Examples: index/by_category/IFCDOOR.jsonl, index/by_category/IFCWINDOW.jsonl
+- index/by_storey/{storey_slug}.jsonl - All elements on a specific floor
+  Examples: index/by_storey/nivel_1.jsonl, index/by_storey/nivel_2.jsonl
 
-Each skill has an index.ts that exports an execute function. Call these functions with the appropriate parameters.`,
+### Raw Element Data
+- raw/by_id/{element_id}.json - Complete properties for individual elements
+
+## How to Answer Queries
+
+1. **Find all doors**: Read index/by_category/IFCDOOR.jsonl
+2. **Find first floor elements**: 
+   - First read schema/storeys.json to find the slug for "first floor"
+   - Then read index/by_storey/{slug}.jsonl
+3. **Find doors on first floor**:
+   - Read schema/storeys.json to get floor slug
+   - Read index/by_category/IFCDOOR.jsonl
+   - Filter results where storeySlug matches the floor slug
+4. **Get element details**: Read raw/by_id/{id}.json
+
+## Response Format
+
+- Provide specific counts and IDs when available
+- Reference actual element properties from the files
+- If you can't find data, explain which file you checked
+
+Example: "I found 15 doors on Nivel 1. The IDs are: [list IDs from the JSONL file]"`,
   workspace,
 });
 
