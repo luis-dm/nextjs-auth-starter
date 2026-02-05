@@ -3,64 +3,53 @@ import { Workspace, LocalFilesystem } from "@mastra/core/workspace";
 import { Mastra } from "@mastra/core";
 import { createOpenAI } from "@ai-sdk/openai";
 import * as readline from "readline";
+import path from "path";
 
 const openai = createOpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
 const basePath = process.env.BIM_DATA_PATH || "./public/bim_data";
+const skillsPath = path.join(__dirname, "skills");
 console.log("Mastra workspace basePath:", basePath);
+console.log("Mastra skills path:", skillsPath);
 
 const workspace = new Workspace({
   filesystem: new LocalFilesystem({
     basePath,
     readOnly: true,
   }),
-  skills: ["./skills"],
+  skills: [skillsPath],
 });
 
 const bimAgent = new Agent({
   id: "bimAgent",
   name: "BIM Query Assistant",
   model: openai("gpt-4o"),
-  instructions: `You are a helpful BIM (Building Information Modeling) assistant with access to organized IFC model data.
+  instructions: `You are a helpful BIM (Building Information Modeling) assistant with access to powerful query tools.
 
-## Available Data Structure
+You have the following skills available to query BIM data efficiently:
 
-The BIM filesystem is organized as follows:
-
-### Schema Files (metadata about the building)
-- schema/categories.json - List of all IFC element types (IFCDOOR, IFCWINDOW, IFCWALL, etc.)
-- schema/storeys.json - Building levels with names, slugs, and aliases (e.g., "Nivel 1" = "nivel_1")
-
-### Index Files (quick lookup)
-- index/by_category/{CATEGORY}.jsonl - All elements of a specific type
-  Examples: index/by_category/IFCDOOR.jsonl, index/by_category/IFCWINDOW.jsonl
-- index/by_storey/{storey_slug}.jsonl - All elements on a specific floor
-  Examples: index/by_storey/nivel_1.jsonl, index/by_storey/nivel_2.jsonl
-
-### Raw Element Data
-- raw/by_id/{element_id}.json - Complete properties for individual elements
+1. **query-by-category-storey**: Find elements by IFC category (IFCDOOR, IFCWINDOW, etc.) and/or floor level
+2. **query-by-name**: Search elements by name pattern (case-insensitive)
+3. **count-elements**: Count elements with various filters
+4. **get-element-properties**: Get detailed properties of specific elements by ID
+5. **query-by-property**: Find elements with specific property names/values
+6. **compute-property**: Calculate/aggregate property values (sum, avg, area calculations)
+7. **describe-selection**: Get comprehensive summaries of element selections
 
 ## How to Answer Queries
 
-1. **Find all doors**: Read index/by_category/IFCDOOR.jsonl
-2. **Find first floor elements**: 
-   - First read schema/storeys.json to find the slug for "first floor"
-   - Then read index/by_storey/{slug}.jsonl
-3. **Find doors on first floor**:
-   - Read schema/storeys.json to get floor slug
-   - Read index/by_category/IFCDOOR.jsonl
-   - Filter results where storeySlug matches the floor slug
-4. **Get element details**: Read raw/by_id/{id}.json
+Use the appropriate skills instead of reading files directly:
 
-## Response Format
+- "ids of doors" → use query-by-category-storey with category="IFCDOOR"
+- "doors on first floor" → first check schema/storeys.json for the slug, then use query-by-category-storey
+- "how many windows" → use count-elements with category="IFCWINDOW"
+- "find chairs" → use query-by-name with pattern="chair"
+- "properties of element 123" → use get-element-properties with ids=["123"]
+- "total area of windows" → query-by-category-storey to get IDs, then compute-property with operation="sum"
 
-- Provide specific counts and IDs when available
-- Reference actual element properties from the files
-- If you can't find data, explain which file you checked
-
-Example: "I found 15 doors on Nivel 1. The IDs are: [list IDs from the JSONL file]"`,
+Always use skills for queries - they're much faster than reading files directly.`,
   workspace,
 });
 
