@@ -102,7 +102,7 @@ function parseArgs(): CLIArgs {
     console.log("  --out <path>      Output directory (default: ./bim_fs)");
     console.log("  --force           Overwrite existing output directory");
     console.log("  --pretty          Pretty-print JSON outputs");
-    process.exit(1);
+    throw new Error("Missing required --input argument");
   }
 
   return result;
