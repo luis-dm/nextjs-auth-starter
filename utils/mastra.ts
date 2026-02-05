@@ -1,7 +1,12 @@
 import { Agent } from "@mastra/core/agent";
 import { Workspace, LocalFilesystem } from "@mastra/core/workspace";
 import { Mastra } from "@mastra/core";
+import { createOpenAI } from "@ai-sdk/openai";
 import * as readline from "readline";
+
+const openai = createOpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
 
 const workspace = new Workspace({
   filesystem: new LocalFilesystem({
@@ -14,8 +19,7 @@ const workspace = new Workspace({
 const bimAgent = new Agent({
   id: "bimAgent",
   name: "BIM Query Assistant",
-  model: "openai/gpt-4o",
-  apiKey: process.env.OPENAI_API_KEY,
+  model: openai("gpt-4o"),
   instructions: `You are a helpful BIM (Building Information Modeling) assistant. 
 You help users query and analyze building elements from IFC models.
 
