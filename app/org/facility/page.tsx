@@ -41,41 +41,56 @@ function FacilityList() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [sortOption, setSortOption] = useState<SortOption>("date-desc");
 
-  // Fetch user's organizations
+  // Fetch user's organizations and initial facilities
   useEffect(() => {
-    const fetchOrganizations = async () => {
+    const fetchData = async () => {
+      setIsLoading(true);
       try {
-        const response = await fetch("/api/organizations");
-        if (response.ok) {
-          const data = await response.json();
-          setOrganizations(data.organizations || []);
+        // Fetch organizations and facilities in parallel
+        const [orgsResponse, facilitiesResponse] = await Promise.all([
+          fetch("/api/organizations"),
+          fetch("/api/facilities"),
+        ]);
+
+        if (orgsResponse.ok) {
+          const orgsData = await orgsResponse.json();
+          setOrganizations(orgsData.organizations || []);
+        }
+
+        if (facilitiesResponse.ok) {
+          const facilitiesData = await facilitiesResponse.json();
+          setFacilities(facilitiesData.facilities || []);
+          setOrganization(facilitiesData.organization || null);
+          setTotalPages(
+            Math.ceil((facilitiesData.facilities?.length || 0) / itemsPerPage),
+          );
         }
       } catch (error) {
-        console.error("Error fetching organizations:", error);
+        console.error("Error fetching data:", error);
+      } finally {
+        setIsLoading(false);
       }
     };
 
-    fetchOrganizations();
-  }, []);
+    fetchData();
+  }, [itemsPerPage]);
 
-  // Fetch facilities from the database
+  // Fetch facilities when organization changes
   useEffect(() => {
-    const fetchFacilities = async () => {
+    if (!organization?.id) return;
+
+    const fetchFacilitiesForOrg = async () => {
       setIsLoading(true);
       try {
-        const url = organization?.id
-          ? `/api/facilities?organizationId=${organization.id}`
-          : "/api/facilities";
-        const response = await fetch(url);
+        const response = await fetch(
+          `/api/facilities?organizationId=${organization.id}`,
+        );
         if (response.ok) {
           const data = await response.json();
           setFacilities(data.facilities || []);
-          setOrganization(data.organization || null);
           setTotalPages(
             Math.ceil((data.facilities?.length || 0) / itemsPerPage),
           );
-        } else {
-          console.error("Failed to fetch facilities");
         }
       } catch (error) {
         console.error("Error fetching facilities:", error);
@@ -84,8 +99,8 @@ function FacilityList() {
       }
     };
 
-    fetchFacilities();
-  }, [itemsPerPage, organization?.id]);
+    fetchFacilitiesForOrg();
+  }, [organization?.id, itemsPerPage]);
 
   // Sort facilities based on the selected option
   const sortedFacilities = [...facilities].sort((a, b) => {
