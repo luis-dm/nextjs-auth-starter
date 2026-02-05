@@ -23,8 +23,15 @@ export async function POST(req: NextRequest) {
     }
 
     // Generate response from the agent (it will read from the filesystem)
+    console.log("Generating response for message:", message);
     const result = await agent.generate(message, {
       maxSteps: 10,
+    });
+
+    console.log("Agent result:", {
+      text: result.text,
+      hasText: !!result.text,
+      resultKeys: Object.keys(result),
     });
 
     return NextResponse.json({

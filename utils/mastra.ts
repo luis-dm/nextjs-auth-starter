@@ -8,9 +8,12 @@ const openai = createOpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
+const basePath = process.env.BIM_DATA_PATH || "./public/bim_data";
+console.log("Mastra workspace basePath:", basePath);
+
 const workspace = new Workspace({
   filesystem: new LocalFilesystem({
-    basePath: process.env.BIM_DATA_PATH || "./public/bim_data",
+    basePath,
     readOnly: true,
   }),
   skills: ["./skills"],
