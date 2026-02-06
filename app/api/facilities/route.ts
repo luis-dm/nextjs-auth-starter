@@ -109,15 +109,21 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  const startTime = Date.now();
+  
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.email) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    console.log(`[Facility POST] Auth check: ${Date.now() - startTime}ms`);
+
     const body = await req.json();
     const { name, fragmentData, ifcFileName, ifcFileSize, organizationId } =
       body;
+
+    console.log(`[Facility POST] Body parsed: ${Date.now() - startTime}ms, fragmentData size: ${fragmentData ? fragmentData.length : 0} bytes`);
 
     if (!name) {
       return NextResponse.json(
@@ -126,17 +132,22 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Get user and check/create organization
+    // Get user with selective fields
     const user = await prisma.user.findUnique({
       where: { email: session.user.email },
-      include: {
+      select: {
+        id: true,
+        name: true,
         organizationMembers: {
-          include: {
-            organization: true,
+          select: {
+            organizationId: true,
+            userId: true,
           },
         },
       },
     });
+
+    console.log(`[Facility POST] User query: ${Date.now() - startTime}ms`);
 
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
@@ -165,8 +176,12 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    console.log(`[Facility POST] Org setup: ${Date.now() - startTime}ms`);
+
     // Convert fragmentData array back to Buffer if it exists
     const fragmentBuffer = fragmentData ? Buffer.from(fragmentData) : null;
+
+    console.log(`[Facility POST] Buffer conversion: ${Date.now() - startTime}ms`);
 
     // Get all organization members to add them to the facility
     const orgMembers = await prisma.organizationMember.findMany({
@@ -177,6 +192,8 @@ export async function POST(req: NextRequest) {
         userId: true,
       },
     });
+
+    console.log(`[Facility POST] Org members query: ${Date.now() - startTime}ms`);
 
     // Create facility members array: creator as MANAGER, others as MEMBER
     const facilityMembers = orgMembers.map((member) => ({
@@ -197,15 +214,18 @@ export async function POST(req: NextRequest) {
           create: facilityMembers,
         },
       },
-      include: {
-        organization: true,
-        members: {
-          include: {
-            user: true,
-          },
-        },
+      select: {
+        id: true,
+        name: true,
+        ifcFileName: true,
+        ifcFileSize: true,
+        createdAt: true,
+        organizationId: true,
       },
     });
+
+    console.log(`[Facility POST] Facility created: ${Date.now() - startTime}ms`);
+    console.log(`[Facility POST] Total time: ${Date.now() - startTime}ms`);
 
     return NextResponse.json(facility);
   } catch (error) {
