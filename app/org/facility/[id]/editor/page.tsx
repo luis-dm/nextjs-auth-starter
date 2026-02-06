@@ -300,10 +300,11 @@ export default function BIMEditPage() {
               );
 
               // Get edit history for database record-keeping (don't apply on load, just display in panel)
-              const history = fragments.editor.get(model.modelId);
+              // The history is stored in fragments.editor.models after we call save()
               let historyBase64 = null;
-              if (history) {
-                const historyBuffer = await history.getBuffer();
+              const historyModel = fragments.editor.models.list.get(model.modelId);
+              if (historyModel) {
+                const historyBuffer = await historyModel.getBuffer();
                 const historyBytes = new Uint8Array(historyBuffer);
                 const historyBinaryString = historyBytes.reduce(
                   (acc, byte) => acc + String.fromCharCode(byte),
