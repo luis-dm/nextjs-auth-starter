@@ -307,6 +307,24 @@ export default function BIMEditPage() {
               const exportedBuffer = await model.getBuffer();
               const exportedBytes = new Uint8Array(exportedBuffer);
 
+              // Convert to base64 (much smaller than JSON array)
+              const binaryString = exportedBytes.reduce(
+                (acc, byte) => acc + String.fromCharCode(byte),
+                "",
+              );
+              const fragmentBase64 = btoa(binaryString);
+
+              // Convert history to base64
+              const historyBinaryString = historyBytes.reduce(
+                (acc, byte) => acc + String.fromCharCode(byte),
+                "",
+              );
+              const historyBase64 = btoa(historyBinaryString);
+
+              console.log(
+                `Uploading fragment: ${fragmentBase64.length} bytes (base64)`,
+              );
+
               // Save the edits to the model (this applies edits but might clear scene)
               await fragments.editor.save(model.modelId);
 
@@ -317,8 +335,8 @@ export default function BIMEditPage() {
                   "Content-Type": "application/json",
                 },
                 body: JSON.stringify({
-                  fragmentData: Array.from(exportedBytes),
-                  editHistory: Array.from(historyBytes),
+                  fragmentData: fragmentBase64,
+                  editHistory: historyBase64,
                 }),
               });
 

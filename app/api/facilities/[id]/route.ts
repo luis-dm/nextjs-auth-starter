@@ -67,6 +67,8 @@ export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  const startTime = Date.now();
+
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.email) {
@@ -75,6 +77,10 @@ export async function PATCH(
 
     const { id } = await params;
     const body = await req.json();
+
+    console.log(
+      `[Facility PATCH] Body parsed: ${Date.now() - startTime}ms, fragmentData size: ${body.fragmentData ? body.fragmentData.length : 0} bytes (base64)`,
+    );
 
     // Get the current user
     const user = await prisma.user.findUnique({
@@ -118,14 +124,22 @@ export async function PATCH(
         }
 
         const fragmentFilePath = path.join(fragmentsDir, `${id}.frag`);
-        const fragmentBuffer = Buffer.from(body.fragmentData);
+        
+        // Convert base64 to buffer
+        const fragmentBuffer = Buffer.from(body.fragmentData, "base64");
+        console.log(
+          `[Facility PATCH] Writing ${fragmentBuffer.length} bytes to volume`,
+        );
 
         fs.writeFileSync(fragmentFilePath, fragmentBuffer);
-        console.log(`Fragment updated on disk: ${fragmentFilePath}`);
+        console.log(
+          `[Facility PATCH] Fragment written: ${Date.now() - startTime}ms`,
+        );
       }
 
       if (body.editHistory) {
-        updateData.editHistory = Buffer.from(body.editHistory);
+        // Convert base64 to buffer for database storage
+        updateData.editHistory = Buffer.from(body.editHistory, "base64");
       }
 
       if (Object.keys(updateData).length > 0) {
@@ -133,7 +147,14 @@ export async function PATCH(
           where: { id },
           data: updateData,
         });
+        console.log(
+          `[Facility PATCH] Database updated: ${Date.now() - startTime}ms`,
+        );
       }
+
+      console.log(
+        `[Facility PATCH] Total time: ${Date.now() - startTime}ms`,
+      );
 
       return NextResponse.json({
         message: "Facility data updated successfully",
