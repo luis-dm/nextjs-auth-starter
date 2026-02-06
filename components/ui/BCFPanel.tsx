@@ -358,7 +358,7 @@ export function BCFPanel({
     )
       return;
 
-    const renderTopicDetails = () => {
+    const renderTopicDetails = async () => {
       const BUI = BUIRef.current;
       const CUI = CUIRef.current;
 
@@ -405,9 +405,8 @@ export function BCFPanel({
       let snapshotSection: HTMLElement | null = null;
       if (selectedTopic.viewpoints.size > 0) {
         const viewpointGuid = Array.from(selectedTopic.viewpoints)[0];
-        const viewpointsComponent = components.get(
-          (window as any).OBC.Viewpoints,
-        );
+        const OBC = await import("@thatopen/components");
+        const viewpointsComponent = components.get(OBC.Viewpoints);
         const viewpoint = viewpointsComponent.list.get(viewpointGuid);
 
         if (viewpoint && viewpoint.snapshot) {
