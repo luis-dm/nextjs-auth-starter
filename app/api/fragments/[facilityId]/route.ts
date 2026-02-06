@@ -64,13 +64,16 @@ export async function GET(
 
     const fragmentData = fs.readFileSync(fragmentFilePath);
 
-    // Return the fragment data as a binary response
+    // Return the fragment data as a binary response with no-cache headers
     return new NextResponse(fragmentData, {
       status: 200,
       headers: {
         "Content-Type": "application/octet-stream",
         "Content-Disposition": `attachment; filename="${facilityId}.frag"`,
         "Content-Length": fragmentData.length.toString(),
+        "Cache-Control": "no-cache, no-store, must-revalidate",
+        "Pragma": "no-cache",
+        "Expires": "0",
       },
     });
   } catch (error) {

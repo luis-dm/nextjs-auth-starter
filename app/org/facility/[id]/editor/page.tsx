@@ -403,9 +403,10 @@ export default function BIMEditPage() {
               return;
             }
 
-            // Fetch fragment from volume API
+            // Fetch fragment from volume API with cache-busting
+            const timestamp = Date.now();
             const fragmentResponse = await fetch(
-              `/api/fragments/${facilityId}`,
+              `/api/fragments/${facilityId}?t=${timestamp}`,
             );
             if (!fragmentResponse.ok) {
               throw new Error("Failed to fetch fragment from volume");

@@ -124,7 +124,7 @@ export async function PATCH(
         }
 
         const fragmentFilePath = path.join(fragmentsDir, `${id}.frag`);
-        
+
         // Convert base64 to buffer
         const fragmentBuffer = Buffer.from(body.fragmentData, "base64");
         console.log(
@@ -152,9 +152,7 @@ export async function PATCH(
         );
       }
 
-      console.log(
-        `[Facility PATCH] Total time: ${Date.now() - startTime}ms`,
-      );
+      console.log(`[Facility PATCH] Total time: ${Date.now() - startTime}ms`);
 
       return NextResponse.json({
         message: "Facility data updated successfully",

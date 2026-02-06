@@ -198,9 +198,12 @@ export default function ViewerPage() {
           }
 
           if (facility.fragmentPath) {
-            // Fetch fragment from volume API
+            // Fetch fragment from volume API with cache-busting
             console.log("Fetching fragment from volume...");
-            const fragmentResponse = await fetch(`/api/fragments/${facilityId}`);
+            const timestamp = Date.now();
+            const fragmentResponse = await fetch(
+              `/api/fragments/${facilityId}?t=${timestamp}`,
+            );
             
             if (fragmentResponse.ok) {
               const fragmentBuffer = await fragmentResponse.arrayBuffer();
