@@ -184,20 +184,25 @@ export default function BIMEditPage() {
             // Initialize the editor UI first
             initializeEditorUI();
 
-            // Load edit history model into the editor (for display in panel, not to apply)
+            // Load edit history into the editor (for display in panel only)
             // The fragment already has all edits baked in from previous saves
             if (historyBuffer) {
               try {
-                // Load the history model
+                // Load the history model with a unique ID
                 const historyModel = await fragments.load(historyBuffer, {
-                  modelId: model.modelId, // Use same modelId to associate history with model
+                  modelId: `${model.modelId}_history`,
                 });
 
-                // Set it in the editor so the history panel can display it
+                // Set it in the editor so the history panel can access it
                 fragments.editor.set(model.modelId, historyModel);
                 console.log(
                   "Edit history loaded into editor for panel display",
                 );
+                
+                // Don't add to scene - history is for display only
+                if (historyModel.object.parent) {
+                  world.scene.three.remove(historyModel.object);
+                }
               } catch (error) {
                 console.error("Error loading edit history into editor:", error);
               }
