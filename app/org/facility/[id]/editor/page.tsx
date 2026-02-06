@@ -185,8 +185,8 @@ export default function BIMEditPage() {
             });
             await generalEditor.init();
 
-            // Initialize the editor UI first
-            initializeEditorUI();
+            // Initialize the editor UI and get the history update function
+            const updateHistoryContainer = initializeEditorUI();
 
             // Store loaded history data globally so the history panel can access it
             if (editHistoryData && editHistoryData.requests.length > 0) {
@@ -206,9 +206,9 @@ export default function BIMEditPage() {
                 );
                 console.log("Edit history applied successfully");
 
-                // Trigger history UI update
-                setTimeout(() => {
-                  fragments.editor.onEdit.trigger();
+                // Trigger history UI update by calling the update function directly
+                setTimeout(async () => {
+                  await updateHistoryContainer();
                 }, 100);
               } catch (error) {
                 console.error("Error applying edit history:", error);
@@ -384,7 +384,7 @@ export default function BIMEditPage() {
           };
 
           // Create the editor panel
-          const { panel, updatePanel } = createEditorPanel(editorConfig);
+          const { panel, updatePanel, updateHistoryContainer } = createEditorPanel(editorConfig);
 
           // Store reference for cleanup
           editorPanel = panel;
@@ -397,6 +397,9 @@ export default function BIMEditPage() {
           // Append panel to DOM
           document.body.append(panel);
           window.dispatchEvent(new Event("resize"));
+
+          // Return the updateHistoryContainer function so it can be called after applying history
+          return updateHistoryContainer;
         };
 
         /* MD
