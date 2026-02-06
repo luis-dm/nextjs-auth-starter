@@ -192,10 +192,12 @@ export default function BIMEditPage() {
                 const historyModel = await fragments.load(historyBuffer, {
                   modelId: model.modelId, // Use same modelId to associate history with model
                 });
-                
+
                 // Set it in the editor so the history panel can display it
                 fragments.editor.set(model.modelId, historyModel);
-                console.log("Edit history loaded into editor for panel display");
+                console.log(
+                  "Edit history loaded into editor for panel display",
+                );
               } catch (error) {
                 console.error("Error loading edit history into editor:", error);
               }
@@ -282,7 +284,31 @@ export default function BIMEditPage() {
             try {
               console.log("Starting save process...");
 
-              // Save the edits to the model FIRST (this bakes edits into the geometry)
+              // Get edit history BEFORE saving (save() may clear it)
+              let historyBase64 = null;
+              try {
+                const historyModel = fragments.editor.models.list.get(
+                  model.modelId,
+                );
+                if (historyModel) {
+                  const historyBuffer = await historyModel.getBuffer();
+                  const historyBytes = new Uint8Array(historyBuffer);
+                  const historyBinaryString = historyBytes.reduce(
+                    (acc, byte) => acc + String.fromCharCode(byte),
+                    "",
+                  );
+                  historyBase64 = btoa(historyBinaryString);
+                  console.log(
+                    `Edit history captured: ${historyBase64.length} bytes (base64)`,
+                  );
+                } else {
+                  console.log("No history model found - no edits made yet");
+                }
+              } catch (error) {
+                console.error("Error getting edit history:", error);
+              }
+
+              // Now save the edits to the model (this bakes edits into the geometry)
               await fragments.editor.save(model.modelId);
               console.log("Edits saved to model");
 
@@ -300,29 +326,6 @@ export default function BIMEditPage() {
               console.log(
                 `Uploading fragment: ${fragmentBase64.length} bytes (base64)`,
               );
-
-              // Get edit history for database record-keeping (don't apply on load, just display in panel)
-              let historyBase64 = null;
-              try {
-                const historyModel =
-                  fragments.editor.models.list.get(model.modelId);
-                if (historyModel) {
-                  const historyBuffer = await historyModel.getBuffer();
-                  const historyBytes = new Uint8Array(historyBuffer);
-                  const historyBinaryString = historyBytes.reduce(
-                    (acc, byte) => acc + String.fromCharCode(byte),
-                    "",
-                  );
-                  historyBase64 = btoa(historyBinaryString);
-                  console.log(
-                    `Uploading edit history: ${historyBase64.length} bytes (base64)`,
-                  );
-                } else {
-                  console.log("No history model found");
-                }
-              } catch (error) {
-                console.error("Error getting edit history:", error);
-              }
 
               // Save to volume via API
               const response = await fetch(`/api/facilities/${facilityId}`, {
@@ -416,11 +419,14 @@ export default function BIMEditPage() {
               try {
                 // editHistory from API is an object with type: 'Buffer' and data: number[]
                 let historyBytes: Uint8Array;
-                
-                if (data.editHistory.type === 'Buffer' && Array.isArray(data.editHistory.data)) {
+
+                if (
+                  data.editHistory.type === "Buffer" &&
+                  Array.isArray(data.editHistory.data)
+                ) {
                   // Direct buffer data from API
                   historyBytes = new Uint8Array(data.editHistory.data);
-                } else if (typeof data.editHistory === 'string') {
+                } else if (typeof data.editHistory === "string") {
                   // Base64 string
                   const binaryString = atob(data.editHistory);
                   historyBytes = new Uint8Array(binaryString.length);
@@ -428,11 +434,13 @@ export default function BIMEditPage() {
                     historyBytes[i] = binaryString.charCodeAt(i);
                   }
                 } else {
-                  throw new Error('Unknown editHistory format');
+                  throw new Error("Unknown editHistory format");
                 }
-                
-                historyBuffer = historyBytes.buffer;
-                console.log(`Edit history loaded from database: ${historyBytes.length} bytes`);
+
+                historyBuffer = historyBytes.buffer as ArrayBuffer;
+                console.log(
+                  `Edit history loaded from database: ${historyBytes.length} bytes`,
+                );
               } catch (error) {
                 console.error("Error loading edit history:", error);
               }
