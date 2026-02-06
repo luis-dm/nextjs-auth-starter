@@ -4,29 +4,42 @@ import { authOptions } from "@/auth";
 import prisma from "@/lib/prisma";
 
 export async function GET(req: NextRequest) {
+  const startTime = Date.now();
+  
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.email) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    console.log(`[Facilities API] Auth check: ${Date.now() - startTime}ms`);
+
     // Get organization ID and pagination params from query params
     const { searchParams } = new URL(req.url);
     const organizationId = searchParams.get("organizationId");
     const page = parseInt(searchParams.get("page") || "1");
     const limit = parseInt(searchParams.get("limit") || "7");
+    const skip = (page - 1) * limit;
 
-    // Get the user's organizations
+    // Get the user's organizations with selective fields
     const user = await prisma.user.findUnique({
       where: { email: session.user.email },
-      include: {
+      select: {
         organizationMembers: {
-          include: {
-            organization: true,
+          select: {
+            organizationId: true,
+            organization: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
           },
         },
       },
     });
+
+    console.log(`[Facilities API] User query: ${Date.now() - startTime}ms`);
 
     if (!user?.organizationMembers.length) {
       return NextResponse.json({
@@ -39,53 +52,49 @@ export async function GET(req: NextRequest) {
     }
 
     // If organizationId is provided, use that; otherwise use the first one
-    let organization;
-    if (organizationId) {
-      const orgMember = user.organizationMembers.find(
-        (m) => m.organizationId === organizationId,
+    const currentOrgId = organizationId || user.organizationMembers[0]?.organizationId;
+    
+    if (!currentOrgId) {
+      return NextResponse.json(
+        { error: "No organization found" },
+        { status: 404 },
       );
-      organization = orgMember?.organization;
-
-      if (!organization) {
-        return NextResponse.json(
-          { error: "Organization not found or access denied" },
-          { status: 404 },
-        );
-      }
-    } else {
-      organization = user.organizationMembers[0].organization;
     }
 
-    // Calculate pagination
-    const skip = (page - 1) * limit;
+    // Parallel queries for count and facilities
+    const [totalCount, facilities] = await Promise.all([
+      prisma.facility.count({
+        where: { organizationId: currentOrgId },
+      }),
+      prisma.facility.findMany({
+        where: { organizationId: currentOrgId },
+        select: {
+          id: true,
+          name: true,
+          ifcFileName: true,
+          ifcFileSize: true,
+          createdAt: true,
+          organizationId: true,
+        },
+        orderBy: { createdAt: "desc" },
+        skip,
+        take: limit,
+      }),
+    ]);
 
-    // Get total count
-    const totalCount = await prisma.facility.count({
-      where: {
-        organizationId: organization.id,
-      },
-    });
+    console.log(`[Facilities API] Data queries: ${Date.now() - startTime}ms`);
 
-    // Fetch facilities for the selected organization with pagination
-    const facilities = await prisma.facility.findMany({
-      where: {
-        organizationId: organization.id,
-      },
-      skip,
-      take: limit,
-      orderBy: {
-        createdAt: "desc",
-      },
-    });
+    const organization = user.organizationMembers.find(
+      (m) => m.organizationId === currentOrgId
+    )?.organization;
 
     const totalPages = Math.ceil(totalCount / limit);
 
+    console.log(`[Facilities API] Total time: ${Date.now() - startTime}ms`);
+
     return NextResponse.json({
       facilities,
-      organization: {
-        id: organization.id,
-        name: organization.name,
-      },
+      organization,
       totalCount,
       totalPages,
       currentPage: page,

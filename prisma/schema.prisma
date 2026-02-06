@@ -86,7 +86,7 @@ model Facility {
   createdAt       DateTime          @default(now())
   updatedAt       DateTime          @updatedAt
   
-  @@index([organizationId])
+  @@index([organizationId, createdAt(sort: Desc)])
 }
 
 model FacilityMember {
