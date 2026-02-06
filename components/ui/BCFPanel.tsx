@@ -539,7 +539,7 @@ export function BCFPanel({
     <>
       {/* Main BCF Panel */}
       <div
-        className={`absolute top-0 right-0 w-[30%] h-full bg-white shadow-[-4px_0_20px_rgba(0,0,0,0.15)] z-[99999999] flex flex-col transition-all duration-300 cubic-bezier(0.4,0,0.2,1) ${
+        className={`absolute top-0 right-0 w-[30%] h-full bg-white shadow-[-4px_0_20px_rgba(0,0,0,0.15)] z-99999999 flex flex-col transition-all duration-300 cubic-bezier(0.4,0,0.2,1) ${
           isOpen
             ? "transform translate-x-0 pointer-events-auto visible"
             : "transform translate-x-full pointer-events-none invisible"
@@ -597,7 +597,7 @@ export function BCFPanel({
       {/* Topic Details Panel - Slides over the main panel */}
       {isDetailsPanelOpen && (
         <div
-          className={`absolute top-0 right-0 w-[30%] h-full bg-white shadow-[-4px_0_20px_rgba(0,0,0,0.15)] z-[999999999] flex flex-col transition-all duration-300 cubic-bezier(0.4,0,0.2,1) ${
+          className={`absolute top-0 right-0 w-[30%] h-full bg-white shadow-[-4px_0_20px_rgba(0,0,0,0.15)] z-999999999 flex flex-col transition-all duration-300 cubic-bezier(0.4,0,0.2,1) ${
             isDetailsPanelOpen
               ? "transform translate-x-0 pointer-events-auto visible"
               : "transform translate-x-full pointer-events-none invisible"
