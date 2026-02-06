@@ -300,20 +300,25 @@ export default function BIMEditPage() {
               );
 
               // Get edit history for database record-keeping (don't apply on load, just display in panel)
-              // The history is stored in fragments.editor.models after we call save()
+              // The history is accessible through the generalEditor
               let historyBase64 = null;
-              const historyModel = fragments.editor.models.list.get(model.modelId);
-              if (historyModel) {
-                const historyBuffer = await historyModel.getBuffer();
-                const historyBytes = new Uint8Array(historyBuffer);
-                const historyBinaryString = historyBytes.reduce(
-                  (acc, byte) => acc + String.fromCharCode(byte),
-                  "",
-                );
-                historyBase64 = btoa(historyBinaryString);
-                console.log(
-                  `Uploading edit history: ${historyBase64.length} bytes (base64)`,
-                );
+              try {
+                const historyModel =
+                  generalEditor.fragments.editor.models.list.get(model.modelId);
+                if (historyModel) {
+                  const historyBuffer = await historyModel.getBuffer();
+                  const historyBytes = new Uint8Array(historyBuffer);
+                  const historyBinaryString = historyBytes.reduce(
+                    (acc, byte) => acc + String.fromCharCode(byte),
+                    "",
+                  );
+                  historyBase64 = btoa(historyBinaryString);
+                  console.log(
+                    `Uploading edit history: ${historyBase64.length} bytes (base64)`,
+                  );
+                }
+              } catch (error) {
+                console.error("Error getting edit history:", error);
               }
 
               // Save to volume via API
@@ -406,8 +411,9 @@ export default function BIMEditPage() {
             let historyBuffer: ArrayBuffer | null = null;
             if (data.editHistory) {
               try {
-                const historyBase64 = Buffer.from(data.editHistory).toString();
-                const binaryString = atob(historyBase64);
+                // editHistory is a Buffer from database containing base64
+                const historyBase64String = data.editHistory.toString("utf-8");
+                const binaryString = atob(historyBase64String);
                 const historyBytes = new Uint8Array(binaryString.length);
                 for (let i = 0; i < binaryString.length; i++) {
                   historyBytes[i] = binaryString.charCodeAt(i);
