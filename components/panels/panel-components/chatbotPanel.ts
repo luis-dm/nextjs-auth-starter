@@ -90,11 +90,11 @@ const updateChatHistory = () => {
 };
 
 // Export function to load spatial structure after model is loaded
-export const loadSpatialStructureAfterModel = async () => {
+export const loadSpatialStructureAfterModel = async (facilityId: string) => {
   if (bimChatbotInstance) {
     try {
       console.log("Loading spatial structure after model load...");
-      await bimChatbotInstance.getDetailedSpatialStructure();
+      await bimChatbotInstance.getDetailedSpatialStructure(facilityId);
     } catch (error) {
       console.error("Failed to load spatial structure:", error);
     }

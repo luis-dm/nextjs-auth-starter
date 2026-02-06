@@ -143,7 +143,7 @@ export default function ViewerPage() {
         try {
           const { loadSpatialStructureAfterModel } =
             await import("@/components/panels/panel-components/chatbotPanel");
-          await loadSpatialStructureAfterModel();
+          await loadSpatialStructureAfterModel(facilityId);
         } catch (error) {
           console.error("Failed to load spatial structure:", error);
         }
@@ -184,8 +184,7 @@ export default function ViewerPage() {
           const facility = await response.json();
           console.log("Facility data received:", {
             name: facility.name,
-            hasFragmentData: !!facility.fragmentData,
-            fragmentDataSize: facility.fragmentData?.length || 0,
+            hasFragmentPath: !!facility.fragmentPath,
           });
 
           // Extract facility users from members
@@ -198,26 +197,32 @@ export default function ViewerPage() {
             setFacilityUsers(users);
           }
 
-          if (facility.fragmentData && facility.fragmentData.length > 0) {
-            // Convert array back to ArrayBuffer
-            const fragmentArray = new Uint8Array(facility.fragmentData);
-            const fragmentBuffer = fragmentArray.buffer;
+          if (facility.fragmentPath) {
+            // Fetch fragment from volume API
+            console.log("Fetching fragment from volume...");
+            const fragmentResponse = await fetch(`/api/fragments/${facilityId}`);
+            
+            if (fragmentResponse.ok) {
+              const fragmentBuffer = await fragmentResponse.arrayBuffer();
 
-            console.log("Loading fragments into scene...", {
-              bufferSize: fragmentBuffer.byteLength,
-              facilityName: facility.name,
-            });
+              console.log("Loading fragments into scene...", {
+                bufferSize: fragmentBuffer.byteLength,
+                facilityName: facility.name,
+              });
 
-            // Load the fragments
-            const modelName =
-              facility.ifcFileName?.replace(".ifc", "") || facility.name;
-            await fragments.core.load(fragmentBuffer, {
-              modelId: modelName,
-            });
+              // Load the fragments
+              const modelName =
+                facility.ifcFileName?.replace(".ifc", "") || facility.name;
+              await fragments.core.load(fragmentBuffer, {
+                modelId: modelName,
+              });
 
-            console.log(
-              `Fragments loaded successfully for facility: ${facility.name}`,
-            );
+              console.log(
+                `Fragments loaded successfully for facility: ${facility.name}`,
+              );
+            } else {
+              console.error("Failed to fetch fragment from volume");
+            }
           } else {
             console.log("No fragment data available for this facility");
           }

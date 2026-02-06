@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/auth";
 import prisma from "@/lib/prisma";
+import fs from "fs";
+import path from "path";
 
 export async function GET(
   req: NextRequest,
@@ -45,9 +47,7 @@ export async function GET(
     // Convert fragmentData Buffer to array for JSON serialization
     const facilityWithFragments = {
       ...facility,
-      fragmentData: facility.fragmentData
-        ? Array.from(facility.fragmentData)
-        : null,
+      fragmentPath: facility.fragmentPath,
       editHistory: facility.editHistory
         ? Array.from(facility.editHistory)
         : null,
@@ -106,22 +106,38 @@ export async function PATCH(
     if (body.fragmentData || body.editHistory) {
       const updateData: any = {};
 
+      // Save fragment to volume if provided
       if (body.fragmentData) {
-        updateData.fragmentData = Buffer.from(body.fragmentData);
+        const fragmentsDir = path.join(
+          process.env.BIM_DATA_PATH || "./public/bim_data",
+          "fragments",
+        );
+
+        if (!fs.existsSync(fragmentsDir)) {
+          fs.mkdirSync(fragmentsDir, { recursive: true });
+        }
+
+        const fragmentFilePath = path.join(fragmentsDir, `${id}.frag`);
+        const fragmentBuffer = Buffer.from(body.fragmentData);
+
+        fs.writeFileSync(fragmentFilePath, fragmentBuffer);
+        console.log(`Fragment updated on disk: ${fragmentFilePath}`);
       }
 
       if (body.editHistory) {
         updateData.editHistory = Buffer.from(body.editHistory);
       }
 
-      await prisma.facility.update({
-        where: { id },
-        data: updateData,
-      });
+      if (Object.keys(updateData).length > 0) {
+        await prisma.facility.update({
+          where: { id },
+          data: updateData,
+        });
+      }
 
       return NextResponse.json({
         message: "Facility data updated successfully",
-        fragmentSize: updateData.fragmentData?.length,
+        fragmentUpdated: !!body.fragmentData,
         historySize: updateData.editHistory?.length,
       });
     }

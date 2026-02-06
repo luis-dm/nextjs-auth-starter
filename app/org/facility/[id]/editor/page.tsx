@@ -246,7 +246,7 @@ export default function BIMEditPage() {
               const exportedBuffer = await model.getBuffer();
               const exportedBytes = new Uint8Array(exportedBuffer);
 
-              // Save to database
+              // Save to volume via API
               const response = await fetch(`/api/facilities/${facilityId}`, {
                 method: "PATCH",
                 headers: {
@@ -259,11 +259,11 @@ export default function BIMEditPage() {
               });
 
               if (!response.ok) {
-                throw new Error("Failed to save fragment data to database");
+                throw new Error("Failed to save fragment data");
               }
 
               console.log(
-                "Fragment data and edit history saved to database successfully",
+                "Fragment data and edit history saved successfully",
               );
 
               // Navigate back to facility dashboard
@@ -315,15 +315,20 @@ export default function BIMEditPage() {
 
             const data = await response.json();
 
-            if (!data.fragmentData) {
+            if (!data.fragmentPath) {
               alert(
                 "No fragment file associated with this facility. Please upload one from the viewer page.",
               );
               return;
             }
 
-            // Convert array back to ArrayBuffer
-            const buffer = new Uint8Array(data.fragmentData).buffer;
+            // Fetch fragment from volume API
+            const fragmentResponse = await fetch(`/api/fragments/${facilityId}`);
+            if (!fragmentResponse.ok) {
+              throw new Error("Failed to fetch fragment from volume");
+            }
+
+            const buffer = await fragmentResponse.arrayBuffer();
 
             // Load edit history if available
             let historyBuffer: ArrayBuffer | undefined;
