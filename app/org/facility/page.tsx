@@ -112,9 +112,14 @@ function FacilityList() {
       let fragmentBase64: string | null = null;
       if (fragmentData) {
         const uint8Array = new Uint8Array(fragmentData);
-        const binaryString = uint8Array.reduce((acc, byte) => acc + String.fromCharCode(byte), '');
+        const binaryString = uint8Array.reduce(
+          (acc, byte) => acc + String.fromCharCode(byte),
+          "",
+        );
         fragmentBase64 = btoa(binaryString);
-        console.log(`Uploading facility (fragment size: ${fragmentBase64.length} bytes base64)`);
+        console.log(
+          `Uploading facility (fragment size: ${fragmentBase64.length} bytes base64)`,
+        );
       }
 
       const response = await fetch("/api/facilities", {
@@ -133,10 +138,21 @@ function FacilityList() {
         const newFacility = await response.json();
         console.log("Facility registered:", newFacility);
 
-        // Add the new facility to the list
-        setFacilities((prev) => [newFacility, ...prev]);
-        setTotalPages(Math.ceil((facilities.length + 1) / itemsPerPage));
-        
+        // Refetch facilities to get correct pagination
+        const refetchResponse = await fetch(
+          `/api/facilities?organizationId=${organization?.id}&page=1&limit=${itemsPerPage}`,
+        );
+        if (refetchResponse.ok) {
+          const data = await refetchResponse.json();
+          setFacilities(data.facilities || []);
+          setTotalPages(data.totalPages || 1);
+          
+          // Navigate to page 1 if not already there
+          if (page !== 1) {
+            window.location.href = `/org/facility?page=1`;
+          }
+        }
+
         // Close modal after successful upload
         setIsModalOpen(false);
       } else {
@@ -154,7 +170,7 @@ function FacilityList() {
   const handleDeleteFacility = async (facilityId: string) => {
     // Optimistically remove from UI
     setFacilities((prev) => prev.filter((f) => f.id !== facilityId));
-    
+
     // Refetch to get accurate pagination
     try {
       const response = await fetch(
