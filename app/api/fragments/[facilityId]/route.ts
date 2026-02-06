@@ -44,7 +44,9 @@ export async function GET(
     });
 
     const fragmentPath =
-      type === "original" ? facility?.fragmentPath : facility?.renderedFragmentPath;
+      type === "original"
+        ? facility?.fragmentPath
+        : facility?.renderedFragmentPath;
 
     // Fall back to original if rendered doesn't exist (backward compatibility)
     const usedPath = fragmentPath || facility?.fragmentPath;
@@ -62,8 +64,10 @@ export async function GET(
       "fragments",
     );
     const filename =
-      type === "original" ? `${facilityId}.frag` : `${facilityId}_rendered.frag`;
-    
+      type === "original"
+        ? `${facilityId}.frag`
+        : `${facilityId}_rendered.frag`;
+
     // Fall back to original filename if rendered doesn't exist
     let fragmentFilePath = path.join(fragmentsDir, filename);
     if (!fs.existsSync(fragmentFilePath)) {

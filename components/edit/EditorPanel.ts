@@ -169,11 +169,16 @@ export const createEditorPanel = (config: EditorPanelConfig) => {
     try {
       const { requests, undoneRequests } =
         await fragments.editor.getModelRequests(model.modelId);
-      
+
       // Merge loaded history (previous session) with current session history
       const previousRequests = loadedHistoryData?.requests ?? [];
       const previousUndoneRequests = loadedHistoryData?.undoneRequests ?? [];
-      const allRequests = [...previousRequests, ...previousUndoneRequests, ...requests, ...undoneRequests];
+      const allRequests = [
+        ...previousRequests,
+        ...previousUndoneRequests,
+        ...requests,
+        ...undoneRequests,
+      ];
 
       historyContainer.innerHTML = "";
 

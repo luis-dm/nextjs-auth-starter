@@ -275,67 +275,72 @@ export default function BIMEditPage() {
             try {
               console.log("Starting save process...");
 
-              // 1. Get ORIGINAL fragment buffer (before baking edits)
-              const originalBuffer = await model.getBuffer();
-              const originalBytes = new Uint8Array(originalBuffer);
-              const originalBinaryString = originalBytes.reduce(
-                (acc, byte) => acc + String.fromCharCode(byte),
-                "",
-              );
-              const originalBase64 = btoa(originalBinaryString);
-              console.log(
-                `Original fragment: ${originalBase64.length} bytes (base64)`,
-              );
-
-              // 2. Get edit history BEFORE saving (save() may clear it)
+              // 1. Get edit history (including both loaded and new edits)
               let historyBase64 = null;
+              let allRequests: any[] = [];
+              let allUndoneRequests: any[] = [];
+              
               try {
+                // Get current session's edit requests
                 const { requests, undoneRequests } =
                   await fragments.editor.getModelRequests(model.modelId);
 
-                if (requests.length > 0 || undoneRequests.length > 0) {
-                  // Serialize requests as JSON
+                // Combine with loaded history from previous sessions
+                allRequests = [
+                  ...(loadedHistoryData?.requests ?? []),
+                  ...requests,
+                ];
+                allUndoneRequests = [
+                  ...(loadedHistoryData?.undoneRequests ?? []),
+                  ...undoneRequests,
+                ];
+
+                if (allRequests.length > 0 || allUndoneRequests.length > 0) {
+                  // Serialize combined requests as JSON
                   const historyJson = JSON.stringify({
-                    requests,
-                    undoneRequests,
+                    requests: allRequests,
+                    undoneRequests: allUndoneRequests,
                   });
                   historyBase64 = btoa(historyJson);
                   console.log(
-                    `Edit history captured: ${requests.length} requests, ${undoneRequests.length} undone`,
+                    `Combined edit history: ${allRequests.length} requests (${loadedHistoryData?.requests.length ?? 0} previous + ${requests.length} new), ${allUndoneRequests.length} undone`,
                   );
                 } else {
-                  console.log("No edit history found - no edits made yet");
+                  console.log("No edit history found - no edits made");
                 }
               } catch (error) {
                 console.error("Error getting edit history:", error);
               }
 
-              // 3. Now save the edits to the model (this bakes edits into the geometry)
+              // 2. Save edits to bake them into the model
               await fragments.editor.save(model.modelId);
-              console.log("Edits saved to model");
+              console.log("Edits baked into model");
 
-              // 4. Get RENDERED fragment buffer (after baking edits)
-              const renderedBuffer = await model.getBuffer();
-              const renderedBytes = new Uint8Array(renderedBuffer);
-              const renderedBinaryString = renderedBytes.reduce(
+              // 3. Get the buffer AFTER saving (this has ALL edits baked in - previous + new)
+              const currentStateBuffer = await model.getBuffer();
+              const currentStateBytes = new Uint8Array(currentStateBuffer);
+              const currentStateBinaryString = currentStateBytes.reduce(
                 (acc, byte) => acc + String.fromCharCode(byte),
                 "",
               );
-              const renderedBase64 = btoa(renderedBinaryString);
+              const currentStateBase64 = btoa(currentStateBinaryString);
+
               console.log(
-                `Rendered fragment: ${renderedBase64.length} bytes (base64)`,
+                `Current state fragment: ${currentStateBase64.length} bytes (base64) - this becomes the new 'original'`,
               );
 
-              // 5. Save both versions to the API
+              // 4. Save both as the same (current state with all edits baked in)
+              // The "original" for next session is the current fully-edited state
+              // The "rendered" for viewer is the same (no difference needed)
               const response = await fetch(`/api/facilities/${facilityId}`, {
                 method: "PATCH",
                 headers: {
                   "Content-Type": "application/json",
                 },
                 body: JSON.stringify({
-                  fragmentData: originalBase64, // Original for editor
-                  renderedFragmentData: renderedBase64, // Rendered for viewer
-                  editHistory: historyBase64, // History for audit/display
+                  fragmentData: currentStateBase64, // Current state becomes new original
+                  renderedFragmentData: currentStateBase64, // Same for rendered
+                  editHistory: historyBase64, // Combined history for display
                 }),
               });
 
