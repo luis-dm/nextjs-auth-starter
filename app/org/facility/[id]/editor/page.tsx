@@ -184,16 +184,18 @@ export default function BIMEditPage() {
             // Initialize the editor UI first
             initializeEditorUI();
 
-            // Load edit history into the editor for display in panel (but don't apply it)
-            // The fragment already has all edits baked in
+            // Load edit history model into the editor (for display in panel, not to apply)
+            // The fragment already has all edits baked in from previous saves
             if (historyBuffer) {
               try {
+                // Load the history model
                 const historyModel = await fragments.load(historyBuffer, {
-                  modelId: "history_model",
+                  modelId: model.modelId, // Use same modelId to associate history with model
                 });
-                // Set the history in the editor (for display only, not to apply edits)
+                
+                // Set it in the editor so the history panel can display it
                 fragments.editor.set(model.modelId, historyModel);
-                console.log("Edit history loaded into panel for display");
+                console.log("Edit history loaded into editor for panel display");
               } catch (error) {
                 console.error("Error loading edit history into editor:", error);
               }
@@ -300,11 +302,10 @@ export default function BIMEditPage() {
               );
 
               // Get edit history for database record-keeping (don't apply on load, just display in panel)
-              // The history is accessible through the generalEditor
               let historyBase64 = null;
               try {
                 const historyModel =
-                  generalEditor.fragments.editor.models.list.get(model.modelId);
+                  fragments.editor.models.list.get(model.modelId);
                 if (historyModel) {
                   const historyBuffer = await historyModel.getBuffer();
                   const historyBytes = new Uint8Array(historyBuffer);
@@ -316,6 +317,8 @@ export default function BIMEditPage() {
                   console.log(
                     `Uploading edit history: ${historyBase64.length} bytes (base64)`,
                   );
+                } else {
+                  console.log("No history model found");
                 }
               } catch (error) {
                 console.error("Error getting edit history:", error);
@@ -407,19 +410,29 @@ export default function BIMEditPage() {
 
             const buffer = await fragmentResponse.arrayBuffer();
 
-            // Load edit history for display in panel (but don't apply it - edits are baked in)
+            // Load edit history from database (for display in panel only)
             let historyBuffer: ArrayBuffer | null = null;
             if (data.editHistory) {
               try {
-                // editHistory is a Buffer from database containing base64
-                const historyBase64String = data.editHistory.toString("utf-8");
-                const binaryString = atob(historyBase64String);
-                const historyBytes = new Uint8Array(binaryString.length);
-                for (let i = 0; i < binaryString.length; i++) {
-                  historyBytes[i] = binaryString.charCodeAt(i);
+                // editHistory from API is an object with type: 'Buffer' and data: number[]
+                let historyBytes: Uint8Array;
+                
+                if (data.editHistory.type === 'Buffer' && Array.isArray(data.editHistory.data)) {
+                  // Direct buffer data from API
+                  historyBytes = new Uint8Array(data.editHistory.data);
+                } else if (typeof data.editHistory === 'string') {
+                  // Base64 string
+                  const binaryString = atob(data.editHistory);
+                  historyBytes = new Uint8Array(binaryString.length);
+                  for (let i = 0; i < binaryString.length; i++) {
+                    historyBytes[i] = binaryString.charCodeAt(i);
+                  }
+                } else {
+                  throw new Error('Unknown editHistory format');
                 }
+                
                 historyBuffer = historyBytes.buffer;
-                console.log("Edit history loaded for display in panel");
+                console.log(`Edit history loaded from database: ${historyBytes.length} bytes`);
               } catch (error) {
                 console.error("Error loading edit history:", error);
               }
