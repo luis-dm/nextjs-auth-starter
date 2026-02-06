@@ -80,7 +80,7 @@ model Facility {
   renderedFragmentPath    String?           // Rendered fragment with baked edits (for viewer display)
   ifcFileName             String?           // Original IFC filename
   ifcFileSize             Int?              // Size in bytes
-  bcfData                 Bytes?            // BCF topics data
+  bcfPath                 String?           // Path to BCF file
   editHistory             Bytes?            // Edit history data from fragments editor (as JSON)
   organization            Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   members                 FacilityMember[]

@@ -190,17 +190,15 @@ export async function POST(req: NextRequest) {
     // Save fragment to volume if provided
     let fragmentPath: string | null = null;
     if (fragmentData) {
-      const fragmentsDir = path.join(
-        process.env.BIM_DATA_PATH || "./public/bim_data",
-        "fragments",
-      );
+      const basePath = process.env.BIM_DATA_PATH || "./public/bim_data";
+      const fragmentsDir = path.join(basePath, facilityId, "fragments");
 
       // Create fragments directory if it doesn't exist
       if (!fs.existsSync(fragmentsDir)) {
         fs.mkdirSync(fragmentsDir, { recursive: true });
       }
 
-      const fragmentFilePath = path.join(fragmentsDir, `${facilityId}.frag`);
+      const fragmentFilePath = path.join(fragmentsDir, "original.frag");
 
       // Convert base64 string back to buffer
       const fragmentBuffer = Buffer.from(fragmentData, "base64");
@@ -209,7 +207,7 @@ export async function POST(req: NextRequest) {
       );
 
       fs.writeFileSync(fragmentFilePath, fragmentBuffer);
-      fragmentPath = `/fragments/${facilityId}.frag`;
+      fragmentPath = `/${facilityId}/fragments/original.frag`;
 
       console.log(
         `[Facility POST] Fragment saved to disk: ${Date.now() - startTime}ms`,

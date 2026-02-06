@@ -58,20 +58,18 @@ export async function GET(
       );
     }
 
-    // Read the fragment file from volume
-    const fragmentsDir = path.join(
-      process.env.BIM_DATA_PATH || "./public/bim_data",
-      "fragments",
-    );
+    // Read the fragment file from facility-specific directory
+    const basePath = process.env.BIM_DATA_PATH || "./public/bim_data";
+    const fragmentsDir = path.join(basePath, facilityId, "fragments");
     const filename =
-      type === "original"
-        ? `${facilityId}.frag`
-        : `${facilityId}_rendered.frag`;
+      type === "original" ? "original.frag" : "rendered.frag";
 
-    // Fall back to original filename if rendered doesn't exist
+    // Try to get the requested type
     let fragmentFilePath = path.join(fragmentsDir, filename);
-    if (!fs.existsSync(fragmentFilePath)) {
-      fragmentFilePath = path.join(fragmentsDir, `${facilityId}.frag`);
+    
+    // Fall back to original if rendered doesn't exist
+    if (!fs.existsSync(fragmentFilePath) && type === "rendered") {
+      fragmentFilePath = path.join(fragmentsDir, "original.frag");
     }
 
     if (!fs.existsSync(fragmentFilePath)) {

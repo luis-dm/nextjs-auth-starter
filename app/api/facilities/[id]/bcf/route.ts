@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/auth";
 import prisma from "@/lib/prisma";
+import fs from "fs";
+import path from "path";
 
 // GET: Load BCF data for a facility
 export async function GET(
@@ -41,10 +43,10 @@ export async function GET(
       );
     }
 
-    // Get BCF data
+    // Get BCF file path from database
     const facility = await prisma.facility.findUnique({
       where: { id },
-      select: { bcfData: true },
+      select: { bcfPath: true },
     });
 
     if (!facility) {
@@ -54,16 +56,24 @@ export async function GET(
       );
     }
 
-    console.log(
-      "GET BCF - Facility found, bcfData exists:",
-      !!facility.bcfData,
-      "size:",
-      facility.bcfData?.length,
-    );
+    // Check if BCF file exists in facility-specific directory
+    const basePath = process.env.BIM_DATA_PATH || "./public/bim_data";
+    const bcfFilePath = path.join(basePath, id, "bcf", "topics.bcf");
 
-    // Return BCF data as array (or null if not exists)
-    return NextResponse.json({
-      bcfData: facility.bcfData ? Array.from(facility.bcfData) : null,
+    if (!fs.existsSync(bcfFilePath)) {
+      console.log("GET BCF - No BCF file found for facility:", id);
+      return NextResponse.json({ bcfData: null });
+    }
+
+    // Read BCF file and return as binary stream
+    const bcfBuffer = fs.readFileSync(bcfFilePath);
+    console.log("GET BCF - File loaded, size:", bcfBuffer.length, "bytes");
+
+    return new NextResponse(bcfBuffer, {
+      headers: {
+        'Content-Type': 'application/octet-stream',
+        'Content-Length': bcfBuffer.length.toString(),
+      },
     });
   } catch (error) {
     console.error("Error loading BCF data:", error);
@@ -130,13 +140,25 @@ export async function POST(
       bcfBuffer.length,
     );
 
-    // Update facility with BCF data
+    // Save to file system in facility-specific directory
+    const basePath = process.env.BIM_DATA_PATH || "./public/bim_data";
+    const bcfDir = path.join(basePath, id, "bcf");
+
+    if (!fs.existsSync(bcfDir)) {
+      fs.mkdirSync(bcfDir, { recursive: true });
+    }
+
+    const bcfFilePath = path.join(bcfDir, "topics.bcf");
+    fs.writeFileSync(bcfFilePath, bcfBuffer);
+
+    // Update facility with BCF path reference
+    const relativePath = `/${id}/bcf/topics.bcf`;
     await prisma.facility.update({
       where: { id },
-      data: { bcfData: bcfBuffer },
+      data: { bcfPath: relativePath },
     });
 
-    console.log("POST BCF - Data saved successfully");
+    console.log("POST BCF - Data saved to file system:", bcfFilePath);
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Error saving BCF data:", error);

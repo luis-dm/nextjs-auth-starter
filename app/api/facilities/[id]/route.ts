@@ -4,6 +4,8 @@ import { authOptions } from "@/auth";
 import prisma from "@/lib/prisma";
 import fs from "fs";
 import path from "path";
+import fs from "fs";
+import path from "path";
 
 export async function GET(
   req: NextRequest,
@@ -111,10 +113,8 @@ export async function PATCH(
     // Update fragment data if provided
     if (body.fragmentData || body.renderedFragmentData || body.editHistory) {
       const updateData: any = {};
-      const fragmentsDir = path.join(
-        process.env.BIM_DATA_PATH || "./public/bim_data",
-        "fragments",
-      );
+      const basePath = process.env.BIM_DATA_PATH || "./public/bim_data";
+      const fragmentsDir = path.join(basePath, id, "fragments");
 
       if (!fs.existsSync(fragmentsDir)) {
         fs.mkdirSync(fragmentsDir, { recursive: true });
@@ -122,20 +122,20 @@ export async function PATCH(
 
       // Save original fragment (for editor) if provided
       if (body.fragmentData) {
-        const fragmentFilePath = path.join(fragmentsDir, `${id}.frag`);
+        const fragmentFilePath = path.join(fragmentsDir, "original.frag");
         const fragmentBuffer = Buffer.from(body.fragmentData, "base64");
         console.log(
           `[Facility PATCH] Writing original fragment ${fragmentBuffer.length} bytes to volume`,
         );
         fs.writeFileSync(fragmentFilePath, fragmentBuffer);
-        updateData.fragmentPath = `/fragments/${id}.frag`;
+        updateData.fragmentPath = `/${id}/fragments/original.frag`;
       }
 
       // Save rendered fragment (for viewer) if provided
       if (body.renderedFragmentData) {
         const renderedFragmentFilePath = path.join(
           fragmentsDir,
-          `${id}_rendered.frag`,
+          "rendered.frag",
         );
         const renderedFragmentBuffer = Buffer.from(
           body.renderedFragmentData,
@@ -145,7 +145,7 @@ export async function PATCH(
           `[Facility PATCH] Writing rendered fragment ${renderedFragmentBuffer.length} bytes to volume`,
         );
         fs.writeFileSync(renderedFragmentFilePath, renderedFragmentBuffer);
-        updateData.renderedFragmentPath = `/fragments/${id}_rendered.frag`;
+        updateData.renderedFragmentPath = `/${id}/fragments/rendered.frag`;
       }
 
       if (body.editHistory) {
@@ -224,7 +224,16 @@ export async function DELETE(
       );
     }
 
-    // Delete the facility (cascade will delete facility members)
+    // Delete all facility files from volume
+    const basePath = process.env.BIM_DATA_PATH || "./public/bim_data";
+    const facilityDir = path.join(basePath, id);
+    
+    if (fs.existsSync(facilityDir)) {
+      console.log(`Deleting facility directory: ${facilityDir}`);
+      fs.rmSync(facilityDir, { recursive: true, force: true });
+    }
+
+    // Delete the facility from database (cascade will delete facility members)
     await prisma.facility.delete({
       where: { id },
     });

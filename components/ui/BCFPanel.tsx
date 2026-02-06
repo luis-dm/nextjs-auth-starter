@@ -129,23 +129,30 @@ export function BCFPanel({
     if (!bcfTopicsRef.current || !facilityId) return;
 
     try {
-      console.log("Loading BCF from database for facility:", facilityId);
+      console.log("Loading BCF from file system for facility:", facilityId);
       const response = await fetch(`/api/facilities/${facilityId}/bcf`);
       console.log("Load response:", response.ok, response.status);
-      if (!response.ok) return;
+      
+      if (!response.ok) {
+        // Check if it's a 404 (no BCF file) or actual error
+        if (response.status === 404) {
+          console.log("No BCF file found for this facility");
+          return;
+        }
+        console.error("Error loading BCF:", response.statusText);
+        return;
+      }
 
-      const data = await response.json();
-      console.log(
-        "BCF data received:",
-        data.bcfData ? `${data.bcfData.length} bytes` : "null",
-      );
-      if (data.bcfData && data.bcfData.length > 0) {
-        const bcfBuffer = new Uint8Array(data.bcfData);
-        await bcfTopicsRef.current.load(bcfBuffer);
+      // Get as ArrayBuffer directly (binary stream)
+      const bcfBuffer = await response.arrayBuffer();
+      console.log("BCF data received:", bcfBuffer.byteLength, "bytes");
+      
+      if (bcfBuffer.byteLength > 0) {
+        await bcfTopicsRef.current.load(new Uint8Array(bcfBuffer));
         console.log("BCF data loaded successfully");
       }
     } catch (error) {
-      console.error("Error loading BCF from database:", error);
+      console.error("Error loading BCF from file system:", error);
     }
   };
 
@@ -250,7 +257,7 @@ export function BCFPanel({
             // Create single viewpoint for this topic
             const viewpoint = viewpoints.create();
             await viewpoint.updateCamera();
-            await viewpoint.setSnapshot();
+            await viewpoint.updateSnapshot();
             topic.viewpoints.add(viewpoint.guid);
           }
         });
@@ -262,7 +269,7 @@ export function BCFPanel({
             const viewpoint = viewpoints.list.get(viewpointGuid);
             if (viewpoint) {
               await viewpoint.updateCamera();
-              await viewpoint.setSnapshot();
+              await viewpoint.updateSnapshot();
             }
           }
         });

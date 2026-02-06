@@ -35,12 +35,14 @@ export async function POST(req: NextRequest) {
     const basePath = process.env.BIM_DATA_PATH || "./public/bim_data";
 
     // Create facility-specific path
-    const facilityBasePath = path.join(basePath, "filesystems", facilityId);
+    const facilityDir = path.join(basePath, facilityId);
+    const aiDir = path.join(facilityDir, "ai");
+    const facilityBasePath = path.join(aiDir, "bim_fs");
 
-    // Ensure facility directory exists
-    if (!fs.existsSync(facilityBasePath)) {
-      console.log("Creating facility directory:", facilityBasePath);
-      fs.mkdirSync(facilityBasePath, { recursive: true });
+    // Ensure AI directory exists
+    if (!fs.existsSync(aiDir)) {
+      console.log("Creating AI directory:", aiDir);
+      fs.mkdirSync(aiDir, { recursive: true });
     }
 
     // Write the enhanced structure to a temporary file
