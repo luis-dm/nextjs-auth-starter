@@ -39,7 +39,6 @@ function FacilityList() {
   const [totalPages, setTotalPages] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isUploading, setIsUploading] = useState(false);
   const [sortOption, setSortOption] = useState<SortOption>("date-desc");
 
   // Fetch user's organizations and initial facilities
@@ -107,8 +106,7 @@ function FacilityList() {
     fragmentData: ArrayBuffer | null,
     ifcFileName: string | null,
     ifcFileSize: number | null,
-  ) => {
-    setIsUploading(true);
+  ): Promise<void> => {
     try {
       // Convert ArrayBuffer to base64 string (much smaller than array of numbers)
       let fragmentBase64: string | null = null;
@@ -144,12 +142,11 @@ function FacilityList() {
         const error = await response.json();
         console.error("Failed to register facility:", error);
         alert("Failed to register facility: " + error.error);
+        throw new Error("Failed to register facility");
       }
     } catch (error) {
       console.error("Error registering facility:", error);
-      alert("Error registering facility");
-    } finally {
-      setIsUploading(false);
+      throw error;
     }
   };
 
@@ -293,7 +290,6 @@ function FacilityList() {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onSubmit={handleRegisterFacility}
-        isUploading={isUploading}
       />
     </>
   );

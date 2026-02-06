@@ -163,7 +163,7 @@ interface RegisterFacilityModalProps {
     fragmentData: ArrayBuffer | null,
     ifcFileName: string | null,
     ifcFileSize: number | null,
-  ) => void;
+  ) => Promise<void>;
   isUploading?: boolean;
 }
 
@@ -176,6 +176,7 @@ export default function RegisterFacilityModal({
   const [facilityName, setFacilityName] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isConverting, setIsConverting] = useState(false);
+  const [isUploadingInternal, setIsUploadingInternal] = useState(false);
   const [conversionProgress, setConversionProgress] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -219,17 +220,21 @@ export default function RegisterFacilityModal({
           setIsConverting(false);
           return;
         }
-        // Don't set isConverting to false here - let parent handle it
+        // Don't set isConverting to false here - transition to upload state
         setConversionProgress(0);
       }
 
-      // Keep isConverting true until upload starts
-      onSubmit(facilityName.trim(), fragmentData, ifcFileName, ifcFileSize);
+      // Show upload state
+      setIsConverting(false);
+      setIsUploadingInternal(true);
       
-      // Reset form only after parent confirms upload is done
+      // Wait for upload to complete
+      await onSubmit(facilityName.trim(), fragmentData, ifcFileName, ifcFileSize);
+      
+      // Reset form after successful upload
       setFacilityName("");
       setSelectedFile(null);
-      setIsConverting(false);
+      setIsUploadingInternal(false);
       onClose();
     }
   };
@@ -257,7 +262,7 @@ export default function RegisterFacilityModal({
     >
       <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-6 relative">
         {/* Conversion/Upload Loading Overlay */}
-        {(isConverting || isUploading) && (
+        {(isConverting || isUploadingInternal) && (
           <div className="absolute inset-0 bg-white/95 rounded-lg flex flex-col items-center justify-center z-10">
             <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-4"></div>
             <p className="text-gray-700 font-medium mb-2">
@@ -360,17 +365,17 @@ export default function RegisterFacilityModal({
             <button
               type="button"
               onClick={onClose}
-              disabled={isConverting || isUploading}
+              disabled={isConverting || isUploadingInternal}
               className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Cancel
             </button>
             <button
               type="submit"
-              disabled={!facilityName.trim() || isConverting || isUploading}
+              disabled={!facilityName.trim() || isConverting || isUploadingInternal}
               className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
             >
-              {isConverting ? "Converting..." : isUploading ? "Uploading..." : "Register Facility"}
+              {isConverting ? "Converting..." : isUploadingInternal ? "Uploading..." : "Register Facility"}
             </button>
           </div>
         </form>
