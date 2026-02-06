@@ -241,7 +241,7 @@ export function BCFPanel({
         // Listen for snapshot updates to refresh the details panel
         viewpoints.list.onItemUpdated.add(() => {
           // Trigger re-render of details panel when viewpoint is updated
-          setSnapshotUpdateTrigger(prev => prev + 1);
+          setSnapshotUpdateTrigger((prev) => prev + 1);
         });
 
         bcfTopics.list.onItemSet.add(async ({ value: topic }: any) => {
@@ -250,6 +250,7 @@ export function BCFPanel({
             // Create single viewpoint for this topic
             const viewpoint = viewpoints.create();
             await viewpoint.updateCamera();
+            await viewpoint.setSnapshot();
             topic.viewpoints.add(viewpoint.guid);
           }
         });
@@ -261,6 +262,7 @@ export function BCFPanel({
             const viewpoint = viewpoints.list.get(viewpointGuid);
             if (viewpoint) {
               await viewpoint.updateCamera();
+              await viewpoint.setSnapshot();
             }
           }
         });
@@ -410,37 +412,50 @@ export function BCFPanel({
         return section;
       };
 
-      // Create viewpoint snapshot section if viewpoint exists
-      let snapshotSection: HTMLElement | null = null;
+      // Create viewpoint snapshots section
+      const snapshotSections: HTMLElement[] = [];
       if (selectedTopic.viewpoints.size > 0) {
-        const viewpointGuid = Array.from(selectedTopic.viewpoints)[0];
         const OBC = await import("@thatopen/components");
         const viewpointsComponent = components.get(OBC.Viewpoints);
-        const viewpoint = viewpointsComponent.list.get(viewpointGuid);
+        
+        let viewpointIndex = 0;
+        for (const viewpointGuid of selectedTopic.viewpoints) {
+          viewpointIndex++;
+          const viewpoint = viewpointsComponent.list.get(viewpointGuid);
 
-        if (viewpoint && viewpoint.snapshot) {
-          const snapshotData = viewpointsComponent.snapshots.get(
-            viewpoint.snapshot,
-          );
-          if (snapshotData) {
-            const blob = new Blob([snapshotData], { type: "image/png" });
-            const url = URL.createObjectURL(blob);
-
-            const snapshotContainer = document.createElement("div");
-            snapshotContainer.style.cssText = "padding: 1rem;";
-
-            const img = document.createElement("img");
-            img.src = url;
-            img.alt = "Viewpoint Snapshot";
-            img.style.cssText =
-              "width: 100%; max-width: 100%; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);";
-
-            snapshotContainer.appendChild(img);
-            snapshotSection = createSection(
-              "Snapshot",
-              "tabler:photo",
-              snapshotContainer,
+          if (viewpoint && viewpoint.snapshot) {
+            const snapshotData = viewpointsComponent.snapshots.get(
+              viewpoint.snapshot,
             );
+            if (snapshotData) {
+              const blob = new Blob([snapshotData], { type: "image/png" });
+              const url = URL.createObjectURL(blob);
+
+              const snapshotContainer = document.createElement("div");
+              snapshotContainer.style.cssText = "padding: 1rem;";
+
+              // Add viewpoint label
+              const label = document.createElement("div");
+              label.textContent = `Viewpoint ${viewpointIndex}`;
+              label.style.cssText =
+                "font-weight: 600; margin-bottom: 0.5rem; color: #1c1b1f; font-size: 0.875rem;";
+              snapshotContainer.appendChild(label);
+
+              const img = document.createElement("img");
+              img.src = url;
+              img.alt = `Viewpoint ${viewpointIndex} Snapshot`;
+              img.style.cssText =
+                "width: 100%; max-width: 100%; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);";
+
+              snapshotContainer.appendChild(img);
+              snapshotSections.push(
+                createSection(
+                  `Snapshot ${viewpointIndex}`,
+                  "tabler:photo",
+                  snapshotContainer,
+                ),
+              );
+            }
           }
         }
       }
@@ -451,9 +466,9 @@ export function BCFPanel({
       detailsContainer.appendChild(
         createSection("Comments", "majesticons:comment-line", comments),
       );
-      if (snapshotSection) {
-        detailsContainer.appendChild(snapshotSection);
-      }
+      snapshotSections.forEach(section => {
+        detailsContainer.appendChild(section);
+      });
       detailsContainer.appendChild(
         createSection("Viewpoints", "tabler:camera", viewpoints),
       );

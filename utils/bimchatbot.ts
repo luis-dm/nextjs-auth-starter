@@ -200,7 +200,10 @@ export class BimChatbot {
     return this.enhancedStructure;
   }
 
-  private async buildBimFilesystem(structure: IFCNode, facilityId: string): Promise<void> {
+  private async buildBimFilesystem(
+    structure: IFCNode,
+    facilityId: string,
+  ): Promise<void> {
     try {
       // Call the API endpoint to build and save the filesystem structure
       const response = await fetch("/api/bim/build-filesystem", {

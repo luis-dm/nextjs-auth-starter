@@ -201,7 +201,7 @@ export async function POST(req: NextRequest) {
       }
 
       const fragmentFilePath = path.join(fragmentsDir, `${facilityId}.frag`);
-      
+
       // Convert base64 string back to buffer
       const fragmentBuffer = Buffer.from(fragmentData, "base64");
       console.log(

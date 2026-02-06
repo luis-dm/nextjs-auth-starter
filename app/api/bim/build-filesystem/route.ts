@@ -61,10 +61,7 @@ export async function POST(req: NextRequest) {
 
     // Clean up temp file
     fs.unlinkSync(tempFile);
-    console.log(
-      "BIM filesystem built successfully at:",
-      facilityBasePath,
-    );
+    console.log("BIM filesystem built successfully at:", facilityBasePath);
 
     return NextResponse.json({
       success: true,
