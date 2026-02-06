@@ -164,12 +164,14 @@ interface RegisterFacilityModalProps {
     ifcFileName: string | null,
     ifcFileSize: number | null,
   ) => void;
+  isUploading?: boolean;
 }
 
 export default function RegisterFacilityModal({
   isOpen,
   onClose,
   onSubmit,
+  isUploading = false,
 }: RegisterFacilityModalProps) {
   const [facilityName, setFacilityName] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -252,14 +254,16 @@ export default function RegisterFacilityModal({
       onClick={handleBackdropClick}
     >
       <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-6 relative">
-        {/* Conversion Loading Overlay */}
-        {isConverting && (
+        {/* Conversion/Upload Loading Overlay */}
+        {(isConverting || isUploading) && (
           <div className="absolute inset-0 bg-white/95 rounded-lg flex flex-col items-center justify-center z-10">
             <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-4"></div>
             <p className="text-gray-700 font-medium mb-2">
-              Converting IFC to Fragments...
+              {isConverting ? "Converting IFC to Fragments..." : "Uploading facility..."}
             </p>
-            <p className="text-sm text-gray-600">{conversionProgress}%</p>
+            {isConverting && (
+              <p className="text-sm text-gray-600">{conversionProgress}%</p>
+            )}
           </div>
         )}
 
@@ -354,16 +358,17 @@ export default function RegisterFacilityModal({
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+              disabled={isConverting || isUploading}
+              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Cancel
             </button>
             <button
               type="submit"
-              disabled={!facilityName.trim() || isConverting}
+              disabled={!facilityName.trim() || isConverting || isUploading}
               className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
             >
-              {isConverting ? "Converting..." : "Register Facility"}
+              {isConverting ? "Converting..." : isUploading ? "Uploading..." : "Register Facility"}
             </button>
           </div>
         </form>
