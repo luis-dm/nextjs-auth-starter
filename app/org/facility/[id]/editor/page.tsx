@@ -205,7 +205,9 @@ export default function BIMEditPage() {
                     removeRedo: false,
                   },
                 );
-                console.log("[HISTORY DEBUG] Edit history applied successfully");
+                console.log(
+                  "[HISTORY DEBUG] Edit history applied successfully",
+                );
 
                 // Verify the history was applied by checking the editor
                 const { requests, undoneRequests } =
@@ -225,7 +227,10 @@ export default function BIMEditPage() {
                   );
                 }, 100);
               } catch (error) {
-                console.error("[HISTORY DEBUG] Error applying edit history:", error);
+                console.error(
+                  "[HISTORY DEBUG] Error applying edit history:",
+                  error,
+                );
               }
             } else {
               console.log(
@@ -459,6 +464,27 @@ export default function BIMEditPage() {
             } | null = null;
             if (data.editHistory) {
               try {
+                console.log(
+                  "[HISTORY DEBUG] Raw editHistory type:",
+                  typeof data.editHistory,
+                );
+                console.log(
+                  "[HISTORY DEBUG] Raw editHistory value:",
+                  data.editHistory,
+                );
+                console.log(
+                  "[HISTORY DEBUG] Is Buffer object?",
+                  data.editHistory?.type === "Buffer",
+                );
+                console.log(
+                  "[HISTORY DEBUG] Is array?",
+                  Array.isArray(data.editHistory),
+                );
+                console.log(
+                  "[HISTORY DEBUG] Is string?",
+                  typeof data.editHistory === "string",
+                );
+
                 // editHistory from API is an object with type: 'Buffer' and data: number[]
                 let historyJson: string;
 
@@ -466,24 +492,39 @@ export default function BIMEditPage() {
                   data.editHistory.type === "Buffer" &&
                   Array.isArray(data.editHistory.data)
                 ) {
+                  console.log("[HISTORY DEBUG] Parsing as Buffer object");
                   // Convert buffer data to string
                   const historyBytes = new Uint8Array(data.editHistory.data);
                   const historyBase64 = String.fromCharCode(...historyBytes);
                   historyJson = atob(historyBase64);
                 } else if (typeof data.editHistory === "string") {
+                  console.log("[HISTORY DEBUG] Parsing as base64 string");
                   // Base64 string
                   historyJson = atob(data.editHistory);
+                } else if (Array.isArray(data.editHistory)) {
+                  console.log("[HISTORY DEBUG] Parsing as direct byte array");
+                  // Direct byte array
+                  const historyBytes = new Uint8Array(data.editHistory);
+                  const historyBase64 = String.fromCharCode(...historyBytes);
+                  historyJson = atob(historyBase64);
                 } else {
+                  console.error(
+                    "[HISTORY DEBUG] Unknown format, data:",
+                    data.editHistory,
+                  );
                   throw new Error("Unknown editHistory format");
                 }
 
+                console.log("[HISTORY DEBUG] Decoded JSON:", historyJson);
                 editHistoryData = JSON.parse(historyJson);
                 console.log(
-                  `Edit history loaded: ${editHistoryData?.requests.length ?? 0} requests, ${editHistoryData?.undoneRequests.length ?? 0} undone`,
+                  `[HISTORY DEBUG] Edit history loaded: ${editHistoryData?.requests.length ?? 0} requests, ${editHistoryData?.undoneRequests.length ?? 0} undone`,
                 );
               } catch (error) {
                 console.error("Error loading edit history:", error);
               }
+            } else {
+              console.log("[HISTORY DEBUG] No editHistory in facility data");
             }
 
             await loadModelAndInitializeEditor(
