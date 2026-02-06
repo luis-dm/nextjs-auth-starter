@@ -189,10 +189,11 @@ export default function BIMEditPage() {
             const updateHistoryContainer = initializeEditorUI();
 
             // Store loaded history data globally so the history panel can access it
+            console.log("[HISTORY DEBUG] editHistoryData:", editHistoryData);
             if (editHistoryData && editHistoryData.requests.length > 0) {
               loadedHistoryData = editHistoryData;
               console.log(
-                `Applying ${editHistoryData.requests.length} edit history requests to model...`,
+                `[HISTORY DEBUG] Applying ${editHistoryData.requests.length} edit history requests to model...`,
               );
 
               // Apply the loaded history to the model (this makes previous edits visible)
@@ -204,16 +205,32 @@ export default function BIMEditPage() {
                     removeRedo: false,
                   },
                 );
-                console.log("Edit history applied successfully");
+                console.log("[HISTORY DEBUG] Edit history applied successfully");
+
+                // Verify the history was applied by checking the editor
+                const { requests, undoneRequests } =
+                  await fragments.editor.getModelRequests(model.modelId);
+                console.log(
+                  `[HISTORY DEBUG] After applying history - Editor has ${requests.length} requests, ${undoneRequests.length} undone`,
+                );
 
                 // Trigger history UI update by calling the update function directly
+                console.log(
+                  "[HISTORY DEBUG] Calling updateHistoryContainer...",
+                );
                 setTimeout(async () => {
                   await updateHistoryContainer();
+                  console.log(
+                    "[HISTORY DEBUG] updateHistoryContainer completed",
+                  );
                 }, 100);
               } catch (error) {
-                console.error("Error applying edit history:", error);
+                console.error("[HISTORY DEBUG] Error applying edit history:", error);
               }
             } else {
+              console.log(
+                "[HISTORY DEBUG] No edit history to apply (empty or null)",
+              );
               loadedHistoryData = null;
             }
 
@@ -384,7 +401,8 @@ export default function BIMEditPage() {
           };
 
           // Create the editor panel
-          const { panel, updatePanel, updateHistoryContainer } = createEditorPanel(editorConfig);
+          const { panel, updatePanel, updateHistoryContainer } =
+            createEditorPanel(editorConfig);
 
           // Store reference for cleanup
           editorPanel = panel;

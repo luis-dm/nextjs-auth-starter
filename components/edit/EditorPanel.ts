@@ -163,20 +163,31 @@ export const createEditorPanel = (config: EditorPanelConfig) => {
   let selectedRequestIndex: number | null = null;
 
   const updateHistoryContainerInternal = async () => {
+    console.log("[HISTORY PANEL] updateHistoryContainerInternal called");
     const historyContainer = document.getElementById("history-container");
-    if (!historyContainer) return;
+    if (!historyContainer) {
+      console.log("[HISTORY PANEL] history-container element not found!");
+      return;
+    }
 
     try {
       // Get current edit requests from the editor
       // After applying loaded history on load, this already includes ALL edits
+      console.log("[HISTORY PANEL] Getting model requests...");
       const { requests, undoneRequests } =
         await fragments.editor.getModelRequests(model.modelId);
+
+      console.log(
+        `[HISTORY PANEL] Got ${requests.length} requests, ${undoneRequests.length} undone`,
+      );
+      console.log("[HISTORY PANEL] Requests:", requests);
 
       const allRequests = [...requests, ...undoneRequests];
 
       historyContainer.innerHTML = "";
 
       if (allRequests.length === 0) {
+        console.log("[HISTORY PANEL] No requests found - showing empty state");
         historyContainer.innerHTML = `
           <div style="padding: 1rem; text-align: center; color: #6b7280; font-size: 0.875rem;">
             No edit history yet.<br>
@@ -185,6 +196,10 @@ export const createEditorPanel = (config: EditorPanelConfig) => {
         `;
         return;
       }
+
+      console.log(
+        `[HISTORY PANEL] Rendering ${allRequests.length} history items`,
+      );
 
       for (let i = 0; i < allRequests.length; i++) {
         const request = allRequests[i];
