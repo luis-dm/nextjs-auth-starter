@@ -189,9 +189,32 @@ export default function BIMEditPage() {
             initializeEditorUI();
 
             // Store loaded history data globally so the history panel can access it
-            if (editHistoryData) {
+            if (editHistoryData && editHistoryData.requests.length > 0) {
               loadedHistoryData = editHistoryData;
-              console.log("Previous edit history available for display");
+              console.log(
+                `Applying ${editHistoryData.requests.length} edit history requests to model...`,
+              );
+
+              // Apply the loaded history to the model (this makes previous edits visible)
+              try {
+                await fragments.editor.edit(
+                  model.modelId,
+                  editHistoryData.requests,
+                  {
+                    removeRedo: false,
+                  },
+                );
+                console.log("Edit history applied successfully");
+
+                // Trigger history UI update
+                setTimeout(() => {
+                  fragments.editor.onEdit.trigger();
+                }, 100);
+              } catch (error) {
+                console.error("Error applying edit history:", error);
+              }
+            } else {
+              loadedHistoryData = null;
             }
 
             console.log(`Model "${fileName}" loaded successfully`);
@@ -275,35 +298,23 @@ export default function BIMEditPage() {
             try {
               console.log("Starting save process...");
 
-              // 1. Get edit history (including both loaded and new edits)
+              // 1. Get current edit requests from the editor
+              // After applying loaded history, this includes BOTH old and new edits
               let historyBase64 = null;
-              let allRequests: any[] = [];
-              let allUndoneRequests: any[] = [];
-              
+
               try {
-                // Get current session's edit requests
                 const { requests, undoneRequests } =
                   await fragments.editor.getModelRequests(model.modelId);
 
-                // Combine with loaded history from previous sessions
-                allRequests = [
-                  ...(loadedHistoryData?.requests ?? []),
-                  ...requests,
-                ];
-                allUndoneRequests = [
-                  ...(loadedHistoryData?.undoneRequests ?? []),
-                  ...undoneRequests,
-                ];
-
-                if (allRequests.length > 0 || allUndoneRequests.length > 0) {
-                  // Serialize combined requests as JSON
+                if (requests.length > 0 || undoneRequests.length > 0) {
+                  // Serialize requests as JSON
                   const historyJson = JSON.stringify({
-                    requests: allRequests,
-                    undoneRequests: allUndoneRequests,
+                    requests,
+                    undoneRequests,
                   });
                   historyBase64 = btoa(historyJson);
                   console.log(
-                    `Combined edit history: ${allRequests.length} requests (${loadedHistoryData?.requests.length ?? 0} previous + ${requests.length} new), ${allUndoneRequests.length} undone`,
+                    `Edit history captured: ${requests.length} requests, ${undoneRequests.length} undone`,
                   );
                 } else {
                   console.log("No edit history found - no edits made");
@@ -316,7 +327,7 @@ export default function BIMEditPage() {
               await fragments.editor.save(model.modelId);
               console.log("Edits baked into model");
 
-              // 3. Get the buffer AFTER saving (this has ALL edits baked in - previous + new)
+              // 3. Get the buffer AFTER saving (this has ALL edits baked in)
               const currentStateBuffer = await model.getBuffer();
               const currentStateBytes = new Uint8Array(currentStateBuffer);
               const currentStateBinaryString = currentStateBytes.reduce(
@@ -326,12 +337,11 @@ export default function BIMEditPage() {
               const currentStateBase64 = btoa(currentStateBinaryString);
 
               console.log(
-                `Current state fragment: ${currentStateBase64.length} bytes (base64) - this becomes the new 'original'`,
+                `Current state fragment: ${currentStateBase64.length} bytes (base64)`,
               );
 
-              // 4. Save both as the same (current state with all edits baked in)
-              // The "original" for next session is the current fully-edited state
-              // The "rendered" for viewer is the same (no difference needed)
+              // 4. Save to database
+              // Both original and rendered are the same (current state with all edits baked in)
               const response = await fetch(`/api/facilities/${facilityId}`, {
                 method: "PATCH",
                 headers: {
@@ -340,7 +350,7 @@ export default function BIMEditPage() {
                 body: JSON.stringify({
                   fragmentData: currentStateBase64, // Current state becomes new original
                   renderedFragmentData: currentStateBase64, // Same for rendered
-                  editHistory: historyBase64, // Combined history for display
+                  editHistory: historyBase64, // All edit history
                 }),
               });
 

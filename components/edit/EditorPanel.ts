@@ -167,18 +167,12 @@ export const createEditorPanel = (config: EditorPanelConfig) => {
     if (!historyContainer) return;
 
     try {
+      // Get current edit requests from the editor
+      // After applying loaded history on load, this already includes ALL edits
       const { requests, undoneRequests } =
         await fragments.editor.getModelRequests(model.modelId);
 
-      // Merge loaded history (previous session) with current session history
-      const previousRequests = loadedHistoryData?.requests ?? [];
-      const previousUndoneRequests = loadedHistoryData?.undoneRequests ?? [];
-      const allRequests = [
-        ...previousRequests,
-        ...previousUndoneRequests,
-        ...requests,
-        ...undoneRequests,
-      ];
+      const allRequests = [...requests, ...undoneRequests];
 
       historyContainer.innerHTML = "";
 
