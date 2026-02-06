@@ -226,7 +226,8 @@ export default function BIMEditPage() {
           const exportModel = async () => {
             // Create loading overlay matching viewer style
             const loadingOverlay = document.createElement("div");
-            loadingOverlay.className = "absolute inset-0 z-50 flex items-center justify-center";
+            loadingOverlay.className =
+              "absolute inset-0 z-50 flex items-center justify-center";
             loadingOverlay.style.cssText = `
               position: fixed;
               top: 0;
@@ -239,7 +240,7 @@ export default function BIMEditPage() {
               justify-content: center;
               z-index: 9999;
             `;
-            
+
             const card = document.createElement("div");
             card.style.cssText = `
               background: white;
@@ -249,7 +250,7 @@ export default function BIMEditPage() {
               flex-direction: column;
               align-items: center;
             `;
-            
+
             const spinner = document.createElement("div");
             spinner.style.cssText = `
               width: 3rem;
@@ -260,7 +261,7 @@ export default function BIMEditPage() {
               animation: spin 1s linear infinite;
               margin-bottom: 1rem;
             `;
-            
+
             const message = document.createElement("p");
             message.style.cssText = `
               color: #374151;
@@ -268,15 +269,15 @@ export default function BIMEditPage() {
               margin: 0;
             `;
             message.textContent = "Saving model...";
-            
+
             card.appendChild(spinner);
             card.appendChild(message);
             loadingOverlay.appendChild(card);
-            
+
             // Add spinner animation if not already present
-            if (!document.getElementById('spinner-animation')) {
+            if (!document.getElementById("spinner-animation")) {
               const style = document.createElement("style");
-              style.id = 'spinner-animation';
+              style.id = "spinner-animation";
               style.textContent = `
                 @keyframes spin {
                   to { transform: rotate(360deg); }
@@ -285,7 +286,7 @@ export default function BIMEditPage() {
               document.head.appendChild(style);
             }
             document.body.appendChild(loadingOverlay);
-            
+
             try {
               // Get edit history BEFORE saving (save clears the history)
               const { requests, undoneRequests } =
@@ -325,9 +326,7 @@ export default function BIMEditPage() {
                 throw new Error("Failed to save fragment data");
               }
 
-              console.log(
-                "Fragment data and edit history saved successfully",
-              );
+              console.log("Fragment data and edit history saved successfully");
 
               // Navigate back to facility dashboard
               window.location.href = "/org/facility";
@@ -387,7 +386,9 @@ export default function BIMEditPage() {
             }
 
             // Fetch fragment from volume API
-            const fragmentResponse = await fetch(`/api/fragments/${facilityId}`);
+            const fragmentResponse = await fetch(
+              `/api/fragments/${facilityId}`,
+            );
             if (!fragmentResponse.ok) {
               throw new Error("Failed to fetch fragment from volume");
             }
@@ -405,7 +406,7 @@ export default function BIMEditPage() {
               data.ifcFileName || "facility_model",
               historyBuffer,
             );
-            
+
             // Hide loading overlay after model is loaded
             setIsLoading(false);
           } catch (error) {

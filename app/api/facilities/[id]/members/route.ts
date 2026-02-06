@@ -51,6 +51,35 @@ export async function PATCH(
       );
     }
 
+    // Get the member being updated to check their current role
+    const memberToUpdate = await prisma.facilityMember.findUnique({
+      where: { id: memberId },
+    });
+
+    if (!memberToUpdate) {
+      return NextResponse.json(
+        { error: "Member not found" },
+        { status: 404 },
+      );
+    }
+
+    // Prevent removing the last manager
+    if (memberToUpdate.role === "MANAGER" && role === "MEMBER") {
+      const managerCount = await prisma.facilityMember.count({
+        where: {
+          facilityId,
+          role: "MANAGER",
+        },
+      });
+
+      if (managerCount <= 1) {
+        return NextResponse.json(
+          { error: "Cannot remove the last manager. There must be at least one manager." },
+          { status: 400 },
+        );
+      }
+    }
+
     // Update member role
     const updatedMember = await prisma.facilityMember.update({
       where: { id: memberId },
