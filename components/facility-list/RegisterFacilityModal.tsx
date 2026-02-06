@@ -360,9 +360,7 @@ export default function RegisterFacilityModal({
                   <p className="text-sm text-gray-600">
                     Click to upload IFC file
                   </p>
-                  <p className="text-xs text-gray-500 mt-1">
-                    Required
-                  </p>
+                  <p className="text-xs text-gray-500 mt-1">Required</p>
                 </div>
               )}
             </div>
@@ -381,7 +379,10 @@ export default function RegisterFacilityModal({
             <button
               type="submit"
               disabled={
-                !facilityName.trim() || !selectedFile || isConverting || isUploadingInternal
+                !facilityName.trim() ||
+                !selectedFile ||
+                isConverting ||
+                isUploadingInternal
               }
               className="px-4 py-2 text-sm font-medium text-white bg-gray-800 rounded-md hover:bg-gray-500 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
             >
