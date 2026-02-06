@@ -157,7 +157,7 @@ export default function BIMEditPage() {
         const loadModelAndInitializeEditor = async (
           buffer: ArrayBuffer,
           fileName: string = "facility_model",
-          historyBuffer: ArrayBuffer | null = null,
+          editHistoryData: { requests: any[]; undoneRequests: any[] } | null = null,
         ) => {
           try {
             // Load the model
@@ -184,29 +184,9 @@ export default function BIMEditPage() {
             // Initialize the editor UI first
             initializeEditorUI();
 
-            // Load edit history into the editor (for display in panel only)
-            // The fragment already has all edits baked in from previous saves
-            if (historyBuffer) {
-              try {
-                // Load the history model with a unique ID
-                const historyModel = await fragments.load(historyBuffer, {
-                  modelId: `${model.modelId}_history`,
-                });
-
-                // Set it in the editor so the history panel can access it
-                fragments.editor.set(model.modelId, historyModel);
-                console.log(
-                  "Edit history loaded into editor for panel display",
-                );
-                
-                // Don't add to scene - history is for display only
-                if (historyModel.object.parent) {
-                  world.scene.three.remove(historyModel.object);
-                }
-              } catch (error) {
-                console.error("Error loading edit history into editor:", error);
-              }
-            }
+            // Note: The fragment already has all previous edits baked into the geometry
+            // The editor starts with a fresh history for any new edits made in this session
+            // Previous edit history is saved in the database for audit purposes only
 
             console.log(`Model "${fileName}" loaded successfully`);
           } catch (error) {
@@ -289,25 +269,21 @@ export default function BIMEditPage() {
             try {
               console.log("Starting save process...");
 
-              // Get edit history BEFORE saving (save() may clear it)
+              // Get edit requests BEFORE saving (save() may clear them)
               let historyBase64 = null;
               try {
-                const historyModel = fragments.editor.models.list.get(
-                  model.modelId,
-                );
-                if (historyModel) {
-                  const historyBuffer = await historyModel.getBuffer();
-                  const historyBytes = new Uint8Array(historyBuffer);
-                  const historyBinaryString = historyBytes.reduce(
-                    (acc, byte) => acc + String.fromCharCode(byte),
-                    "",
-                  );
-                  historyBase64 = btoa(historyBinaryString);
+                const { requests, undoneRequests } =
+                  await fragments.editor.getModelRequests(model.modelId);
+                
+                if (requests.length > 0 || undoneRequests.length > 0) {
+                  // Serialize requests as JSON
+                  const historyJson = JSON.stringify({ requests, undoneRequests });
+                  historyBase64 = btoa(historyJson);
                   console.log(
-                    `Edit history captured: ${historyBase64.length} bytes (base64)`,
+                    `Edit history captured: ${requests.length} requests, ${undoneRequests.length} undone`,
                   );
                 } else {
-                  console.log("No history model found - no edits made yet");
+                  console.log("No edit history found - no edits made yet");
                 }
               } catch (error) {
                 console.error("Error getting edit history:", error);
@@ -419,32 +395,30 @@ export default function BIMEditPage() {
             const buffer = await fragmentResponse.arrayBuffer();
 
             // Load edit history from database (for display in panel only)
-            let historyBuffer: ArrayBuffer | null = null;
+            let editHistoryData: { requests: any[]; undoneRequests: any[] } | null = null;
             if (data.editHistory) {
               try {
                 // editHistory from API is an object with type: 'Buffer' and data: number[]
-                let historyBytes: Uint8Array;
+                let historyJson: string;
 
                 if (
                   data.editHistory.type === "Buffer" &&
                   Array.isArray(data.editHistory.data)
                 ) {
-                  // Direct buffer data from API
-                  historyBytes = new Uint8Array(data.editHistory.data);
+                  // Convert buffer data to string
+                  const historyBytes = new Uint8Array(data.editHistory.data);
+                  const historyBase64 = String.fromCharCode(...historyBytes);
+                  historyJson = atob(historyBase64);
                 } else if (typeof data.editHistory === "string") {
                   // Base64 string
-                  const binaryString = atob(data.editHistory);
-                  historyBytes = new Uint8Array(binaryString.length);
-                  for (let i = 0; i < binaryString.length; i++) {
-                    historyBytes[i] = binaryString.charCodeAt(i);
-                  }
+                  historyJson = atob(data.editHistory);
                 } else {
                   throw new Error("Unknown editHistory format");
                 }
 
-                historyBuffer = historyBytes.buffer as ArrayBuffer;
+                editHistoryData = JSON.parse(historyJson);
                 console.log(
-                  `Edit history loaded from database: ${historyBytes.length} bytes`,
+                  `Edit history loaded: ${editHistoryData?.requests.length ?? 0} requests, ${editHistoryData?.undoneRequests.length ?? 0} undone`,
                 );
               } catch (error) {
                 console.error("Error loading edit history:", error);
@@ -454,7 +428,7 @@ export default function BIMEditPage() {
             await loadModelAndInitializeEditor(
               buffer,
               data.ifcFileName || "facility_model",
-              historyBuffer,
+              editHistoryData,
             );
 
             // Hide loading overlay after model is loaded
