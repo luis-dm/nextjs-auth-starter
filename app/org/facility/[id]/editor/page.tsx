@@ -503,10 +503,9 @@ export default function BIMEditPage() {
                   historyJson = atob(data.editHistory);
                 } else if (Array.isArray(data.editHistory)) {
                   console.log("[HISTORY DEBUG] Parsing as direct byte array");
-                  // Direct byte array
+                  // Direct byte array - convert bytes directly to string (no base64 decoding needed)
                   const historyBytes = new Uint8Array(data.editHistory);
-                  const historyBase64 = String.fromCharCode(...historyBytes);
-                  historyJson = atob(historyBase64);
+                  historyJson = new TextDecoder().decode(historyBytes);
                 } else {
                   console.error(
                     "[HISTORY DEBUG] Unknown format, data:",
