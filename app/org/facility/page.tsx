@@ -30,7 +30,7 @@ export const dynamic = "force-dynamic";
 function FacilityList() {
   const searchParams = useSearchParams();
   const page = parseInt(searchParams.get("page") || "1");
-  const itemsPerPage = 8;
+  const itemsPerPage = 7;
 
   const [facilities, setFacilities] = useState<Facility[]>([]);
   const [organization, setOrganization] = useState<Organization | null>(null);
@@ -49,7 +49,7 @@ function FacilityList() {
         // Fetch organizations and facilities in parallel
         const [orgsResponse, facilitiesResponse] = await Promise.all([
           fetch("/api/organizations"),
-          fetch("/api/facilities"),
+          fetch(`/api/facilities?page=${page}&limit=${itemsPerPage}`),
         ]);
 
         if (orgsResponse.ok) {
@@ -61,9 +61,7 @@ function FacilityList() {
           const facilitiesData = await facilitiesResponse.json();
           setFacilities(facilitiesData.facilities || []);
           setOrganization(facilitiesData.organization || null);
-          setTotalPages(
-            Math.ceil((facilitiesData.facilities?.length || 0) / itemsPerPage),
-          );
+          setTotalPages(facilitiesData.totalPages || 1);
         }
       } catch (error) {
         console.error("Error fetching data:", error);
@@ -73,7 +71,7 @@ function FacilityList() {
     };
 
     fetchData();
-  }, [itemsPerPage]);
+  }, [page, itemsPerPage]);
 
   // Fetch facilities when organization changes
   useEffect(() => {
@@ -83,14 +81,12 @@ function FacilityList() {
       setIsLoading(true);
       try {
         const response = await fetch(
-          `/api/facilities?organizationId=${organization.id}`,
+          `/api/facilities?organizationId=${organization.id}&page=${page}&limit=${itemsPerPage}`,
         );
         if (response.ok) {
           const data = await response.json();
           setFacilities(data.facilities || []);
-          setTotalPages(
-            Math.ceil((data.facilities?.length || 0) / itemsPerPage),
-          );
+          setTotalPages(data.totalPages || 1);
         }
       } catch (error) {
         console.error("Error fetching facilities:", error);
@@ -100,32 +96,10 @@ function FacilityList() {
     };
 
     fetchFacilitiesForOrg();
-  }, [organization?.id, itemsPerPage]);
+  }, [organization?.id, page, itemsPerPage]);
 
-  // Sort facilities based on the selected option
-  const sortedFacilities = [...facilities].sort((a, b) => {
-    switch (sortOption) {
-      case "name-asc":
-        return a.name.localeCompare(b.name);
-      case "name-desc":
-        return b.name.localeCompare(a.name);
-      case "date-asc":
-        return (
-          new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
-        );
-      case "date-desc":
-        return (
-          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-        );
-      default:
-        return 0;
-    }
-  });
-
-  // Calculate paginated facilities
-  const startIndex = (page - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  const paginatedFacilities = sortedFacilities.slice(startIndex, endIndex);
+  // Facilities are already paginated and sorted from server
+  const paginatedFacilities = facilities;
 
   const handleRegisterFacility = async (
     name: string,

@@ -10,9 +10,11 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Get organization ID from query params
+    // Get organization ID and pagination params from query params
     const { searchParams } = new URL(req.url);
     const organizationId = searchParams.get("organizationId");
+    const page = parseInt(searchParams.get("page") || "1");
+    const limit = parseInt(searchParams.get("limit") || "7");
 
     // Get the user's organizations
     const user = await prisma.user.findUnique({
@@ -30,6 +32,9 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({
         facilities: [],
         organization: null,
+        totalCount: 0,
+        totalPages: 0,
+        currentPage: page,
       });
     }
 
@@ -51,15 +56,29 @@ export async function GET(req: NextRequest) {
       organization = user.organizationMembers[0].organization;
     }
 
-    // Fetch facilities for the selected organization
+    // Calculate pagination
+    const skip = (page - 1) * limit;
+
+    // Get total count
+    const totalCount = await prisma.facility.count({
+      where: {
+        organizationId: organization.id,
+      },
+    });
+
+    // Fetch facilities for the selected organization with pagination
     const facilities = await prisma.facility.findMany({
       where: {
         organizationId: organization.id,
       },
+      skip,
+      take: limit,
       orderBy: {
         createdAt: "desc",
       },
     });
+
+    const totalPages = Math.ceil(totalCount / limit);
 
     return NextResponse.json({
       facilities,
@@ -67,6 +86,9 @@ export async function GET(req: NextRequest) {
         id: organization.id,
         name: organization.name,
       },
+      totalCount,
+      totalPages,
+      currentPage: page,
     });
   } catch (error) {
     console.error("Error fetching facilities:", error);
