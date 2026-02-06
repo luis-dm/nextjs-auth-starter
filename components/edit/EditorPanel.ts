@@ -8,6 +8,7 @@ export interface EditorPanelConfig {
   model: any;
   FRAGS: any;
   updateHistoryContainer: () => Promise<void>;
+  loadedHistoryData?: { requests: any[]; undoneRequests: any[] } | null;
 }
 
 export const createEditorPanel = (config: EditorPanelConfig) => {
@@ -19,6 +20,7 @@ export const createEditorPanel = (config: EditorPanelConfig) => {
     model,
     FRAGS,
     updateHistoryContainer,
+    loadedHistoryData,
   } = config;
 
   // Create the properties table and store reference to generalEditor
@@ -167,7 +169,11 @@ export const createEditorPanel = (config: EditorPanelConfig) => {
     try {
       const { requests, undoneRequests } =
         await fragments.editor.getModelRequests(model.modelId);
-      const allRequests = [...requests, ...undoneRequests];
+      
+      // Merge loaded history (previous session) with current session history
+      const previousRequests = loadedHistoryData?.requests ?? [];
+      const previousUndoneRequests = loadedHistoryData?.undoneRequests ?? [];
+      const allRequests = [...previousRequests, ...previousUndoneRequests, ...requests, ...undoneRequests];
 
       historyContainer.innerHTML = "";
 

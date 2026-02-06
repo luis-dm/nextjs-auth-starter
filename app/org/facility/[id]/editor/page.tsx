@@ -28,6 +28,7 @@ let world: any;
 let fragments: any;
 let model: any;
 let generalEditor: any;
+let loadedHistoryData: { requests: any[]; undoneRequests: any[] } | null = null;
 
 // TransformControls import
 const loadTransformControls = async () => {
@@ -157,7 +158,10 @@ export default function BIMEditPage() {
         const loadModelAndInitializeEditor = async (
           buffer: ArrayBuffer,
           fileName: string = "facility_model",
-          editHistoryData: { requests: any[]; undoneRequests: any[] } | null = null,
+          editHistoryData: {
+            requests: any[];
+            undoneRequests: any[];
+          } | null = null,
         ) => {
           try {
             // Load the model
@@ -184,9 +188,11 @@ export default function BIMEditPage() {
             // Initialize the editor UI first
             initializeEditorUI();
 
-            // Note: The fragment already has all previous edits baked into the geometry
-            // The editor starts with a fresh history for any new edits made in this session
-            // Previous edit history is saved in the database for audit purposes only
+            // Store loaded history data globally so the history panel can access it
+            if (editHistoryData) {
+              loadedHistoryData = editHistoryData;
+              console.log("Previous edit history available for display");
+            }
 
             console.log(`Model "${fileName}" loaded successfully`);
           } catch (error) {
@@ -269,15 +275,30 @@ export default function BIMEditPage() {
             try {
               console.log("Starting save process...");
 
-              // Get edit requests BEFORE saving (save() may clear them)
+              // 1. Get ORIGINAL fragment buffer (before baking edits)
+              const originalBuffer = await model.getBuffer();
+              const originalBytes = new Uint8Array(originalBuffer);
+              const originalBinaryString = originalBytes.reduce(
+                (acc, byte) => acc + String.fromCharCode(byte),
+                "",
+              );
+              const originalBase64 = btoa(originalBinaryString);
+              console.log(
+                `Original fragment: ${originalBase64.length} bytes (base64)`,
+              );
+
+              // 2. Get edit history BEFORE saving (save() may clear it)
               let historyBase64 = null;
               try {
                 const { requests, undoneRequests } =
                   await fragments.editor.getModelRequests(model.modelId);
-                
+
                 if (requests.length > 0 || undoneRequests.length > 0) {
                   // Serialize requests as JSON
-                  const historyJson = JSON.stringify({ requests, undoneRequests });
+                  const historyJson = JSON.stringify({
+                    requests,
+                    undoneRequests,
+                  });
                   historyBase64 = btoa(historyJson);
                   console.log(
                     `Edit history captured: ${requests.length} requests, ${undoneRequests.length} undone`,
@@ -289,34 +310,32 @@ export default function BIMEditPage() {
                 console.error("Error getting edit history:", error);
               }
 
-              // Now save the edits to the model (this bakes edits into the geometry)
+              // 3. Now save the edits to the model (this bakes edits into the geometry)
               await fragments.editor.save(model.modelId);
               console.log("Edits saved to model");
 
-              // Get the buffer AFTER saving (now contains baked-in edits)
-              const exportedBuffer = await model.getBuffer();
-              const exportedBytes = new Uint8Array(exportedBuffer);
-
-              // Convert to base64 (much smaller than JSON array)
-              const binaryString = exportedBytes.reduce(
+              // 4. Get RENDERED fragment buffer (after baking edits)
+              const renderedBuffer = await model.getBuffer();
+              const renderedBytes = new Uint8Array(renderedBuffer);
+              const renderedBinaryString = renderedBytes.reduce(
                 (acc, byte) => acc + String.fromCharCode(byte),
                 "",
               );
-              const fragmentBase64 = btoa(binaryString);
-
+              const renderedBase64 = btoa(renderedBinaryString);
               console.log(
-                `Uploading fragment: ${fragmentBase64.length} bytes (base64)`,
+                `Rendered fragment: ${renderedBase64.length} bytes (base64)`,
               );
 
-              // Save to volume via API
+              // 5. Save both versions to the API
               const response = await fetch(`/api/facilities/${facilityId}`, {
                 method: "PATCH",
                 headers: {
                   "Content-Type": "application/json",
                 },
                 body: JSON.stringify({
-                  fragmentData: fragmentBase64,
-                  editHistory: historyBase64, // Save history for record-keeping
+                  fragmentData: originalBase64, // Original for editor
+                  renderedFragmentData: renderedBase64, // Rendered for viewer
+                  editHistory: historyBase64, // History for audit/display
                 }),
               });
 
@@ -324,7 +343,9 @@ export default function BIMEditPage() {
                 throw new Error("Failed to save fragment data");
               }
 
-              console.log("Fragment data and edit history saved successfully");
+              console.log(
+                "Original fragment, rendered fragment, and edit history saved successfully",
+              );
 
               // Navigate back to facility dashboard
               window.location.href = "/org/facility";
@@ -344,6 +365,7 @@ export default function BIMEditPage() {
             model,
             FRAGS,
             updateHistoryContainer: async () => {}, // Will be replaced by the component
+            loadedHistoryData, // Pass the loaded history from previous session
           };
 
           // Create the editor panel
@@ -383,10 +405,10 @@ export default function BIMEditPage() {
               return;
             }
 
-            // Fetch fragment from volume API with cache-busting
+            // Fetch ORIGINAL fragment from volume API (for editor to apply history)
             const timestamp = Date.now();
             const fragmentResponse = await fetch(
-              `/api/fragments/${facilityId}?t=${timestamp}`,
+              `/api/fragments/${facilityId}?type=original&t=${timestamp}`,
             );
             if (!fragmentResponse.ok) {
               throw new Error("Failed to fetch fragment from volume");
@@ -395,7 +417,10 @@ export default function BIMEditPage() {
             const buffer = await fragmentResponse.arrayBuffer();
 
             // Load edit history from database (for display in panel only)
-            let editHistoryData: { requests: any[]; undoneRequests: any[] } | null = null;
+            let editHistoryData: {
+              requests: any[];
+              undoneRequests: any[];
+            } | null = null;
             if (data.editHistory) {
               try {
                 // editHistory from API is an object with type: 'Buffer' and data: number[]

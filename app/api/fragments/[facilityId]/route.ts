@@ -16,6 +16,8 @@ export async function GET(
     }
 
     const { facilityId } = await params;
+    const { searchParams } = new URL(req.url);
+    const type = searchParams.get("type") || "rendered"; // Default to rendered for viewer
 
     // Get the facility and verify user has access
     const user = await prisma.user.findUnique({
@@ -38,10 +40,16 @@ export async function GET(
     // Get the facility to find the fragment path
     const facility = await prisma.facility.findUnique({
       where: { id: facilityId },
-      select: { fragmentPath: true },
+      select: { fragmentPath: true, renderedFragmentPath: true },
     });
 
-    if (!facility?.fragmentPath) {
+    const fragmentPath =
+      type === "original" ? facility?.fragmentPath : facility?.renderedFragmentPath;
+
+    // Fall back to original if rendered doesn't exist (backward compatibility)
+    const usedPath = fragmentPath || facility?.fragmentPath;
+
+    if (!usedPath) {
       return NextResponse.json(
         { error: "No fragment file found for this facility" },
         { status: 404 },
@@ -53,7 +61,14 @@ export async function GET(
       process.env.BIM_DATA_PATH || "./public/bim_data",
       "fragments",
     );
-    const fragmentFilePath = path.join(fragmentsDir, `${facilityId}.frag`);
+    const filename =
+      type === "original" ? `${facilityId}.frag` : `${facilityId}_rendered.frag`;
+    
+    // Fall back to original filename if rendered doesn't exist
+    let fragmentFilePath = path.join(fragmentsDir, filename);
+    if (!fs.existsSync(fragmentFilePath)) {
+      fragmentFilePath = path.join(fragmentsDir, `${facilityId}.frag`);
+    }
 
     if (!fs.existsSync(fragmentFilePath)) {
       return NextResponse.json(

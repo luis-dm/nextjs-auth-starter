@@ -198,11 +198,11 @@ export default function ViewerPage() {
           }
 
           if (facility.fragmentPath) {
-            // Fetch fragment from volume API with cache-busting
-            console.log("Fetching fragment from volume...");
+            // Fetch RENDERED fragment from volume API (viewer shows baked edits)
+            console.log("Fetching rendered fragment from volume...");
             const timestamp = Date.now();
             const fragmentResponse = await fetch(
-              `/api/fragments/${facilityId}?t=${timestamp}`,
+              `/api/fragments/${facilityId}?type=rendered&t=${timestamp}`,
             );
 
             if (fragmentResponse.ok) {

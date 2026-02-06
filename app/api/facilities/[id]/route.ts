@@ -109,32 +109,43 @@ export async function PATCH(
     }
 
     // Update fragment data if provided
-    if (body.fragmentData || body.editHistory) {
+    if (body.fragmentData || body.renderedFragmentData || body.editHistory) {
       const updateData: any = {};
+      const fragmentsDir = path.join(
+        process.env.BIM_DATA_PATH || "./public/bim_data",
+        "fragments",
+      );
 
-      // Save fragment to volume if provided
+      if (!fs.existsSync(fragmentsDir)) {
+        fs.mkdirSync(fragmentsDir, { recursive: true });
+      }
+
+      // Save original fragment (for editor) if provided
       if (body.fragmentData) {
-        const fragmentsDir = path.join(
-          process.env.BIM_DATA_PATH || "./public/bim_data",
-          "fragments",
-        );
-
-        if (!fs.existsSync(fragmentsDir)) {
-          fs.mkdirSync(fragmentsDir, { recursive: true });
-        }
-
         const fragmentFilePath = path.join(fragmentsDir, `${id}.frag`);
-
-        // Convert base64 to buffer
         const fragmentBuffer = Buffer.from(body.fragmentData, "base64");
         console.log(
-          `[Facility PATCH] Writing ${fragmentBuffer.length} bytes to volume`,
+          `[Facility PATCH] Writing original fragment ${fragmentBuffer.length} bytes to volume`,
         );
-
         fs.writeFileSync(fragmentFilePath, fragmentBuffer);
-        console.log(
-          `[Facility PATCH] Fragment written: ${Date.now() - startTime}ms`,
+        updateData.fragmentPath = `/fragments/${id}.frag`;
+      }
+
+      // Save rendered fragment (for viewer) if provided
+      if (body.renderedFragmentData) {
+        const renderedFragmentFilePath = path.join(
+          fragmentsDir,
+          `${id}_rendered.frag`,
         );
+        const renderedFragmentBuffer = Buffer.from(
+          body.renderedFragmentData,
+          "base64",
+        );
+        console.log(
+          `[Facility PATCH] Writing rendered fragment ${renderedFragmentBuffer.length} bytes to volume`,
+        );
+        fs.writeFileSync(renderedFragmentFilePath, renderedFragmentBuffer);
+        updateData.renderedFragmentPath = `/fragments/${id}_rendered.frag`;
       }
 
       if (body.editHistory) {
@@ -156,7 +167,8 @@ export async function PATCH(
 
       return NextResponse.json({
         message: "Facility data updated successfully",
-        fragmentUpdated: !!body.fragmentData,
+        originalFragmentUpdated: !!body.fragmentData,
+        renderedFragmentUpdated: !!body.renderedFragmentData,
         historySize: updateData.editHistory?.length,
       });
     }
