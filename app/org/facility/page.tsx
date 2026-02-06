@@ -125,6 +125,7 @@ function FacilityList() {
           fragmentData: fragmentBase64,
           ifcFileName,
           ifcFileSize,
+          organizationId: organization?.id,
         }),
       });
 
@@ -150,9 +151,23 @@ function FacilityList() {
     }
   };
 
-  const handleDeleteFacility = (facilityId: string) => {
+  const handleDeleteFacility = async (facilityId: string) => {
+    // Optimistically remove from UI
     setFacilities((prev) => prev.filter((f) => f.id !== facilityId));
-    setTotalPages(Math.ceil((facilities.length - 1) / itemsPerPage));
+    
+    // Refetch to get accurate pagination
+    try {
+      const response = await fetch(
+        `/api/facilities?organizationId=${organization?.id}&page=${page}&limit=${itemsPerPage}`,
+      );
+      if (response.ok) {
+        const data = await response.json();
+        setFacilities(data.facilities || []);
+        setTotalPages(data.totalPages || 1);
+      }
+    } catch (error) {
+      console.error("Error refetching facilities:", error);
+    }
   };
 
   const handleEditFacility = (facilityId: string, facilityName: string) => {
