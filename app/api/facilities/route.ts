@@ -128,7 +128,7 @@ export async function POST(req: NextRequest) {
       body;
 
     console.log(
-      `[Facility POST] Body parsed: ${Date.now() - startTime}ms, fragmentData size: ${fragmentData ? fragmentData.length : 0} bytes`,
+      `[Facility POST] Body parsed: ${Date.now() - startTime}ms, fragmentData size: ${fragmentData ? fragmentData.length : 0} bytes (base64)`,
     );
 
     if (!name) {
@@ -201,7 +201,12 @@ export async function POST(req: NextRequest) {
       }
 
       const fragmentFilePath = path.join(fragmentsDir, `${facilityId}.frag`);
-      const fragmentBuffer = Buffer.from(fragmentData);
+      
+      // Convert base64 string back to buffer
+      const fragmentBuffer = Buffer.from(fragmentData, "base64");
+      console.log(
+        `[Facility POST] Writing ${fragmentBuffer.length} bytes to disk`,
+      );
 
       fs.writeFileSync(fragmentFilePath, fragmentBuffer);
       fragmentPath = `/fragments/${facilityId}.frag`;

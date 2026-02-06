@@ -108,14 +108,21 @@ function FacilityList() {
     ifcFileSize: number | null,
   ) => {
     try {
+      // Convert ArrayBuffer to base64 string (much smaller than array of numbers)
+      let fragmentBase64: string | null = null;
+      if (fragmentData) {
+        const uint8Array = new Uint8Array(fragmentData);
+        const binaryString = uint8Array.reduce((acc, byte) => acc + String.fromCharCode(byte), '');
+        fragmentBase64 = btoa(binaryString);
+        console.log(`Uploading facility (fragment size: ${fragmentBase64.length} bytes base64)`);
+      }
+
       const response = await fetch("/api/facilities", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name,
-          fragmentData: fragmentData
-            ? Array.from(new Uint8Array(fragmentData))
-            : null,
+          fragmentData: fragmentBase64,
           ifcFileName,
           ifcFileSize,
         }),
