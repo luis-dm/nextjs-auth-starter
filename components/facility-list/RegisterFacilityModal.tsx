@@ -218,16 +218,18 @@ export default function RegisterFacilityModal({
           alert("Error converting IFC file");
           setIsConverting(false);
           return;
-        } finally {
-          setIsConverting(false);
-          setConversionProgress(0);
         }
+        // Don't set isConverting to false here - let parent handle it
+        setConversionProgress(0);
       }
 
+      // Keep isConverting true until upload starts
       onSubmit(facilityName.trim(), fragmentData, ifcFileName, ifcFileSize);
-      // Reset form
+      
+      // Reset form only after parent confirms upload is done
       setFacilityName("");
       setSelectedFile(null);
+      setIsConverting(false);
       onClose();
     }
   };
