@@ -417,7 +417,7 @@ export function BCFPanel({
       if (selectedTopic.viewpoints.size > 0) {
         const OBC = await import("@thatopen/components");
         const viewpointsComponent = components.get(OBC.Viewpoints);
-        
+
         let viewpointIndex = 0;
         for (const viewpointGuid of selectedTopic.viewpoints) {
           viewpointIndex++;
@@ -466,7 +466,7 @@ export function BCFPanel({
       detailsContainer.appendChild(
         createSection("Comments", "majesticons:comment-line", comments),
       );
-      snapshotSections.forEach(section => {
+      snapshotSections.forEach((section) => {
         detailsContainer.appendChild(section);
       });
       detailsContainer.appendChild(
