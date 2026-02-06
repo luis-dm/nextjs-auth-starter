@@ -76,13 +76,13 @@ export default function FacilityCard({
     <Link href={`/org/facility/${id}/viewer`} className="group block">
       <div className="flex items-center gap-4 p-4 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 hover:shadow-md transition-all duration-200">
         {/* Icon/Thumbnail */}
-        <div className="shrink-0 w-10 h-10 bg-linear-to-br from-blue-100 to-blue-200 rounded flex items-center justify-center">
-          <Building2 className="w-6 h-6 text-blue-600" />
+        <div className="shrink-0 w-10 h-10 bg-linear-to-br from-gray-100 to-gray-200 rounded flex items-center justify-center">
+          <Building2 className="w-6 h-6 text-gray-700" />
         </div>
 
         {/* Content */}
         <div className="flex-1 min-w-0">
-          <h3 className="font-medium text-sm text-gray-900 group-hover:text-blue-600 transition-colors truncate">
+          <h3 className="font-medium text-sm text-gray-900 group-hover:text-gray-700 transition-colors truncate">
             {name}
           </h3>
           <p className="text-xs text-gray-500 truncate">
@@ -97,7 +97,7 @@ export default function FacilityCard({
         {onDetails && (
           <button
             onClick={handleDetails}
-            className="shrink-0 p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
+            className="shrink-0 p-2 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded transition-colors"
             title="View details"
           >
             <Info className="w-4 h-4" />
@@ -108,7 +108,7 @@ export default function FacilityCard({
         {onEdit && (
           <button
             onClick={handleEdit}
-            className="shrink-0 p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
+            className="shrink-0 p-2 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded transition-colors"
             title="Edit facility"
           >
             <Pencil className="w-4 h-4" />

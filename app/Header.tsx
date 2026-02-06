@@ -35,7 +35,7 @@ export default function Header() {
       <nav className="flex justify-between items-center">
         <Link
           href="/"
-          className="text-3xl font-bold text-gray-800 hover:text-blue-600 transition-colors"
+          className="text-3xl font-bold text-gray-800 hover:text-gray-500 transition-colors"
         >
           OpenBIM
         </Link>
@@ -78,7 +78,7 @@ export default function Header() {
           ) : (
             <Link
               href="/login"
-              className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition"
+              className="bg-gray-800 text-white px-4 py-2 rounded-lg hover:bg-gray-500 transition"
             >
               Sign In
             </Link>

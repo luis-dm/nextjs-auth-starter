@@ -55,7 +55,7 @@ export default function NewUser() {
         </div>
         <button
           type="submit"
-          className="w-full bg-blue-500 text-white py-3 rounded-lg hover:bg-blue-600"
+          className="w-full bg-gray-800 text-white py-3 rounded-lg hover:bg-gray-500"
         >
           Create User
         </button>

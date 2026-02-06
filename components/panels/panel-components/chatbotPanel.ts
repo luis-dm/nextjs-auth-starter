@@ -224,7 +224,7 @@ export const chatbotPanelTemplate: BUI.StatefullComponent<ChatbotPanelState> = (
             @keypress=${onKeyPress}
             rows="1"
           ></textarea>
-          <button class="rounded-lg bg-primary text-white px-4 py-3 border border-primary cursor-pointer text-sm font-normal transition-all duration-200 hover:bg-blue-700 hover:border-blue-700 disabled:opacity-50 disabled:cursor-not-allowed" @click=${handleSendMessage} ?disabled=${isLoading}>
+          <button class="rounded-lg bg-primary text-white px-4 py-3 border border-primary cursor-pointer text-sm font-normal transition-all duration-200 hover:bg-gray-700 hover:border-gray-700 disabled:opacity-50 disabled:cursor-not-allowed" @click=${handleSendMessage} ?disabled=${isLoading}>
             ${isLoading ? "Processing..." : "Send"}
           </button>
         </div>

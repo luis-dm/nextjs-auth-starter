@@ -568,7 +568,7 @@ export default function BIMEditPage() {
       {isLoading && (
         <div className="absolute inset-0 z-50 flex items-center justify-center bg-gray-900/50">
           <div className="bg-white rounded-lg p-6 flex flex-col items-center">
-            <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-4"></div>
+            <div className="w-12 h-12 border-4 border-gray-900 border-t-transparent rounded-full animate-spin mb-4"></div>
             <p className="text-gray-700 font-medium">Loading model...</p>
           </div>
         </div>

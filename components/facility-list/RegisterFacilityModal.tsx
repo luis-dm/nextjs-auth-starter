@@ -227,10 +227,15 @@ export default function RegisterFacilityModal({
       // Show upload state
       setIsConverting(false);
       setIsUploadingInternal(true);
-      
+
       // Wait for upload to complete
-      await onSubmit(facilityName.trim(), fragmentData, ifcFileName, ifcFileSize);
-      
+      await onSubmit(
+        facilityName.trim(),
+        fragmentData,
+        ifcFileName,
+        ifcFileSize,
+      );
+
       // Reset form after successful upload
       setFacilityName("");
       setSelectedFile(null);
@@ -264,9 +269,11 @@ export default function RegisterFacilityModal({
         {/* Conversion/Upload Loading Overlay */}
         {(isConverting || isUploadingInternal) && (
           <div className="absolute inset-0 bg-white/95 rounded-lg flex flex-col items-center justify-center z-10">
-            <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-4"></div>
+            <div className="w-16 h-16 border-4 border-gray-800 border-t-transparent rounded-full animate-spin mb-4"></div>
             <p className="text-gray-700 font-medium mb-2">
-              {isConverting ? "Converting IFC to Fragments..." : "Uploading facility..."}
+              {isConverting
+                ? "Converting IFC to Fragments..."
+                : "Uploading facility..."}
             </p>
             {isConverting && (
               <p className="text-sm text-gray-600">{conversionProgress}%</p>
@@ -302,7 +309,7 @@ export default function RegisterFacilityModal({
               id="facilityName"
               value={facilityName}
               onChange={(e) => setFacilityName(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-800 focus:border-transparent"
               placeholder="Enter facility name"
               required
             />
@@ -311,7 +318,7 @@ export default function RegisterFacilityModal({
           {/* IFC File Upload */}
           <div className="mb-6">
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              IFC File
+              IFC File <span className="text-red-500">*</span>
             </label>
             <div
               onClick={() => fileInputRef.current?.click()}
@@ -323,6 +330,7 @@ export default function RegisterFacilityModal({
                 accept=".ifc"
                 onChange={handleFileChange}
                 className="hidden"
+                required
               />
               <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
               {selectedFile ? (
@@ -353,7 +361,7 @@ export default function RegisterFacilityModal({
                     Click to upload IFC file
                   </p>
                   <p className="text-xs text-gray-500 mt-1">
-                    Optional - Can be added later
+                    Required
                   </p>
                 </div>
               )}
@@ -372,10 +380,16 @@ export default function RegisterFacilityModal({
             </button>
             <button
               type="submit"
-              disabled={!facilityName.trim() || isConverting || isUploadingInternal}
-              className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
+              disabled={
+                !facilityName.trim() || !selectedFile || isConverting || isUploadingInternal
+              }
+              className="px-4 py-2 text-sm font-medium text-white bg-gray-800 rounded-md hover:bg-gray-500 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
             >
-              {isConverting ? "Converting..." : isUploadingInternal ? "Uploading..." : "Register Facility"}
+              {isConverting
+                ? "Converting..."
+                : isUploadingInternal
+                  ? "Uploading..."
+                  : "Register Facility"}
             </button>
           </div>
         </form>

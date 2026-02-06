@@ -56,14 +56,14 @@ export default function OrganizationSelector({
                     }}
                     className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 transition-colors ${
                       org.id === currentOrganization?.id
-                        ? "bg-blue-50 text-blue-700 font-medium"
+                        ? "bg-gray-50 text-gray-700 font-medium"
                         : "text-gray-700"
                     }`}
                   >
                     <div className="flex items-center justify-between">
                       <span>{org.name}</span>
                       {org.id === currentOrganization?.id && (
-                        <span className="text-blue-600">✓</span>
+                        <span className="text-gray-600">✓</span>
                       )}
                     </div>
                   </button>
@@ -77,7 +77,7 @@ export default function OrganizationSelector({
       {/* Info Button */}
       <button
         onClick={onInfoClick}
-        className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
+        className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-50 rounded transition-colors"
         title="View organization details"
       >
         <Info className="w-4 h-4" />

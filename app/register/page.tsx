@@ -146,7 +146,7 @@ export default function RegisterPage() {
                   <span className="font-medium text-gray-900">{email}</span>
                   <button
                     onClick={() => copyToClipboard(link)}
-                    className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+                    className="text-sm text-gray-800 hover:text-gray-500 font-medium"
                   >
                     Copy Link
                   </button>
@@ -161,7 +161,7 @@ export default function RegisterPage() {
           <div className="text-center">
             <button
               onClick={handleContinue}
-              className="w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-hidden focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              className="w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-gray-800 hover:bg-gray-500 focus:outline-hidden focus:ring-2 focus:ring-offset-2 focus:ring-gray-900"
             >
               Continue to Dashboard
             </button>
@@ -194,7 +194,7 @@ export default function RegisterPage() {
                 name="name"
                 type="text"
                 required
-                className="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-hidden focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+                className="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-hidden focus:ring-gray-900 focus:border-gray-900 focus:z-10 sm:text-sm"
                 placeholder="John Doe"
               />
             </div>
@@ -210,7 +210,7 @@ export default function RegisterPage() {
                 name="email"
                 type="email"
                 required
-                className="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-hidden focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+                className="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-hidden focus:ring-gray-900 focus:border-gray-900 focus:z-10 sm:text-sm"
                 placeholder="john@company.com"
               />
             </div>
@@ -226,7 +226,7 @@ export default function RegisterPage() {
                 name="password"
                 type="password"
                 required
-                className="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-hidden focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+                className="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-hidden focus:ring-gray-900 focus:border-gray-900 focus:z-10 sm:text-sm"
                 placeholder="••••••••"
               />
             </div>
@@ -246,7 +246,7 @@ export default function RegisterPage() {
                 name="organizationName"
                 type="text"
                 required
-                className="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-hidden focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+                className="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-hidden focus:ring-gray-900 focus:border-gray-900 focus:z-10 sm:text-sm"
                 placeholder="Your Company"
               />
             </div>
@@ -263,7 +263,7 @@ export default function RegisterPage() {
                       type="email"
                       value={email}
                       onChange={(e) => updateEmail(index, e.target.value)}
-                      className="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-hidden focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                      className="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-hidden focus:ring-gray-900 focus:border-gray-900 sm:text-sm"
                       placeholder="teammate@company.com"
                     />
                     {memberEmails.length > 1 && (
@@ -281,7 +281,7 @@ export default function RegisterPage() {
               <button
                 type="button"
                 onClick={addEmailField}
-                className="mt-2 flex items-center gap-1 text-sm text-blue-600 hover:text-blue-700"
+                className="mt-2 flex items-center gap-1 text-sm text-gray-500 hover:text-gray-900"
               >
                 <Plus className="w-4 h-4" />
                 Add another member
@@ -296,14 +296,14 @@ export default function RegisterPage() {
           <div>
             <button
               type="submit"
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-hidden focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-gray-800 hover:bg-gray-500 focus:outline-hidden focus:ring-2 focus:ring-offset-2 focus:ring-gray-900"
             >
               Register
             </button>
           </div>
         </form>
         <div className="text-center">
-          <Link href="/login" className="text-blue-600 hover:underline">
+          <Link href="/login" className="text-gray-600 hover:underline">
             Already have an account? Sign in
           </Link>
         </div>

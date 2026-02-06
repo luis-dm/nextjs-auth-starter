@@ -73,7 +73,7 @@ export default function FacilitySorter({
               >
                 <span>{option.label}</span>
                 {currentSort === option.value && (
-                  <Check className="w-4 h-4 text-blue-600" />
+                  <Check className="w-4 h-4 text-gray-800" />
                 )}
               </button>
             ))}
