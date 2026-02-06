@@ -204,7 +204,7 @@ export default function ViewerPage() {
             const fragmentResponse = await fetch(
               `/api/fragments/${facilityId}?t=${timestamp}`,
             );
-            
+
             if (fragmentResponse.ok) {
               const fragmentBuffer = await fragmentResponse.arrayBuffer();
 

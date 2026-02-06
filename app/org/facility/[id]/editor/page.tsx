@@ -157,7 +157,6 @@ export default function BIMEditPage() {
         const loadModelAndInitializeEditor = async (
           buffer: ArrayBuffer,
           fileName: string = "facility_model",
-          historyData?: ArrayBuffer,
         ) => {
           try {
             // Load the model
@@ -183,31 +182,6 @@ export default function BIMEditPage() {
 
             // Initialize the editor UI first
             initializeEditorUI();
-
-            // Load edit history AFTER UI is initialized
-            if (historyData) {
-              try {
-                const historyJson = new TextDecoder().decode(historyData);
-                const { requests, undoneRequests } = JSON.parse(historyJson);
-
-                // Restore edit history
-                if (requests && requests.length > 0) {
-                  await fragments.editor.edit(model.modelId, requests, {
-                    removeRedo: false,
-                  });
-                  console.log(
-                    `Loaded ${requests.length} edit history requests`,
-                  );
-
-                  // Trigger history UI update after a short delay to ensure DOM is ready
-                  setTimeout(() => {
-                    fragments.editor.onEdit.trigger();
-                  }, 100);
-                }
-              } catch (error) {
-                console.warn("Error loading edit history:", error);
-              }
-            }
 
             console.log(`Model "${fileName}" loaded successfully`);
           } catch (error) {
@@ -288,22 +262,13 @@ export default function BIMEditPage() {
             document.body.appendChild(loadingOverlay);
 
             try {
-              // Get edit history BEFORE saving (save clears the history)
-              const { requests, undoneRequests } =
-                await fragments.editor.getModelRequests(model.modelId);
-              const historyData = {
-                requests,
-                undoneRequests,
-              };
-              const historyJson = JSON.stringify(historyData);
-              const historyBytes = new TextEncoder().encode(historyJson);
+              console.log("Starting save process...");
 
-              console.log("Edit history before save:", {
-                requestsCount: requests.length,
-                undoneRequestsCount: undoneRequests.length,
-              });
+              // Save the edits to the model FIRST (this bakes edits into the geometry)
+              await fragments.editor.save(model.modelId);
+              console.log("Edits saved to model");
 
-              // Get the buffer BEFORE saving (save might clear the model)
+              // Get the buffer AFTER saving (now contains baked-in edits)
               const exportedBuffer = await model.getBuffer();
               const exportedBytes = new Uint8Array(exportedBuffer);
 
@@ -314,20 +279,11 @@ export default function BIMEditPage() {
               );
               const fragmentBase64 = btoa(binaryString);
 
-              // Convert history to base64
-              const historyBinaryString = historyBytes.reduce(
-                (acc, byte) => acc + String.fromCharCode(byte),
-                "",
-              );
-              const historyBase64 = btoa(historyBinaryString);
-
               console.log(
                 `Uploading fragment: ${fragmentBase64.length} bytes (base64)`,
               );
 
-              // Save the edits to the model (this applies edits but might clear scene)
-              await fragments.editor.save(model.modelId);
-
+              // Don't save edit history - edits are now baked into the fragment
               // Save to volume via API
               const response = await fetch(`/api/facilities/${facilityId}`, {
                 method: "PATCH",
@@ -336,7 +292,7 @@ export default function BIMEditPage() {
                 },
                 body: JSON.stringify({
                   fragmentData: fragmentBase64,
-                  editHistory: historyBase64,
+                  editHistory: null, // Clear history since edits are baked in
                 }),
               });
 
@@ -414,16 +370,10 @@ export default function BIMEditPage() {
 
             const buffer = await fragmentResponse.arrayBuffer();
 
-            // Load edit history if available
-            let historyBuffer: ArrayBuffer | undefined;
-            if (data.editHistory) {
-              historyBuffer = new Uint8Array(data.editHistory).buffer;
-            }
-
+            // Don't load edit history - fragments now have edits baked in
             await loadModelAndInitializeEditor(
               buffer,
               data.ifcFileName || "facility_model",
-              historyBuffer,
             );
 
             // Hide loading overlay after model is loaded

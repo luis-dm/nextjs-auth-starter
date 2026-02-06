@@ -72,8 +72,8 @@ export async function GET(
         "Content-Disposition": `attachment; filename="${facilityId}.frag"`,
         "Content-Length": fragmentData.length.toString(),
         "Cache-Control": "no-cache, no-store, must-revalidate",
-        "Pragma": "no-cache",
-        "Expires": "0",
+        Pragma: "no-cache",
+        Expires: "0",
       },
     });
   } catch (error) {
