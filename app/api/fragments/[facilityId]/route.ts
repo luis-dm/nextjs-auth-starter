@@ -7,7 +7,7 @@ import path from "path";
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { facilityId: string } },
+  { params }: { params: Promise<{ facilityId: string }> },
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -15,7 +15,7 @@ export async function GET(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { facilityId } = params;
+    const { facilityId } = await params;
 
     // Get the facility and verify user has access
     const user = await prisma.user.findUnique({
