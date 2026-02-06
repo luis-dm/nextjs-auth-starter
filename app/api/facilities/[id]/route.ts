@@ -4,8 +4,6 @@ import { authOptions } from "@/auth";
 import prisma from "@/lib/prisma";
 import fs from "fs";
 import path from "path";
-import fs from "fs";
-import path from "path";
 
 export async function GET(
   req: NextRequest,
@@ -227,7 +225,7 @@ export async function DELETE(
     // Delete all facility files from volume
     const basePath = process.env.BIM_DATA_PATH || "./public/bim_data";
     const facilityDir = path.join(basePath, id);
-    
+
     if (fs.existsSync(facilityDir)) {
       console.log(`Deleting facility directory: ${facilityDir}`);
       fs.rmSync(facilityDir, { recursive: true, force: true });

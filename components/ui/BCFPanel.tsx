@@ -132,7 +132,7 @@ export function BCFPanel({
       console.log("Loading BCF from file system for facility:", facilityId);
       const response = await fetch(`/api/facilities/${facilityId}/bcf`);
       console.log("Load response:", response.ok, response.status);
-      
+
       if (!response.ok) {
         // Check if it's a 404 (no BCF file) or actual error
         if (response.status === 404) {
@@ -146,7 +146,7 @@ export function BCFPanel({
       // Get as ArrayBuffer directly (binary stream)
       const bcfBuffer = await response.arrayBuffer();
       console.log("BCF data received:", bcfBuffer.byteLength, "bytes");
-      
+
       if (bcfBuffer.byteLength > 0) {
         await bcfTopicsRef.current.load(new Uint8Array(bcfBuffer));
         console.log("BCF data loaded successfully");

@@ -71,8 +71,8 @@ export async function GET(
 
     return new NextResponse(bcfBuffer, {
       headers: {
-        'Content-Type': 'application/octet-stream',
-        'Content-Length': bcfBuffer.length.toString(),
+        "Content-Type": "application/octet-stream",
+        "Content-Length": bcfBuffer.length.toString(),
       },
     });
   } catch (error) {
