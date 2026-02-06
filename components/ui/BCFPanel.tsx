@@ -42,6 +42,8 @@ export function BCFPanel({
   const usersRef = useRef<any>(null);
   const hasLoadedBCFRef = useRef(false);
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const viewpointsRef = useRef<any>(null);
+  const [snapshotUpdateTrigger, setSnapshotUpdateTrigger] = useState(0);
 
   const saveBCFToDatabase = async () => {
     if (!bcfTopicsRef.current || !facilityId || isSaving) return;
@@ -234,6 +236,13 @@ export function BCFPanel({
         // Initialize Viewpoints
         const viewpoints = components.get(OBC.Viewpoints);
         viewpoints.world = world;
+        viewpointsRef.current = viewpoints;
+
+        // Listen for snapshot updates to refresh the details panel
+        viewpoints.list.onItemUpdated.add(() => {
+          // Trigger re-render of details panel when viewpoint is updated
+          setSnapshotUpdateTrigger(prev => prev + 1);
+        });
 
         bcfTopics.list.onItemSet.add(async ({ value: topic }: any) => {
           // Check if topic already has a viewpoint
@@ -439,12 +448,12 @@ export function BCFPanel({
       detailsContainer.appendChild(
         createSection("Information", "ph:info-bold", information),
       );
-      if (snapshotSection) {
-        detailsContainer.appendChild(snapshotSection);
-      }
       detailsContainer.appendChild(
         createSection("Comments", "majesticons:comment-line", comments),
       );
+      if (snapshotSection) {
+        detailsContainer.appendChild(snapshotSection);
+      }
       detailsContainer.appendChild(
         createSection("Viewpoints", "tabler:camera", viewpoints),
       );
@@ -459,7 +468,7 @@ export function BCFPanel({
     };
 
     renderTopicDetails();
-  }, [selectedTopic, components, world]);
+  }, [selectedTopic, components, world, snapshotUpdateTrigger]);
 
   const handleCreateTopic = () => {
     if (!topicFormRef.current) return;
