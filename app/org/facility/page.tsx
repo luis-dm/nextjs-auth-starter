@@ -6,6 +6,8 @@ import Link from "next/link";
 import FacilityCard from "@/components/facility-list/FacilityCard";
 import RegisterFacilityModal from "@/components/facility-list/RegisterFacilityModal";
 import FacilityDetailsModal from "@/components/facility-list/FacilityDetailsModal";
+import OrganizationSelector from "@/components/organization/OrganizationSelector";
+import OrganizationDetailsModal from "@/components/organization/OrganizationDetailsModal";
 import FacilitySorter, {
   SortOption,
 } from "@/components/facility-list/FacilitySorter";
@@ -36,11 +38,11 @@ function FacilityList() {
   const [facilities, setFacilities] = useState<Facility[]>([]);
   const [organization, setOrganization] = useState<Organization | null>(null);
   const [organizations, setOrganizations] = useState<Organization[]>([]);
-  const [showOrgDropdown, setShowOrgDropdown] = useState(false);
   const [totalPages, setTotalPages] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
+  const [isOrgDetailsModalOpen, setIsOrgDetailsModalOpen] = useState(false);
   const [selectedFacility, setSelectedFacility] = useState<{
     id: string;
     name: string;
@@ -214,54 +216,13 @@ function FacilityList() {
           <div className="w-full max-w-7xl mb-6 flex items-center justify-between shrink-0">
             <h1 className="text-2xl font-bold text-gray-900">Facilities</h1>
 
-            {/* Org Selector - Centered */}
-            <div className="relative">
-              <button
-                onClick={() => setShowOrgDropdown(!showOrgDropdown)}
-                className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
-              >
-                <Users className="w-4 h-4 text-gray-600" />
-                <span className="text-gray-900 font-medium text-sm">
-                  {organization?.name || "Loading..."}
-                </span>
-                <ChevronDown className="w-4 h-4 text-gray-500" />
-              </button>
-
-              {/* Dropdown */}
-              {showOrgDropdown && organizations.length > 0 && (
-                <>
-                  <div
-                    className="fixed inset-0 z-10"
-                    onClick={() => setShowOrgDropdown(false)}
-                  />
-                  <div className="absolute top-full left-0 mt-2 w-64 bg-white border border-gray-200 rounded-md shadow-lg z-20">
-                    <div className="py-1">
-                      {organizations.map((org) => (
-                        <button
-                          key={org.id}
-                          onClick={() => {
-                            setOrganization(org);
-                            setShowOrgDropdown(false);
-                          }}
-                          className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 transition-colors ${
-                            org.id === organization?.id
-                              ? "bg-blue-50 text-blue-700 font-medium"
-                              : "text-gray-700"
-                          }`}
-                        >
-                          <div className="flex items-center justify-between">
-                            <span>{org.name}</span>
-                            {org.id === organization?.id && (
-                              <span className="text-blue-600">✓</span>
-                            )}
-                          </div>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </>
-              )}
-            </div>
+            {/* Organization Selector */}
+            <OrganizationSelector
+              organizations={organizations}
+              currentOrganization={organization}
+              onOrganizationChange={(org) => setOrganization(org)}
+              onInfoClick={() => setIsOrgDetailsModalOpen(true)}
+            />
 
             {/* Right Actions */}
             <div className="flex items-center gap-3">
@@ -345,6 +306,16 @@ function FacilityList() {
           }}
           facilityId={selectedFacility.id}
           facilityName={selectedFacility.name}
+        />
+      )}
+
+      {/* Organization Details Modal */}
+      {organization && (
+        <OrganizationDetailsModal
+          isOpen={isOrgDetailsModalOpen}
+          onClose={() => setIsOrgDetailsModalOpen(false)}
+          organizationId={organization.id}
+          organizationName={organization.name}
         />
       )}
     </>
