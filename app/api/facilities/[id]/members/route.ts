@@ -57,10 +57,7 @@ export async function PATCH(
     });
 
     if (!memberToUpdate) {
-      return NextResponse.json(
-        { error: "Member not found" },
-        { status: 404 },
-      );
+      return NextResponse.json({ error: "Member not found" }, { status: 404 });
     }
 
     // Prevent removing the last manager
@@ -74,7 +71,10 @@ export async function PATCH(
 
       if (managerCount <= 1) {
         return NextResponse.json(
-          { error: "Cannot remove the last manager. There must be at least one manager." },
+          {
+            error:
+              "Cannot remove the last manager. There must be at least one manager.",
+          },
           { status: 400 },
         );
       }
