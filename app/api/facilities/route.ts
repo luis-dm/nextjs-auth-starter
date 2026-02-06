@@ -2,10 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/auth";
 import prisma from "@/lib/prisma";
+import fs from "fs";
+import path from "path";
+import { randomUUID } from "crypto";
 
 export async function GET(req: NextRequest) {
   const startTime = Date.now();
-  
+
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.email) {
@@ -52,8 +55,9 @@ export async function GET(req: NextRequest) {
     }
 
     // If organizationId is provided, use that; otherwise use the first one
-    const currentOrgId = organizationId || user.organizationMembers[0]?.organizationId;
-    
+    const currentOrgId =
+      organizationId || user.organizationMembers[0]?.organizationId;
+
     if (!currentOrgId) {
       return NextResponse.json(
         { error: "No organization found" },
@@ -85,7 +89,7 @@ export async function GET(req: NextRequest) {
     console.log(`[Facilities API] Data queries: ${Date.now() - startTime}ms`);
 
     const organization = user.organizationMembers.find(
-      (m) => m.organizationId === currentOrgId
+      (m) => m.organizationId === currentOrgId,
     )?.organization;
 
     const totalPages = Math.ceil(totalCount / limit);
@@ -110,7 +114,7 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   const startTime = Date.now();
-  
+
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.email) {
@@ -123,7 +127,9 @@ export async function POST(req: NextRequest) {
     const { name, fragmentData, ifcFileName, ifcFileSize, organizationId } =
       body;
 
-    console.log(`[Facility POST] Body parsed: ${Date.now() - startTime}ms, fragmentData size: ${fragmentData ? fragmentData.length : 0} bytes`);
+    console.log(
+      `[Facility POST] Body parsed: ${Date.now() - startTime}ms, fragmentData size: ${fragmentData ? fragmentData.length : 0} bytes`,
+    );
 
     if (!name) {
       return NextResponse.json(
@@ -178,10 +184,32 @@ export async function POST(req: NextRequest) {
 
     console.log(`[Facility POST] Org setup: ${Date.now() - startTime}ms`);
 
-    // Convert fragmentData array back to Buffer if it exists
-    const fragmentBuffer = fragmentData ? Buffer.from(fragmentData) : null;
+    // Generate unique facility ID
+    const facilityId = randomUUID();
 
-    console.log(`[Facility POST] Buffer conversion: ${Date.now() - startTime}ms`);
+    // Save fragment to volume if provided
+    let fragmentPath: string | null = null;
+    if (fragmentData) {
+      const fragmentsDir = path.join(
+        process.env.BIM_DATA_PATH || "./public/bim_data",
+        "fragments",
+      );
+
+      // Create fragments directory if it doesn't exist
+      if (!fs.existsSync(fragmentsDir)) {
+        fs.mkdirSync(fragmentsDir, { recursive: true });
+      }
+
+      const fragmentFilePath = path.join(fragmentsDir, `${facilityId}.frag`);
+      const fragmentBuffer = Buffer.from(fragmentData);
+
+      fs.writeFileSync(fragmentFilePath, fragmentBuffer);
+      fragmentPath = `/fragments/${facilityId}.frag`;
+
+      console.log(
+        `[Facility POST] Fragment saved to disk: ${Date.now() - startTime}ms`,
+      );
+    }
 
     // Get all organization members to add them to the facility
     const orgMembers = await prisma.organizationMember.findMany({
@@ -193,7 +221,9 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    console.log(`[Facility POST] Org members query: ${Date.now() - startTime}ms`);
+    console.log(
+      `[Facility POST] Org members query: ${Date.now() - startTime}ms`,
+    );
 
     // Create facility members array: creator as MANAGER, others as MEMBER
     const facilityMembers = orgMembers.map((member) => ({
@@ -205,8 +235,9 @@ export async function POST(req: NextRequest) {
 
     const facility = await prisma.facility.create({
       data: {
+        id: facilityId,
         name,
-        fragmentData: fragmentBuffer,
+        fragmentPath,
         ifcFileName,
         ifcFileSize,
         organizationId: orgId,
@@ -224,7 +255,9 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    console.log(`[Facility POST] Facility created: ${Date.now() - startTime}ms`);
+    console.log(
+      `[Facility POST] Facility created: ${Date.now() - startTime}ms`,
+    );
     console.log(`[Facility POST] Total time: ${Date.now() - startTime}ms`);
 
     return NextResponse.json(facility);

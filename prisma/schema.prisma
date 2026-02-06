@@ -76,7 +76,7 @@ model Facility {
   id              String            @id @default(cuid())
   name            String
   organizationId  String
-  fragmentData    Bytes?            // Binary fragment data
+  fragmentPath    String?           // Path to fragment file in volume
   ifcFileName     String?           // Original IFC filename
   ifcFileSize     Int?              // Size in bytes
   bcfData         Bytes?            // BCF topics data

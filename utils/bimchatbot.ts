@@ -182,7 +182,7 @@ export class BimChatbot {
     }
   }
 
-  async getDetailedSpatialStructure(): Promise<any> {
+  async getDetailedSpatialStructure(facilityId: string): Promise<any> {
     if (!this.spatialStructure) {
       await this.loadSpatialStructure();
     }
@@ -193,14 +193,14 @@ export class BimChatbot {
     );
 
     // Build the BIM filesystem from the enhanced structure
-    await this.buildBimFilesystem(this.enhancedStructure);
+    await this.buildBimFilesystem(this.enhancedStructure, facilityId);
 
     console.log("Enhanced spatial structure loaded and filesystem built");
 
     return this.enhancedStructure;
   }
 
-  private async buildBimFilesystem(structure: IFCNode): Promise<void> {
+  private async buildBimFilesystem(structure: IFCNode, facilityId: string): Promise<void> {
     try {
       // Call the API endpoint to build and save the filesystem structure
       const response = await fetch("/api/bim/build-filesystem", {
@@ -208,7 +208,7 @@ export class BimChatbot {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ structure }),
+        body: JSON.stringify({ structure, facilityId }),
       });
 
       if (!response.ok) {

@@ -9,7 +9,7 @@ export async function POST(req: NextRequest) {
     console.log("Received build-filesystem request");
 
     const body = await req.json();
-    const { structure } = body;
+    const { structure, facilityId } = body;
 
     if (!structure) {
       console.error("No structure provided in request");
@@ -19,21 +19,34 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    console.log("Structure received, preparing to build filesystem");
+    if (!facilityId) {
+      console.error("No facilityId provided in request");
+      return NextResponse.json(
+        { error: "No facilityId provided" },
+        { status: 400 },
+      );
+    }
+
+    console.log(
+      `Structure received for facility ${facilityId}, preparing to build filesystem`,
+    );
 
     // Get the base path from environment or use default
     const basePath = process.env.BIM_DATA_PATH || "./public/bim_data";
 
-    // Ensure base directory exists
-    if (!fs.existsSync(basePath)) {
-      console.log("Creating base directory:", basePath);
-      fs.mkdirSync(basePath, { recursive: true });
+    // Create facility-specific path
+    const facilityBasePath = path.join(basePath, "filesystems", facilityId);
+
+    // Ensure facility directory exists
+    if (!fs.existsSync(facilityBasePath)) {
+      console.log("Creating facility directory:", facilityBasePath);
+      fs.mkdirSync(facilityBasePath, { recursive: true });
     }
 
     // Write the enhanced structure to a temporary file
     const tempFile = path.join(
       os.tmpdir(),
-      `enhanced_structure_${Date.now()}.json`,
+      `enhanced_structure_${facilityId}_${Date.now()}.json`,
     );
     fs.writeFileSync(tempFile, JSON.stringify(structure, null, 2));
     console.log("Temporary structure file written:", tempFile);
@@ -41,19 +54,23 @@ export async function POST(req: NextRequest) {
     // Build the filesystem using the build_bim_fs utility
     await buildFilesystem({
       inputFile: tempFile,
-      outputDir: basePath,
+      outputDir: facilityBasePath,
       force: true,
-      pretty: true,
+      pretty: false,
     });
 
     // Clean up temp file
     fs.unlinkSync(tempFile);
-    console.log("BIM filesystem built successfully at:", basePath);
+    console.log(
+      "BIM filesystem built successfully at:",
+      facilityBasePath,
+    );
 
     return NextResponse.json({
       success: true,
       message: "BIM filesystem built successfully",
-      path: basePath,
+      path: facilityBasePath,
+      facilityId,
     });
   } catch (error) {
     console.error("Error saving BIM structure:", error);
