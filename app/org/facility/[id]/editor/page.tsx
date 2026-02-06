@@ -157,6 +157,7 @@ export default function BIMEditPage() {
         const loadModelAndInitializeEditor = async (
           buffer: ArrayBuffer,
           fileName: string = "facility_model",
+          historyBuffer: ArrayBuffer | null = null,
         ) => {
           try {
             // Load the model
@@ -182,6 +183,21 @@ export default function BIMEditPage() {
 
             // Initialize the editor UI first
             initializeEditorUI();
+
+            // Load edit history into the editor for display in panel (but don't apply it)
+            // The fragment already has all edits baked in
+            if (historyBuffer) {
+              try {
+                const historyModel = await fragments.load(historyBuffer, {
+                  modelId: "history_model",
+                });
+                // Set the history in the editor (for display only, not to apply edits)
+                fragments.editor.set(model.modelId, historyModel);
+                console.log("Edit history loaded into panel for display");
+              } catch (error) {
+                console.error("Error loading edit history into editor:", error);
+              }
+            }
 
             console.log(`Model "${fileName}" loaded successfully`);
           } catch (error) {
@@ -283,7 +299,22 @@ export default function BIMEditPage() {
                 `Uploading fragment: ${fragmentBase64.length} bytes (base64)`,
               );
 
-              // Don't save edit history - edits are now baked into the fragment
+              // Get edit history for database record-keeping (don't apply on load, just display in panel)
+              const history = fragments.editor.get(model.modelId);
+              let historyBase64 = null;
+              if (history) {
+                const historyBuffer = await history.getBuffer();
+                const historyBytes = new Uint8Array(historyBuffer);
+                const historyBinaryString = historyBytes.reduce(
+                  (acc, byte) => acc + String.fromCharCode(byte),
+                  "",
+                );
+                historyBase64 = btoa(historyBinaryString);
+                console.log(
+                  `Uploading edit history: ${historyBase64.length} bytes (base64)`,
+                );
+              }
+
               // Save to volume via API
               const response = await fetch(`/api/facilities/${facilityId}`, {
                 method: "PATCH",
@@ -292,7 +323,7 @@ export default function BIMEditPage() {
                 },
                 body: JSON.stringify({
                   fragmentData: fragmentBase64,
-                  editHistory: null, // Clear history since edits are baked in
+                  editHistory: historyBase64, // Save history for record-keeping
                 }),
               });
 
@@ -370,10 +401,27 @@ export default function BIMEditPage() {
 
             const buffer = await fragmentResponse.arrayBuffer();
 
-            // Don't load edit history - fragments now have edits baked in
+            // Load edit history for display in panel (but don't apply it - edits are baked in)
+            let historyBuffer: ArrayBuffer | null = null;
+            if (data.editHistory) {
+              try {
+                const historyBase64 = Buffer.from(data.editHistory).toString();
+                const binaryString = atob(historyBase64);
+                const historyBytes = new Uint8Array(binaryString.length);
+                for (let i = 0; i < binaryString.length; i++) {
+                  historyBytes[i] = binaryString.charCodeAt(i);
+                }
+                historyBuffer = historyBytes.buffer;
+                console.log("Edit history loaded for display in panel");
+              } catch (error) {
+                console.error("Error loading edit history:", error);
+              }
+            }
+
             await loadModelAndInitializeEditor(
               buffer,
               data.ifcFileName || "facility_model",
+              historyBuffer,
             );
 
             // Hide loading overlay after model is loaded
