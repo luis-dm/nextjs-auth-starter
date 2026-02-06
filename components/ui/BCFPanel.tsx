@@ -219,15 +219,41 @@ export function BCFPanel({
             "Plumbing",
             "HVAC",
           ]),
+          stages: new Set([
+            "Conceptual Design",
+            "Schematic Design",
+            "Design Development",
+            "Construction Documentation",
+            "Bidding",
+            "Construction",
+            "Closeout",
+          ]),
           version: "3",
         });
 
         // Initialize Viewpoints
         const viewpoints = components.get(OBC.Viewpoints);
-        bcfTopics.list.onItemSet.add(({ value: topic }: any) => {
-          const viewpoint = viewpoints.create();
-          viewpoint.world = world;
-          topic.viewpoints.add(viewpoint.guid);
+        viewpoints.world = world;
+
+        bcfTopics.list.onItemSet.add(async ({ value: topic }: any) => {
+          // Check if topic already has a viewpoint
+          if (topic.viewpoints.size === 0) {
+            // Create single viewpoint for this topic
+            const viewpoint = viewpoints.create();
+            await viewpoint.updateCamera();
+            topic.viewpoints.add(viewpoint.guid);
+          }
+        });
+
+        // When topic is updated, update its viewpoint snapshot
+        bcfTopics.list.onItemUpdated.add(async ({ value: topic }: any) => {
+          if (topic.viewpoints.size > 0) {
+            const viewpointGuid = Array.from(topic.viewpoints)[0];
+            const viewpoint = viewpoints.list.get(viewpointGuid);
+            if (viewpoint) {
+              await viewpoint.updateCamera();
+            }
+          }
         });
 
         // Create Topics List Table
@@ -375,9 +401,48 @@ export function BCFPanel({
         return section;
       };
 
+      // Create viewpoint snapshot section if viewpoint exists
+      let snapshotSection: HTMLElement | null = null;
+      if (selectedTopic.viewpoints.size > 0) {
+        const viewpointGuid = Array.from(selectedTopic.viewpoints)[0];
+        const viewpointsComponent = components.get(
+          (window as any).OBC.Viewpoints,
+        );
+        const viewpoint = viewpointsComponent.list.get(viewpointGuid);
+
+        if (viewpoint && viewpoint.snapshot) {
+          const snapshotData = viewpointsComponent.snapshots.get(
+            viewpoint.snapshot,
+          );
+          if (snapshotData) {
+            const blob = new Blob([snapshotData], { type: "image/png" });
+            const url = URL.createObjectURL(blob);
+
+            const snapshotContainer = document.createElement("div");
+            snapshotContainer.style.cssText = "padding: 1rem;";
+
+            const img = document.createElement("img");
+            img.src = url;
+            img.alt = "Viewpoint Snapshot";
+            img.style.cssText =
+              "width: 100%; max-width: 100%; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);";
+
+            snapshotContainer.appendChild(img);
+            snapshotSection = createSection(
+              "Snapshot",
+              "tabler:photo",
+              snapshotContainer,
+            );
+          }
+        }
+      }
+
       detailsContainer.appendChild(
         createSection("Information", "ph:info-bold", information),
       );
+      if (snapshotSection) {
+        detailsContainer.appendChild(snapshotSection);
+      }
       detailsContainer.appendChild(
         createSection("Comments", "majesticons:comment-line", comments),
       );
