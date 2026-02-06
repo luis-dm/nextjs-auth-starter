@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { GeneralEditor, type TableData } from "@/components/edit/GeneralEditor";
 import {
@@ -39,6 +39,7 @@ const loadTransformControls = async () => {
 export default function BIMEditPage() {
   const params = useParams();
   const facilityId = params.id as string;
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     let editorPanel: HTMLElement | null = null;
@@ -223,6 +224,68 @@ export default function BIMEditPage() {
         const initializeEditorUI = () => {
           // Export model function - save to database and return to dashboard
           const exportModel = async () => {
+            // Create loading overlay matching viewer style
+            const loadingOverlay = document.createElement("div");
+            loadingOverlay.className = "absolute inset-0 z-50 flex items-center justify-center";
+            loadingOverlay.style.cssText = `
+              position: fixed;
+              top: 0;
+              left: 0;
+              right: 0;
+              bottom: 0;
+              background: rgba(17, 24, 39, 0.5);
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              z-index: 9999;
+            `;
+            
+            const card = document.createElement("div");
+            card.style.cssText = `
+              background: white;
+              border-radius: 0.5rem;
+              padding: 1.5rem;
+              display: flex;
+              flex-direction: column;
+              align-items: center;
+            `;
+            
+            const spinner = document.createElement("div");
+            spinner.style.cssText = `
+              width: 3rem;
+              height: 3rem;
+              border: 4px solid #3B82F6;
+              border-top-color: transparent;
+              border-radius: 50%;
+              animation: spin 1s linear infinite;
+              margin-bottom: 1rem;
+            `;
+            
+            const message = document.createElement("p");
+            message.style.cssText = `
+              color: #374151;
+              font-weight: 500;
+              margin: 0;
+            `;
+            message.textContent = "Saving model...";
+            
+            card.appendChild(spinner);
+            card.appendChild(message);
+            loadingOverlay.appendChild(card);
+            
+            // Add spinner animation if not already present
+            if (!document.getElementById('spinner-animation')) {
+              const style = document.createElement("style");
+              style.id = 'spinner-animation';
+              style.textContent = `
+                @keyframes spin {
+                  to { transform: rotate(360deg); }
+                }
+              `;
+              document.head.appendChild(style);
+            }
+            document.body.appendChild(loadingOverlay);
+            
             try {
               // Get edit history BEFORE saving (save clears the history)
               const { requests, undoneRequests } =
@@ -239,12 +302,12 @@ export default function BIMEditPage() {
                 undoneRequestsCount: undoneRequests.length,
               });
 
-              // Save the edits to the model
-              await fragments.editor.save(model.modelId);
-
-              // Get the updated buffer
+              // Get the buffer BEFORE saving (save might clear the model)
               const exportedBuffer = await model.getBuffer();
               const exportedBytes = new Uint8Array(exportedBuffer);
+
+              // Save the edits to the model (this applies edits but might clear scene)
+              await fragments.editor.save(model.modelId);
 
               // Save to volume via API
               const response = await fetch(`/api/facilities/${facilityId}`, {
@@ -270,6 +333,7 @@ export default function BIMEditPage() {
               window.location.href = "/org/facility";
             } catch (error) {
               console.error("Error saving model:", error);
+              document.body.removeChild(loadingOverlay);
               alert("Error saving the model. Please try again.");
             }
           };
@@ -341,9 +405,13 @@ export default function BIMEditPage() {
               data.ifcFileName || "facility_model",
               historyBuffer,
             );
+            
+            // Hide loading overlay after model is loaded
+            setIsLoading(false);
           } catch (error) {
             console.error("Error loading facility fragment:", error);
             alert("Error loading the facility fragment file.");
+            setIsLoading(false);
           }
         };
 
@@ -371,6 +439,14 @@ export default function BIMEditPage() {
 
   return (
     <>
+      {isLoading && (
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-gray-900/50">
+          <div className="bg-white rounded-lg p-6 flex flex-col items-center">
+            <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-4"></div>
+            <p className="text-gray-700 font-medium">Loading model...</p>
+          </div>
+        </div>
+      )}
       <div id="container" style={{ width: "100vw", height: "100vh" }} />
       <style jsx global>{`
         @import url("https://fonts.googleapis.com/icon?family=Material+Icons");

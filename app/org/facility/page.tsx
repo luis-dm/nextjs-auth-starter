@@ -5,6 +5,7 @@ import { useEffect, useState, Suspense } from "react";
 import Link from "next/link";
 import FacilityCard from "@/components/facility-list/FacilityCard";
 import RegisterFacilityModal from "@/components/facility-list/RegisterFacilityModal";
+import FacilityDetailsModal from "@/components/facility-list/FacilityDetailsModal";
 import FacilitySorter, {
   SortOption,
 } from "@/components/facility-list/FacilitySorter";
@@ -39,6 +40,11 @@ function FacilityList() {
   const [totalPages, setTotalPages] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
+  const [selectedFacility, setSelectedFacility] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
   const [sortOption, setSortOption] = useState<SortOption>("date-desc");
 
   // Fetch user's organizations and initial facilities
@@ -146,7 +152,7 @@ function FacilityList() {
           const data = await refetchResponse.json();
           setFacilities(data.facilities || []);
           setTotalPages(data.totalPages || 1);
-          
+
           // Navigate to page 1 if not already there
           if (page !== 1) {
             window.location.href = `/org/facility?page=1`;
@@ -188,6 +194,11 @@ function FacilityList() {
 
   const handleEditFacility = (facilityId: string, facilityName: string) => {
     window.location.href = `/org/facility/${facilityId}/editor`;
+  };
+
+  const handleDetailsFacility = (facilityId: string, facilityName: string) => {
+    setSelectedFacility({ id: facilityId, name: facilityName });
+    setIsDetailsModalOpen(true);
   };
 
   return (
@@ -282,6 +293,7 @@ function FacilityList() {
                   createdAt={facility.createdAt}
                   onDelete={handleDeleteFacility}
                   onEdit={handleEditFacility}
+                  onDetails={handleDetailsFacility}
                 />
               ))}
             </div>
@@ -322,6 +334,19 @@ function FacilityList() {
         onClose={() => setIsModalOpen(false)}
         onSubmit={handleRegisterFacility}
       />
+
+      {/* Facility Details Modal */}
+      {selectedFacility && (
+        <FacilityDetailsModal
+          isOpen={isDetailsModalOpen}
+          onClose={() => {
+            setIsDetailsModalOpen(false);
+            setSelectedFacility(null);
+          }}
+          facilityId={selectedFacility.id}
+          facilityName={selectedFacility.name}
+        />
+      )}
     </>
   );
 }

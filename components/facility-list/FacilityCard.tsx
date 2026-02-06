@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Building2, Trash2, Pencil } from "lucide-react";
+import { Building2, Trash2, Pencil, Info } from "lucide-react";
 import { useState } from "react";
 
 interface FacilityCardProps {
@@ -9,6 +9,7 @@ interface FacilityCardProps {
   createdAt: string;
   onDelete?: (id: string) => void;
   onEdit?: (id: string, name: string) => void;
+  onDetails?: (id: string, name: string) => void;
 }
 
 export default function FacilityCard({
@@ -18,6 +19,7 @@ export default function FacilityCard({
   createdAt,
   onDelete,
   onEdit,
+  onDetails,
 }: FacilityCardProps) {
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -64,6 +66,12 @@ export default function FacilityCard({
     onEdit?.(id, name);
   };
 
+  const handleDetails = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    onDetails?.(id, name);
+  };
+
   return (
     <Link href={`/org/facility/${id}/viewer`} className="group block">
       <div className="flex items-center gap-4 p-4 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 hover:shadow-md transition-all duration-200">
@@ -84,6 +92,17 @@ export default function FacilityCard({
 
         {/* Date */}
         <div className="shrink-0 text-xs text-gray-500">{formattedDate}</div>
+
+        {/* Info Button */}
+        {onDetails && (
+          <button
+            onClick={handleDetails}
+            className="shrink-0 p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
+            title="View details"
+          >
+            <Info className="w-4 h-4" />
+          </button>
+        )}
 
         {/* Edit Button */}
         {onEdit && (
