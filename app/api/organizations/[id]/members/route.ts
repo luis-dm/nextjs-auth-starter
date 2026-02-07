@@ -6,7 +6,7 @@ import prisma from "@/lib/prisma";
 // GET /api/organizations/[id]/members - Get organization members
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const { id: organizationId } = await params;
@@ -37,7 +37,7 @@ export async function GET(
     if (!membership) {
       return NextResponse.json(
         { error: "You are not a member of this organization" },
-        { status: 403 }
+        { status: 403 },
       );
     }
 
@@ -73,7 +73,7 @@ export async function GET(
     console.error("Error fetching organization members:", error);
     return NextResponse.json(
       { error: "Internal server error" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

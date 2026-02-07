@@ -37,7 +37,9 @@ export default function OrganizationMembersModal({
     setIsLoading(true);
     setError(null);
     try {
-      const response = await fetch(`/api/organizations/${organizationId}/members`);
+      const response = await fetch(
+        `/api/organizations/${organizationId}/members`,
+      );
       if (response.ok) {
         const data = await response.json();
         setMembers(data.members || []);
@@ -59,7 +61,9 @@ export default function OrganizationMembersModal({
       <div className="bg-white rounded-lg shadow-xl max-w-lg w-full mx-4">
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <div>
-            <h3 className="text-xl font-bold text-gray-900">Organization Members</h3>
+            <h3 className="text-xl font-bold text-gray-900">
+              Organization Members
+            </h3>
             <p className="text-sm text-gray-500 mt-1">{organizationName}</p>
           </div>
           <button
