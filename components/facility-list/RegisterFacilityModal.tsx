@@ -4,6 +4,7 @@ import { useState, useRef } from "react";
 import { X, Upload } from "lucide-react";
 import * as WEBIFC from "web-ifc";
 import * as FRAGS from "@thatopen/fragments";
+import toast from "react-hot-toast";
 
 interface ConversionResult {
   fragmentBytes: ArrayBuffer;

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { X, User, Crown } from "lucide-react";
+import toast from "react-hot-toast";
 
 interface FacilityMember {
   id: string;
