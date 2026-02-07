@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import { X } from "lucide-react";
+import toast from "react-hot-toast";
 
 interface FacilityUser {
   id: string;
@@ -51,7 +52,11 @@ export function BCFPanel({
     try {
       const allTopics = [...bcfTopicsRef.current.list.values()];
       console.log("Saving BCF to database - Topics count:", allTopics.length);
-      if (allTopics.length === 0) return;
+      
+      // Allow saving even when there are 0 topics (to clear the BCF file)
+      if (allTopics.length === 0) {
+        console.log("No topics - will save empty BCF to clear data");
+      }
 
       setIsSaving(true);
       const bcfData = await bcfTopicsRef.current.export(allTopics);
@@ -554,12 +559,11 @@ export function BCFPanel({
 
   const handleDeleteTopic = () => {
     if (!selectedTopic || !bcfTopicsRef.current) return;
-    
-    if (confirm(`Are you sure you want to delete this topic?`)) {
-      bcfTopicsRef.current.list.delete(selectedTopic.guid);
-      setIsDetailsPanelOpen(false);
-      setSelectedTopic(null);
-    }
+
+    bcfTopicsRef.current.list.delete(selectedTopic.guid);
+    toast.success("Topic deleted");
+    setIsDetailsPanelOpen(false);
+    setSelectedTopic(null);
   };
 
   return (
