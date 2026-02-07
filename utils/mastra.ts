@@ -2,6 +2,8 @@ import { Agent } from "@mastra/core/agent";
 import { Workspace, LocalFilesystem } from "@mastra/core/workspace";
 import { Mastra } from "@mastra/core";
 import { createOpenAI } from "@ai-sdk/openai";
+import { createTool } from "@mastra/core/tools";
+import { z } from "zod";
 import * as readline from "readline";
 
 const openai = createOpenAI({
@@ -11,6 +13,7 @@ const openai = createOpenAI({
 const basePath = process.env.BIM_DATA_PATH || "./public/bim_data";
 console.log("Mastra workspace basePath:", basePath);
 
+// Workspace for filesystem queries (your existing skills)
 const workspace = new Workspace({
   filesystem: new LocalFilesystem({
     basePath,
@@ -19,64 +22,132 @@ const workspace = new Workspace({
   skills: ["./skills"],
 });
 
+// Action tools for 3D viewer manipulation
+const selectElementsTool = createTool({
+  id: "select-elements",
+  description: "Select/highlight elements in the 3D viewer. Use the localId field from query results.",
+  inputSchema: z.object({
+    elementIds: z.array(z.number()).describe("Array of element IDs (localId field) to select"),
+  }),
+  outputSchema: z.object({
+    action: z.literal("select"),
+    elementIds: z.array(z.number()),
+    message: z.string(),
+  }),
+  execute: async ({ elementIds }) => {
+    return {
+      action: "select" as const,
+      elementIds,
+      message: `Selected ${elementIds.length} elements`,
+    };
+  },
+});
+
+const hideElementsTool = createTool({
+  id: "hide-elements",
+  description: "Hide elements from the 3D viewer. Use the localId field from query results.",
+  inputSchema: z.object({
+    elementIds: z.array(z.number()).describe("Array of element IDs (localId field) to hide"),
+  }),
+  outputSchema: z.object({
+    action: z.literal("hide"),
+    elementIds: z.array(z.number()),
+    message: z.string(),
+  }),
+  execute: async ({ elementIds }) => {
+    return {
+      action: "hide" as const,
+      elementIds,
+      message: `Hidden ${elementIds.length} elements`,
+    };
+  },
+});
+
+const showElementsTool = createTool({
+  id: "show-elements",
+  description: "Show previously hidden elements. Use the localId field from query results.",
+  inputSchema: z.object({
+    elementIds: z.array(z.number()).describe("Array of element IDs (localId field) to show"),
+  }),
+  outputSchema: z.object({
+    action: z.literal("show"),
+    elementIds: z.array(z.number()),
+    message: z.string(),
+  }),
+  execute: async ({ elementIds }) => {
+    return {
+      action: "show" as const,
+      elementIds,
+      message: `Shown ${elementIds.length} elements`,
+    };
+  },
+});
+
+const isolateElementsTool = createTool({
+  id: "isolate-elements",
+  description: "Hide all elements except the specified ones (focus mode). Use the localId field from query results.",
+  inputSchema: z.object({
+    elementIds: z.array(z.number()).describe("Array of element IDs (localId field) to keep visible"),
+  }),
+  outputSchema: z.object({
+    action: z.literal("isolate"),
+    elementIds: z.array(z.number()),
+    message: z.string(),
+  }),
+  execute: async ({ elementIds }) => {
+    return {
+      action: "isolate" as const,
+      elementIds,
+      message: `Isolated ${elementIds.length} elements`,
+    };
+  },
+});
+
 const bimAgent = new Agent({
   id: "bimAgent",
   name: "BIM Query Assistant",
   model: openai("gpt-4o"),
-  instructions: `You are a helpful BIM (Building Information Modeling) assistant with access to organized IFC model data and the ability to perform actions on the 3D model.
+  instructions: `You are a BIM assistant with access to IFC model data and 3D viewer controls.
 
-## Available Data Structure
+## Data Access (via workspace skills)
 
-The BIM filesystem is organized as follows:
+Use the filesystem to query BIM data:
+- schema/categories.json - Available IFC types
+- schema/storeys.json - Building floors with slugs
+- index/by_category/{CATEGORY}.jsonl - Elements by type
+- index/by_storey/{storey_slug}.jsonl - Elements by floor
+- raw/by_id/{element_id}.json - Detailed element properties
 
-### Schema Files (metadata about the building)
-- schema/categories.json - List of all IFC element types (IFCDOOR, IFCWINDOW, IFCWALL, etc.)
-- schema/storeys.json - Building levels with names, slugs, and aliases (e.g., "Nivel 1" = "nivel_1")
+## Actions (via tools)
 
-### Index Files (quick lookup)
-- index/by_category/{CATEGORY}.jsonl - All elements of a specific type
-  Examples: index/by_category/IFCDOOR.jsonl, index/by_category/IFCWINDOW.jsonl
-- index/by_storey/{storey_slug}.jsonl - All elements on a specific floor
-  Examples: index/by_storey/nivel_1.jsonl, index/by_storey/nivel_2.jsonl
+You have these action tools:
+- select-elements: Highlight elements
+- hide-elements: Hide elements
+- show-elements: Show hidden elements
+- isolate-elements: Focus on specific elements
 
-### Raw Element Data
-- raw/by_id/{element_id}.json - Complete properties for individual elements
+## CRITICAL Workflow for Actions
 
-## Available Actions
+When user wants to SELECT, HIDE, SHOW, or ISOLATE:
 
-You can perform actions on the 3D model:
-- **select-elements**: Highlight elements in the viewer by their IDs
-- **hide-elements**: Hide elements from view by their IDs
-- **show-elements**: Show previously hidden elements by their IDs
-- **isolate-elements**: Hide everything except the specified elements (focus mode)
+1. Query the data to find elements (use workspace filesystem)
+2. Extract the **localId** field from each result
+3. IMMEDIATELY call the action tool with those IDs
+4. DO NOT generate explanatory text
 
-## How to Answer Queries
+Example: "select all slabs"
+Step 1: Read index/by_category/IFCSLAB.jsonl
+Step 2: Extract localId values: [166729, 166811]
+Step 3: Call select-elements with elementIds: [166729, 166811]
 
-1. **Find all doors**: Read index/by_category/IFCDOOR.jsonl
-2. **Find first floor elements**: 
-   - First read schema/storeys.json to find the slug for "first floor"
-   - Then read index/by_storey/{slug}.jsonl
-3. **Find doors on first floor**:
-   - Read schema/storeys.json to get floor slug
-   - Read index/by_category/IFCDOOR.jsonl
-   - Filter results where storeySlug matches the floor slug
-4. **Get element details**: Read raw/by_id/{id}.json
-
-## CRITICAL: Performing Actions
-
-When user asks to "select", "highlight", "show", "hide", or "isolate" elements:
-1. IMMEDIATELY query to find the element IDs (localId field)
-2. IMMEDIATELY call the appropriate action tool with those IDs
-3. DO NOT generate explanatory text - just call the tool
-4. The tool will handle the response message
-
-Examples of what to do:
-- "select all slabs" → query IFCSLAB → call select-elements tool with IDs
-- "hide the walls" → query IFCWALL → call hide-elements tool with IDs
-- "select slabs on level 1" → query IFCSLAB filtered by level → call select-elements tool
-
-DO NOT respond with text like "I found X elements, selecting them now" - just call the tool directly.`,
+DO NOT say "I found 2 slabs, selecting them now" - just call the tool.`,
   workspace,
+  tools: {
+    selectElementsTool,
+    hideElementsTool,
+    showElementsTool,
+    isolateElementsTool,
+  },
 });
 
 export const mastra = new Mastra({
