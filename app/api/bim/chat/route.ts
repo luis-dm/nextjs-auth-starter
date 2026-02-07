@@ -61,13 +61,13 @@ export async function POST(req: NextRequest) {
             if (toolResult && typeof toolResult === "object") {
               // The actual result might be nested in payload.result
               let resultData = toolResult as any;
-              
+
               // Check if it's wrapped in the Mastra tool result structure
               if (resultData.payload && resultData.payload.result) {
                 resultData = resultData.payload.result;
                 console.log(`  Unwrapped payload.result:`, resultData);
               }
-              
+
               if (resultData.action && resultData.elementIds) {
                 lastAction = resultData;
                 responseText =
