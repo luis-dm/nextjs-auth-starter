@@ -56,7 +56,7 @@ export async function POST(request: NextRequest) {
     if (!name || typeof name !== "string") {
       return NextResponse.json(
         { error: "Organization name is required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -82,7 +82,11 @@ export async function POST(request: NextRequest) {
     });
 
     // Send invitations if emails provided
-    if (inviteEmails && Array.isArray(inviteEmails) && inviteEmails.length > 0) {
+    if (
+      inviteEmails &&
+      Array.isArray(inviteEmails) &&
+      inviteEmails.length > 0
+    ) {
       const { Resend } = require("resend");
       const resend = new Resend(process.env.RESEND_API_KEY);
       const crypto = require("crypto");
@@ -153,7 +157,7 @@ export async function POST(request: NextRequest) {
     console.error("Error creating organization:", error);
     return NextResponse.json(
       { error: "Internal server error" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

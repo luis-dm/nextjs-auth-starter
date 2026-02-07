@@ -6,9 +6,10 @@ import prisma from "@/lib/prisma";
 // POST /api/organizations/[organizationId]/invite - Invite members to organization
 export async function POST(
   request: NextRequest,
-  { params }: { params: { organizationId: string } }
+  { params }: { params: Promise<{ organizationId: string }> }
 ) {
   try {
+    const { organizationId } = await params;
     const session = await getServerSession(authOptions);
 
     if (!session?.user?.email) {
@@ -20,7 +21,7 @@ export async function POST(
     if (!emails || !Array.isArray(emails) || emails.length === 0) {
       return NextResponse.json(
         { error: "At least one email is required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -37,7 +38,7 @@ export async function POST(
       where: {
         userId_organizationId: {
           userId: user.id,
-          organizationId: params.organizationId,
+          organizationId: organizationId,
         },
       },
       include: {
@@ -48,7 +49,7 @@ export async function POST(
     if (!membership || membership.role !== "MANAGER") {
       return NextResponse.json(
         { error: "Only managers can invite members" },
-        { status: 403 }
+        { status: 403 },
       );
     }
 
@@ -67,7 +68,7 @@ export async function POST(
           data: {
             email: email.trim(),
             token,
-            organizationId: params.organizationId,
+            organizationId: organizationId,
             expiresAt,
           },
         });
@@ -122,7 +123,7 @@ export async function POST(
     console.error("Error sending invitations:", error);
     return NextResponse.json(
       { error: "Internal server error" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

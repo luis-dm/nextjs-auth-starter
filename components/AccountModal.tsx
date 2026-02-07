@@ -83,7 +83,9 @@ export default function AccountModal({
               <div className="space-y-2">
                 <div>
                   <label className="text-xs text-gray-500">Name</label>
-                  <p className="text-sm font-medium text-gray-900">{userName}</p>
+                  <p className="text-sm font-medium text-gray-900">
+                    {userName}
+                  </p>
                 </div>
                 <div>
                   <label className="text-xs text-gray-500">Email</label>
