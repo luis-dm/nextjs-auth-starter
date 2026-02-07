@@ -28,8 +28,10 @@ model User {
   name                  String?
   email                 String                 @unique
   password              String
+  emailVerified         DateTime?
   organizationMembers   OrganizationMember[]
   facilityMembers       FacilityMember[]
+  verificationTokens    VerificationToken[]
   createdAt             DateTime               @default(now())
   updatedAt             DateTime               @default(now()) @updatedAt
 }
@@ -102,4 +104,17 @@ model FacilityMember {
   @@unique([userId, facilityId])
   @@index([userId])
   @@index([facilityId])
+}
+
+model VerificationToken {
+  id          String    @id @default(cuid())
+  userId      String
+  token       String    @unique
+  type        String    // "EMAIL_VERIFICATION" or "PASSWORD_RESET"
+  expiresAt   DateTime
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt   DateTime  @default(now())
+  
+  @@index([token])
+  @@index([userId])
 }

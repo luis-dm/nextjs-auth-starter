@@ -10,6 +10,7 @@ export default function RegisterPage() {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [memberEmails, setMemberEmails] = useState<string[]>([""]);
+  const [showSuccess, setShowSuccess] = useState(false);
 
   const validatePassword = (password: string): string | null => {
     if (password.length < 8) {
@@ -95,11 +96,59 @@ export default function RegisterPage() {
         return;
       }
 
-      router.push("/org/facility");
-      router.refresh();
+      // Show success message
+      setShowSuccess(true);
     } catch (error) {
       setError(error instanceof Error ? error.message : "Registration failed");
     }
+  }
+
+  if (showSuccess) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-md w-full bg-white p-8 rounded-lg shadow">
+          <div className="text-center">
+            <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100 mb-4">
+              <svg
+                className="h-6 w-6 text-green-600"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M5 13l4 4L19 7"
+                />
+              </svg>
+            </div>
+            <h1 className="text-2xl font-bold text-gray-900 mb-4">
+              Check Your Email!
+            </h1>
+            <p className="text-gray-600 mb-6">
+              We've sent a verification link to your email address. Please check
+              your inbox and click the link to verify your account.
+            </p>
+            <p className="text-sm text-gray-500 mb-6">
+              Didn't receive the email? Check your spam folder or{" "}
+              <a
+                href="/resend-verification"
+                className="text-gray-900 underline hover:text-gray-700"
+              >
+                resend verification email
+              </a>
+            </p>
+            <a
+              href="/login"
+              className="inline-block bg-gray-900 text-white px-6 py-2 rounded-md hover:bg-gray-800"
+            >
+              Go to Login
+            </a>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (

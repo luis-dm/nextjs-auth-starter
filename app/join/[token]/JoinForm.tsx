@@ -194,7 +194,8 @@ export default function JoinForm({
             </p>
           ) : (
             <p className="mt-1 text-xs text-gray-500">
-              Must be 8+ characters with uppercase, lowercase, number, and special character
+              Must be 8+ characters with uppercase, lowercase, number, and
+              special character
             </p>
           )}
         </div>

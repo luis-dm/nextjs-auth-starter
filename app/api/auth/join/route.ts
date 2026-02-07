@@ -55,6 +55,7 @@ export async function POST(request: Request) {
             email: invite.email,
             name,
             password: hashedPassword,
+            emailVerified: new Date(), // Auto-verify invited users (they clicked email link)
           },
         });
       }

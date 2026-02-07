@@ -11,6 +11,7 @@ import OrganizationDetailsModal from "@/components/organization/OrganizationDeta
 import FacilitySorter, {
   SortOption,
 } from "@/components/facility-list/FacilitySorter";
+import { EmailVerificationBanner } from "@/components/EmailVerificationBanner";
 import { Users, Plus, ChevronDown } from "lucide-react";
 
 interface Facility {
@@ -207,6 +208,7 @@ function FacilityList() {
 
   return (
     <>
+      <EmailVerificationBanner />
       {isLoading ? (
         <div className="flex items-center justify-center space-x-2 min-h-[200px]">
           <div className="w-6 h-6 border-4 border-gray-900 border-t-transparent rounded-full animate-spin"></div>
