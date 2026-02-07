@@ -23,30 +23,35 @@ export class BimChatbot {
 
   async selectElements(elementIds: number[]): Promise<void> {
     try {
+      console.log("BimChatbot.selectElements called with:", elementIds);
       const highlighter = this.components.get(OBF.Highlighter);
       const fragments = this.components.get(OBC.FragmentsManager);
-
+      
+      console.log("Fragments list size:", fragments.list.size);
+      
       // Clear previous selection
       await highlighter.clear("select");
-
+      console.log("Cleared previous selection");
+      
       // Build ModelIdMap for selection
       const selection: OBC.ModelIdMap = {};
-
+      
       for (const [modelId] of fragments.list) {
         selection[modelId] = new Set(elementIds);
+        console.log(`Added ${elementIds.length} elements to model ${modelId}`);
       }
-
+      
+      console.log("Selection map:", selection);
+      
       // Apply selection
       await highlighter.highlightByID("select", selection);
-
-      console.log(`Selected ${elementIds.length} elements`);
+      
+      console.log(`✅ Selected ${elementIds.length} elements`);
     } catch (error) {
       console.error("Error selecting elements:", error);
       throw error;
     }
-  }
-
-  async hideElements(elementIds: number[]): Promise<void> {
+  }  async hideElements(elementIds: number[]): Promise<void> {
     try {
       const hider = this.components.get(OBC.Hider);
       const fragments = this.components.get(OBC.FragmentsManager);
@@ -346,6 +351,7 @@ export class BimChatbot {
     }
 
     try {
+      console.log("BimChatbot: Sending message:", message);
       const response = await fetch("/api/bim/chat", {
         method: "POST",
         headers: {
@@ -359,9 +365,14 @@ export class BimChatbot {
       }
 
       const data = await response.json();
+      console.log("BimChatbot: Received response:", data);
 
       // Check if the response contains an action to perform
       if (data.action) {
+        console.log(
+          `BimChatbot: Executing action "${data.action}" with ${data.elementIds?.length} elements:`,
+          data.elementIds,
+        );
         switch (data.action) {
           case "select":
             await this.selectElements(data.elementIds);
@@ -380,10 +391,12 @@ export class BimChatbot {
               data.response || `Isolated ${data.elementIds.length} elements`
             );
           default:
+            console.log("BimChatbot: Unknown action:", data.action);
             return data.response || "Action completed";
         }
       }
 
+      console.log("BimChatbot: No action to perform, returning text response");
       return data.response || "Sorry, I couldn't process your request.";
     } catch (error) {
       console.error("Error sending message:", error);
