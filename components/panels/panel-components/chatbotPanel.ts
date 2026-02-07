@@ -189,7 +189,7 @@ export const chatbotPanelTemplate: BUI.StatefullComponent<ChatbotPanelState> = (
       // Use the BIM chatbot to send message to Mastra agent
       if (bimChatbotInstance) {
         const response = await bimChatbotInstance.sendMessage(userMessage);
-        
+
         // Remove loading message and add actual response
         messages = messages.filter((m) => m.id !== loadingMessageId);
         addMessage(response, false);
