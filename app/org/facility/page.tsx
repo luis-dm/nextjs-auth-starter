@@ -57,7 +57,9 @@ function FacilityList() {
         // Fetch organizations and facilities in parallel
         const [orgsResponse, facilitiesResponse] = await Promise.all([
           fetch("/api/organizations"),
-          fetch(`/api/facilities?page=${page}&limit=${itemsPerPage}&sort=${sortOption}`),
+          fetch(
+            `/api/facilities?page=${page}&limit=${itemsPerPage}&sort=${sortOption}`,
+          ),
         ]);
 
         if (orgsResponse.ok) {

@@ -19,7 +19,7 @@ async function sendInviteEmail(
 
   try {
     const result = await resend.emails.send({
-      from: "Acme <onboarding@resend.dev>",
+      from: "OpenBIM <noreply@openbim.app>",
       to: [email],
       subject: `You've been invited to join ${organizationName}`,
       html: `
@@ -155,19 +155,36 @@ export async function POST(request: Request) {
       return { user, organization, invites };
     });
 
-    // Generate invite links (don't send emails)
-    const inviteLinks = result.invites.map((invite) => ({
-      email: invite.email,
-      link: `${process.env.NEXTAUTH_URL}/join/${invite.token}`,
-      token: invite.token,
-    }));
+    // Send invite emails
+    const inviteLinks = [];
+    for (const invite of result.invites) {
+      try {
+        await sendInviteEmail(
+          invite.email,
+          result.organization.name,
+          invite.token,
+        );
+        inviteLinks.push({
+          email: invite.email,
+          link: `${process.env.NEXTAUTH_URL}/join/${invite.token}`,
+          token: invite.token,
+          sent: true,
+        });
+      } catch (error) {
+        console.error(`Failed to send email to ${invite.email}:`, error);
+        // Still include the link even if email failed
+        inviteLinks.push({
+          email: invite.email,
+          link: `${process.env.NEXTAUTH_URL}/join/${invite.token}`,
+          token: invite.token,
+          sent: false,
+        });
+      }
+    }
 
     console.log(
-      `📧 Generated ${result.invites.length} invite links (no emails sent)`,
+      `📧 Sent ${inviteLinks.filter((l) => l.sent).length} of ${result.invites.length} invite emails`,
     );
-    inviteLinks.forEach(({ email, link }) => {
-      console.log(`\n🔗 INVITE LINK for ${email}:\n${link}\n`);
-    });
 
     return NextResponse.json({
       message: "Registration successful",
