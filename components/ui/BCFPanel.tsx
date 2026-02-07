@@ -404,6 +404,13 @@ export function BCFPanel({
         world,
       });
 
+      // Listen for viewpoint updates from the viewpoints section
+      viewpoints.addEventListener("change", async () => {
+        console.log("Viewpoints section changed");
+        // Trigger re-render when viewpoints section detects changes
+        setSnapshotUpdateTrigger((prev) => prev + 1);
+      });
+
       const [relatedTopics] = CUI.sections.topicRelations({
         components,
         topic: selectedTopic,
