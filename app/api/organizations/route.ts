@@ -109,7 +109,7 @@ export async function POST(request: NextRequest) {
           const inviteLink = `${process.env.NEXTAUTH_URL}/join/${token}`;
 
           await resend.emails.send({
-            from: "OpenBIM noreply@openbim.app",
+            from: "OpenBIM <noreply@openbim.app>",
             to: email.trim(),
             subject: `${user.name || "Someone"} invited you to join ${name}`,
             html: `
