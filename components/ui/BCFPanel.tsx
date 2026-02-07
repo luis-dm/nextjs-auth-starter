@@ -255,13 +255,11 @@ export function BCFPanel({
         bcfTopics.list.onItemSet.add(async ({ value: topic }: any) => {
           // Check if topic already has a viewpoint
           if (topic.viewpoints.size === 0) {
-            // Create single viewpoint for this topic
+            // Create single viewpoint for this topic (without snapshot)
             const viewpoint = viewpoints.create();
-            await viewpoint.updateCamera();
-            await viewpoint.updateSnapshot();
             topic.viewpoints.add(viewpoint.guid);
 
-            // Trigger update to ensure snapshot is shown
+            // Trigger update to ensure UI is refreshed
             setSnapshotUpdateTrigger((prev) => prev + 1);
           }
         });
