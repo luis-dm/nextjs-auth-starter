@@ -82,21 +82,7 @@ export default function RegisterPage() {
         return;
       }
 
-      // Sign in and redirect
-      const email = formData.get("email") as string;
-
-      const signInResult = await signIn("credentials", {
-        email,
-        password,
-        redirect: false,
-      });
-
-      if (signInResult?.error) {
-        setError("Failed to sign in after registration");
-        return;
-      }
-
-      // Show success message
+      // Show success message (don't sign in until email is verified)
       setShowSuccess(true);
     } catch (error) {
       setError(error instanceof Error ? error.message : "Registration failed");
