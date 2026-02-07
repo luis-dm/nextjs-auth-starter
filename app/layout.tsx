@@ -33,20 +33,20 @@ export default function RootLayout({
             toastOptions={{
               duration: 3000,
               style: {
-                background: '#1f2937',
-                color: '#fff',
-                borderRadius: '0.5rem',
+                background: "#1f2937",
+                color: "#fff",
+                borderRadius: "0.5rem",
               },
               success: {
                 iconTheme: {
-                  primary: '#fff',
-                  secondary: '#1f2937',
+                  primary: "#fff",
+                  secondary: "#1f2937",
                 },
               },
               error: {
                 iconTheme: {
-                  primary: '#fff',
-                  secondary: '#1f2937',
+                  primary: "#fff",
+                  secondary: "#1f2937",
                 },
               },
             }}
