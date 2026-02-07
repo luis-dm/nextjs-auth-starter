@@ -133,8 +133,8 @@ export default function AccountModal({
                           <span
                             className={`font-medium ${
                               org.role === "MANAGER"
-                                ? "text-blue-600"
-                                : "text-gray-600"
+                                ? "text-gray-800"
+                                : "text-gray-500"
                             }`}
                           >
                             {org.role === "MANAGER" ? "Manager" : "Member"}

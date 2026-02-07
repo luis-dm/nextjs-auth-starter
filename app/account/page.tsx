@@ -125,8 +125,8 @@ export default function AccountPage() {
                       <span
                         className={`font-medium ${
                           org.role === "MANAGER"
-                            ? "text-blue-600"
-                            : "text-gray-600"
+                            ? "text-gray-800"
+                            : "text-gray-500"
                         }`}
                       >
                         {org.role === "MANAGER" ? "Manager" : "Member"}
@@ -239,7 +239,7 @@ function CreateOrganizationModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div className="fixed inset-0 bg-black/20 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <h3 className="text-xl font-bold text-gray-900">
@@ -378,11 +378,14 @@ function InviteMembersModal({
         return;
       }
 
-      const response = await fetch(`/api/organizations/${organizationId}/invite`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ emails: validEmails }),
-      });
+      const response = await fetch(
+        `/api/organizations/${organizationId}/invite`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ emails: validEmails }),
+        },
+      );
 
       if (response.ok) {
         setSuccess(true);
@@ -404,7 +407,7 @@ function InviteMembersModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div className="fixed inset-0 bg-black/20 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <div>
