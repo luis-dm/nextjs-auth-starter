@@ -67,14 +67,14 @@ export default function AccountPage() {
 
   if (status === "loading" || !session) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="h-full flex items-center justify-center">
         <div className="w-8 h-8 border-4 border-gray-900 border-t-transparent rounded-full animate-spin"></div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4 overflow-y-auto">
+    <div className="h-full bg-gray-50 py-8 px-4 overflow-y-auto">
       <div className="max-w-4xl mx-auto pb-8">
         <h1 className="text-3xl font-bold text-gray-900 mb-8">Account</h1>
 
@@ -123,7 +123,7 @@ export default function AccountPage() {
               No organizations yet
             </p>
           ) : (
-            <div className="space-y-3 max-h-[500px] overflow-y-auto pr-2">
+            <div className="space-y-3">
               {organizations.map((org) => (
                 <OrganizationCard
                   key={org.id}
