@@ -25,20 +25,20 @@ export class BimChatbot {
     try {
       const highlighter = this.components.get(OBF.Highlighter);
       const fragments = this.components.get(OBC.FragmentsManager);
-      
+
       // Clear previous selection
       await highlighter.clear("select");
-      
+
       // Build ModelIdMap for selection
       const selection: OBC.ModelIdMap = {};
-      
+
       for (const [modelId] of fragments.list) {
         selection[modelId] = new Set(elementIds);
       }
-      
+
       // Apply selection
       await highlighter.highlightByID("select", selection);
-      
+
       console.log(`Selected ${elementIds.length} elements`);
     } catch (error) {
       console.error("Error selecting elements:", error);
@@ -50,24 +50,24 @@ export class BimChatbot {
     try {
       const hider = this.components.get(OBC.Hider);
       const fragments = this.components.get(OBC.FragmentsManager);
-      
+
       // Build ModelIdMap for hiding
       const toHide: OBC.ModelIdMap = {};
-      
+
       for (const [modelId] of fragments.list) {
         toHide[modelId] = new Set(elementIds);
       }
-      
+
       // Apply hiding
       await hider.set(false, toHide);
-      
+
       // Dispatch visibility changed event
       dispatchVisibilityChanged({
         elementIds,
         visible: false,
         source: "chatbot",
       });
-      
+
       console.log(`Hid ${elementIds.length} elements`);
     } catch (error) {
       console.error("Error hiding elements:", error);
@@ -79,24 +79,24 @@ export class BimChatbot {
     try {
       const hider = this.components.get(OBC.Hider);
       const fragments = this.components.get(OBC.FragmentsManager);
-      
+
       // Build ModelIdMap for showing
       const toShow: OBC.ModelIdMap = {};
-      
+
       for (const [modelId] of fragments.list) {
         toShow[modelId] = new Set(elementIds);
       }
-      
+
       // Apply showing
       await hider.set(true, toShow);
-      
+
       // Dispatch visibility changed event
       dispatchVisibilityChanged({
         elementIds,
         visible: true,
         source: "chatbot",
       });
-      
+
       console.log(`Showed ${elementIds.length} elements`);
     } catch (error) {
       console.error("Error showing elements:", error);
@@ -108,18 +108,18 @@ export class BimChatbot {
     try {
       const hider = this.components.get(OBC.Hider);
       const fragments = this.components.get(OBC.FragmentsManager);
-      
+
       // Build ModelIdMap for isolating
       const toIsolate: OBC.ModelIdMap = {};
-      
+
       for (const [modelId] of fragments.list) {
         toIsolate[modelId] = new Set(elementIds);
       }
-      
+
       // Apply isolation: hide everything first, then show only selected
       await hider.set(false); // Hide all
       await hider.set(true, toIsolate); // Show only isolated elements
-      
+
       console.log(`Isolated ${elementIds.length} elements`);
     } catch (error) {
       console.error("Error isolating elements:", error);
@@ -359,13 +359,15 @@ export class BimChatbot {
       }
 
       const data = await response.json();
-      
+
       // Check if the response contains an action to perform
       if (data.action) {
         switch (data.action) {
           case "select":
             await this.selectElements(data.elementIds);
-            return data.response || `Selected ${data.elementIds.length} elements`;
+            return (
+              data.response || `Selected ${data.elementIds.length} elements`
+            );
           case "hide":
             await this.hideElements(data.elementIds);
             return data.response || `Hid ${data.elementIds.length} elements`;
@@ -374,12 +376,14 @@ export class BimChatbot {
             return data.response || `Showed ${data.elementIds.length} elements`;
           case "isolate":
             await this.isolateElements(data.elementIds);
-            return data.response || `Isolated ${data.elementIds.length} elements`;
+            return (
+              data.response || `Isolated ${data.elementIds.length} elements`
+            );
           default:
             return data.response || "Action completed";
         }
       }
-      
+
       return data.response || "Sorry, I couldn't process your request.";
     } catch (error) {
       console.error("Error sending message:", error);

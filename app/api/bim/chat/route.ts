@@ -35,13 +35,15 @@ export async function POST(req: NextRequest) {
     if (result.steps && Array.isArray(result.steps)) {
       for (const step of result.steps) {
         // Check if this step has toolResults
-        if ('toolResults' in step && Array.isArray(step.toolResults)) {
+        if ("toolResults" in step && Array.isArray(step.toolResults)) {
           for (const toolResult of step.toolResults) {
-            if (toolResult && typeof toolResult === 'object') {
+            if (toolResult && typeof toolResult === "object") {
               const resultData = toolResult as any;
               if (resultData.action && resultData.elementIds) {
                 lastAction = resultData;
-                responseText = resultData.message || `Performing ${resultData.action} on ${resultData.elementIds.length} elements`;
+                responseText =
+                  resultData.message ||
+                  `Performing ${resultData.action} on ${resultData.elementIds.length} elements`;
               }
             }
           }
