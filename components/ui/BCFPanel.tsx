@@ -552,6 +552,16 @@ export function BCFPanel({
     setSelectedTopic(null);
   };
 
+  const handleDeleteTopic = () => {
+    if (!selectedTopic || !bcfTopicsRef.current) return;
+    
+    if (confirm(`Are you sure you want to delete this topic?`)) {
+      bcfTopicsRef.current.list.delete(selectedTopic.guid);
+      setIsDetailsPanelOpen(false);
+      setSelectedTopic(null);
+    }
+  };
+
   return (
     <>
       {/* Main BCF Panel */}
@@ -634,15 +644,24 @@ export function BCFPanel({
                 Topic Details
               </h2>
             </div>
-            <button
-              className="flex items-center justify-center w-8 h-8 border-none bg-transparent rounded-md cursor-pointer text-[#1c1b1f] transition-all duration-200 ease-in-out hover:bg-gray-100 hover:text-gray-700"
-              onClick={() => {
-                handleCloseDetails();
-                onClose();
-              }}
-            >
-              <span className="material-icons text-[20px]">close</span>
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                className="flex items-center justify-center w-8 h-8 border-none bg-transparent rounded-md cursor-pointer text-[#1c1b1f] transition-all duration-200 ease-in-out hover:bg-red-50 hover:text-red-600"
+                onClick={handleDeleteTopic}
+                title="Delete topic"
+              >
+                <span className="material-icons text-[20px]">delete</span>
+              </button>
+              <button
+                className="flex items-center justify-center w-8 h-8 border-none bg-transparent rounded-md cursor-pointer text-[#1c1b1f] transition-all duration-200 ease-in-out hover:bg-gray-100 hover:text-gray-700"
+                onClick={() => {
+                  handleCloseDetails();
+                  onClose();
+                }}
+              >
+                <span className="material-icons text-[20px]">close</span>
+              </button>
+            </div>
           </div>
 
           {/* Content - CUI Topic Panel */}
