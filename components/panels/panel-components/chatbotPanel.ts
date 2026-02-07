@@ -67,14 +67,25 @@ const updateChatHistory = () => {
         ${
           message.isUser
             ? `
-          <div class="p-2 px-3 rounded-lg rounded-br-sm mb-2 ml-5 border border-gray-100" style="background-color: #e4ebf7;">
+          <div class="p-2 px-3 rounded-lg rounded-br-sm mb-2 ml-5 border border-gray-100 bg-gray-100">
             <div class="text-xs font-bold mb-1 text-gray-800">You</div>
             <div class="text-sm leading-relaxed whitespace-pre-wrap text-gray-600 wrap-break-word">${
               message.content
             }</div>
           </div>
         `
-            : `
+            : message.content === "typing"
+              ? `
+          <div class="bg-white p-2 px-3 rounded-lg rounded-bl-sm mr-5 border border-gray-200">
+            <div class="text-xs font-bold mb-1 text-gray-500">Assistant</div>
+            <div class="flex items-center gap-1">
+              <div class="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style="animation-delay: 0ms"></div>
+              <div class="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style="animation-delay: 150ms"></div>
+              <div class="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style="animation-delay: 300ms"></div>
+            </div>
+          </div>
+        `
+              : `
           <div class="bg-white p-2 px-3 rounded-lg rounded-bl-sm mr-5 border border-gray-200">
             <div class="text-xs font-bold mb-1 text-gray-500">Assistant</div>
             <div class="text-sm leading-relaxed whitespace-pre-wrap text-gray-600 wrap-break-word">${
@@ -162,19 +173,33 @@ export const chatbotPanelTemplate: BUI.StatefullComponent<ChatbotPanelState> = (
     // Add user message
     addMessage(userMessage, true);
 
-    // Show loading state
+    // Show loading state with typing indicator
     isLoading = true;
+    const loadingMessageId = Math.random().toString(36).substring(7);
+    const loadingMessage: ChatMessage = {
+      id: loadingMessageId,
+      content: "typing",
+      isUser: false,
+      timestamp: new Date(),
+    };
+    messages.push(loadingMessage);
+    updateChatHistory();
 
     try {
       // Use the BIM chatbot to send message to Mastra agent
       if (bimChatbotInstance) {
         const response = await bimChatbotInstance.sendMessage(userMessage);
+        
+        // Remove loading message and add actual response
+        messages = messages.filter((m) => m.id !== loadingMessageId);
         addMessage(response, false);
       } else {
+        messages = messages.filter((m) => m.id !== loadingMessageId);
         addMessage("Chatbot is still initializing. Please wait...", false);
       }
     } catch (error) {
       console.error("Error sending message:", error);
+      messages = messages.filter((m) => m.id !== loadingMessageId);
       addMessage(
         "Sorry, an error occurred while processing your message.",
         false,
