@@ -10,15 +10,26 @@ export default function RegisterPage() {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [memberEmails, setMemberEmails] = useState<string[]>([""]);
-  const [inviteLinks, setInviteLinks] = useState<Array<{
-    email: string;
-    link: string;
-  }> | null>(null);
-  const [showSuccess, setShowSuccess] = useState(false);
-  const [userCredentials, setUserCredentials] = useState<{
-    email: string;
-    password: string;
-  } | null>(null);
+
+  const validatePassword = (password: string): string | null => {
+    if (password.length < 8) {
+      return "Password must be at least 8 characters long";
+    }
+    if (!/[A-Z]/.test(password)) {
+      return "Password must contain at least one uppercase letter";
+    }
+    if (!/[a-z]/.test(password)) {
+      return "Password must contain at least one lowercase letter";
+    }
+    if (!/[0-9]/.test(password)) {
+      return "Password must contain at least one number";
+    }
+    if (!/[!@#$%^&*(),.?":{}|<>]/.test(password)) {
+      return "Password must contain at least one special character";
+    }
+    return null;
+  };
+
   const addEmailField = () => {
     setMemberEmails([...memberEmails, ""]);
   };
@@ -40,6 +51,14 @@ export default function RegisterPage() {
       event.preventDefault();
       const formData = new FormData(event.currentTarget);
 
+      // Validate password
+      const password = formData.get("password") as string;
+      const passwordError = validatePassword(password);
+      if (passwordError) {
+        setError(passwordError);
+        return;
+      }
+
       // Filter out empty email fields
       const validEmails = memberEmails.filter((email) => email.trim() !== "");
 
@@ -50,7 +69,7 @@ export default function RegisterPage() {
         body: JSON.stringify({
           name: formData.get("name"),
           email: formData.get("email"),
-          password: formData.get("password"),
+          password: password,
           organizationName: formData.get("organizationName"),
           inviteEmails: validEmails,
         }),
@@ -62,21 +81,9 @@ export default function RegisterPage() {
         return;
       }
 
-      const registerData = await registerResponse.json();
-
-      // Store credentials for later sign-in
+      // Sign in and redirect
       const email = formData.get("email") as string;
-      const password = formData.get("password") as string;
-      setUserCredentials({ email, password });
 
-      // If there are invite links, show them
-      if (registerData.inviteLinks && registerData.inviteLinks.length > 0) {
-        setInviteLinks(registerData.inviteLinks);
-        setShowSuccess(true);
-        return;
-      }
-
-      // Otherwise, sign in and redirect
       const signInResult = await signIn("credentials", {
         email,
         password,
@@ -95,87 +102,11 @@ export default function RegisterPage() {
     }
   }
 
-  const handleContinue = async () => {
-    if (!userCredentials) {
-      router.push("/org/facility");
-      return;
-    }
-
-    const signInResult = await signIn("credentials", {
-      email: userCredentials.email,
-      password: userCredentials.password,
-      redirect: false,
-    });
-
-    if (signInResult?.error) {
-      setError("Failed to sign in");
-      return;
-    }
-
-    router.push("/org/facility");
-    router.refresh();
-  };
-
-  const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text);
-  };
-
-  if (showSuccess && inviteLinks) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-2xl w-full space-y-8">
-          <div className="text-center">
-            <h2 className="text-3xl font-extrabold text-gray-900">
-              Registration Successful! 🎉
-            </h2>
-            <p className="mt-2 text-sm text-gray-600">
-              Share these invite links with your team members
-            </p>
-          </div>
-
-          <div className="bg-white shadow rounded-lg p-6 space-y-4">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">
-              Invite Links
-            </h3>
-            {inviteLinks.map(({ email, link }) => (
-              <div
-                key={email}
-                className="border border-gray-200 rounded-lg p-4 space-y-2"
-              >
-                <div className="flex items-center justify-between">
-                  <span className="font-medium text-gray-900">{email}</span>
-                  <button
-                    onClick={() => copyToClipboard(link)}
-                    className="text-sm text-gray-800 hover:text-gray-500 font-medium"
-                  >
-                    Copy Link
-                  </button>
-                </div>
-                <div className="bg-gray-50 p-2 rounded text-xs text-gray-600 font-mono break-all">
-                  {link}
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <div className="text-center">
-            <button
-              onClick={handleContinue}
-              className="w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-gray-800 hover:bg-gray-500 focus:outline-hidden focus:ring-2 focus:ring-offset-2 focus:ring-gray-900"
-            >
-              Continue to Dashboard
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-md w-full space-y-6">
         <div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
+          <h2 className="text-center text-3xl font-extrabold text-gray-900">
             Create your account
           </h2>
         </div>
@@ -229,6 +160,10 @@ export default function RegisterPage() {
                 className="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-hidden focus:ring-gray-900 focus:border-gray-900 focus:z-10 sm:text-sm"
                 placeholder="••••••••"
               />
+              <p className="mt-1 text-xs text-gray-500">
+                Must be 8+ characters with uppercase, lowercase, number, and
+                special character
+              </p>
             </div>
           </div>
 

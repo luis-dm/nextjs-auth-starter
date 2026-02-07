@@ -21,6 +21,25 @@ export default function JoinForm({
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
+  const validatePassword = (password: string): string | null => {
+    if (password.length < 8) {
+      return "Password must be at least 8 characters long";
+    }
+    if (!/[A-Z]/.test(password)) {
+      return "Password must contain at least one uppercase letter";
+    }
+    if (!/[a-z]/.test(password)) {
+      return "Password must contain at least one lowercase letter";
+    }
+    if (!/[0-9]/.test(password)) {
+      return "Password must contain at least one number";
+    }
+    if (!/[!@#$%^&*(),.?":{}|<>]/.test(password)) {
+      return "Password must contain at least one special character";
+    }
+    return null;
+  };
+
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError(null);
@@ -30,6 +49,16 @@ export default function JoinForm({
       const formData = new FormData(event.currentTarget);
       const password = formData.get("password") as string;
       const name = formData.get("name") as string;
+
+      // Validate password for new users
+      if (!existingUser) {
+        const passwordError = validatePassword(password);
+        if (passwordError) {
+          setError(passwordError);
+          setIsLoading(false);
+          return;
+        }
+      }
 
       if (existingUser) {
         // For existing users, just sign in first to verify password
@@ -165,7 +194,7 @@ export default function JoinForm({
             </p>
           ) : (
             <p className="mt-1 text-xs text-gray-500">
-              Create a password for your new account
+              Must be 8+ characters with uppercase, lowercase, number, and special character
             </p>
           )}
         </div>
