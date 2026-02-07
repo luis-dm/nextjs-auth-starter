@@ -4,10 +4,12 @@ import Link from "next/link";
 import { useSession, signOut } from "next-auth/react";
 import { useState, useRef, useEffect } from "react";
 import { User } from "lucide-react";
+import AccountModal from "@/components/AccountModal";
 
 export default function Header() {
   const { data: session } = useSession();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isAccountModalOpen, setIsAccountModalOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Close dropdown when clicking outside
@@ -64,6 +66,15 @@ export default function Header() {
                   <button
                     onClick={() => {
                       setIsDropdownOpen(false);
+                      setIsAccountModalOpen(true);
+                    }}
+                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                  >
+                    Account
+                  </button>
+                  <button
+                    onClick={() => {
+                      setIsDropdownOpen(false);
                       signOut({
                         callbackUrl: `${window.location.origin}/login`,
                       });
@@ -85,6 +96,16 @@ export default function Header() {
           )}
         </div>
       </nav>
+
+      {/* Account Modal */}
+      {session && (
+        <AccountModal
+          isOpen={isAccountModalOpen}
+          onClose={() => setIsAccountModalOpen(false)}
+          userName={session.user?.name || "User"}
+          userEmail={session.user?.email || ""}
+        />
+      )}
     </header>
   );
 }
