@@ -257,12 +257,8 @@ export function BCFPanel({
           if (topic.viewpoints.size === 0) {
             // Create single viewpoint for this topic
             const viewpoint = viewpoints.create();
-            if (typeof viewpoint.updateCamera === "function") {
-              await viewpoint.updateCamera();
-            }
-            if (typeof viewpoint.updateSnapshot === "function") {
-              await viewpoint.updateSnapshot();
-            }
+            await viewpoint.updateCamera();
+            await viewpoint.updateSnapshot();
             topic.viewpoints.add(viewpoint.guid);
 
             // Trigger update to ensure snapshot is shown
@@ -276,12 +272,8 @@ export function BCFPanel({
             const viewpointGuid = Array.from(topic.viewpoints)[0];
             const viewpoint = viewpoints.list.get(viewpointGuid);
             if (viewpoint) {
-              if (typeof viewpoint.updateCamera === "function") {
-                await viewpoint.updateCamera();
-              }
-              if (typeof viewpoint.updateSnapshot === "function") {
-                await viewpoint.updateSnapshot();
-              }
+              await viewpoint.updateCamera();
+              await viewpoint.updateSnapshot();
             }
           }
         });
