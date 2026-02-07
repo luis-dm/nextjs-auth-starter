@@ -4,12 +4,10 @@ import Link from "next/link";
 import { useSession, signOut } from "next-auth/react";
 import { useState, useRef, useEffect } from "react";
 import { User } from "lucide-react";
-import AccountModal from "@/components/AccountModal";
 
 export default function Header() {
   const { data: session } = useSession();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [isAccountModalOpen, setIsAccountModalOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Close dropdown when clicking outside
@@ -63,15 +61,13 @@ export default function Header() {
 
               {isDropdownOpen && (
                 <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-md shadow-lg z-50">
-                  <button
-                    onClick={() => {
-                      setIsDropdownOpen(false);
-                      setIsAccountModalOpen(true);
-                    }}
-                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                  <Link
+                    href="/account"
+                    onClick={() => setIsDropdownOpen(false)}
+                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
                   >
                     Account
-                  </button>
+                  </Link>
                   <button
                     onClick={() => {
                       setIsDropdownOpen(false);
@@ -96,16 +92,6 @@ export default function Header() {
           )}
         </div>
       </nav>
-
-      {/* Account Modal */}
-      {session && (
-        <AccountModal
-          isOpen={isAccountModalOpen}
-          onClose={() => setIsAccountModalOpen(false)}
-          userName={session.user?.name || "User"}
-          userEmail={session.user?.email || ""}
-        />
-      )}
     </header>
   );
 }
