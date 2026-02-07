@@ -3,13 +3,13 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/auth";
 import prisma from "@/lib/prisma";
 
-// POST /api/organizations/[organizationId]/invite - Invite members to organization
+// POST /api/organizations/[id]/invite - Invite members to organization
 export async function POST(
   request: NextRequest,
-  { params }: { params: Promise<{ organizationId: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const { organizationId } = await params;
+    const { id: organizationId } = await params;
     const session = await getServerSession(authOptions);
 
     if (!session?.user?.email) {
