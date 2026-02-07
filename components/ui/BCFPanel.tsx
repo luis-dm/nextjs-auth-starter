@@ -256,10 +256,10 @@ export function BCFPanel({
           if (topic.viewpoints.size === 0) {
             // Create single viewpoint for this topic
             const viewpoint = viewpoints.create();
-            if (typeof viewpoint.updateCamera === 'function') {
+            if (typeof viewpoint.updateCamera === "function") {
               await viewpoint.updateCamera();
             }
-            if (typeof viewpoint.updateSnapshot === 'function') {
+            if (typeof viewpoint.updateSnapshot === "function") {
               await viewpoint.updateSnapshot();
             }
             topic.viewpoints.add(viewpoint.guid);
@@ -272,10 +272,10 @@ export function BCFPanel({
             const viewpointGuid = Array.from(topic.viewpoints)[0];
             const viewpoint = viewpoints.list.get(viewpointGuid);
             if (viewpoint) {
-              if (typeof viewpoint.updateCamera === 'function') {
+              if (typeof viewpoint.updateCamera === "function") {
                 await viewpoint.updateCamera();
               }
-              if (typeof viewpoint.updateSnapshot === 'function') {
+              if (typeof viewpoint.updateSnapshot === "function") {
                 await viewpoint.updateSnapshot();
               }
             }
@@ -412,7 +412,8 @@ export function BCFPanel({
 
       // Create a container div and append all sections with headers
       const detailsContainer = document.createElement("div");
-      detailsContainer.style.padding = "1.5rem";
+      detailsContainer.style.cssText =
+        "display: flex; flex-direction: column; min-height: min-content;";
 
       // Create section wrappers with headers
       const createSection = (
