@@ -66,7 +66,7 @@ export function EmailVerificationBanner() {
   };
 
   return (
-    <div className="bg-yellow-50 mb-8 border-b border-yellow-200 w-200">
+    <div className="bg-yellow-50 mb-8 border-b border-yellow-200 w-1/2 mx-auto">
       <div className="max-w-7xl mx-auto py-3 px-3 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between flex-wrap gap-3">
           <div className="flex items-center flex-1 min-w-0">
