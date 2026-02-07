@@ -26,32 +26,33 @@ export class BimChatbot {
       console.log("BimChatbot.selectElements called with:", elementIds);
       const highlighter = this.components.get(OBF.Highlighter);
       const fragments = this.components.get(OBC.FragmentsManager);
-      
+
       console.log("Fragments list size:", fragments.list.size);
-      
+
       // Clear previous selection
       await highlighter.clear("select");
       console.log("Cleared previous selection");
-      
+
       // Build ModelIdMap for selection
       const selection: OBC.ModelIdMap = {};
-      
+
       for (const [modelId] of fragments.list) {
         selection[modelId] = new Set(elementIds);
         console.log(`Added ${elementIds.length} elements to model ${modelId}`);
       }
-      
+
       console.log("Selection map:", selection);
-      
+
       // Apply selection
       await highlighter.highlightByID("select", selection);
-      
+
       console.log(`✅ Selected ${elementIds.length} elements`);
     } catch (error) {
       console.error("Error selecting elements:", error);
       throw error;
     }
-  }  async hideElements(elementIds: number[]): Promise<void> {
+  }
+  async hideElements(elementIds: number[]): Promise<void> {
     try {
       const hider = this.components.get(OBC.Hider);
       const fragments = this.components.get(OBC.FragmentsManager);
