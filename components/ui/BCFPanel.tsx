@@ -435,7 +435,8 @@ export function BCFPanel({
         const viewpointsComponent = components.get(OBC.Viewpoints);
 
         const allSnapshotsContainer = document.createElement("div");
-        allSnapshotsContainer.style.cssText = "display: flex; flex-direction: column; gap: 1rem; padding: 1rem;";
+        allSnapshotsContainer.style.cssText =
+          "display: flex; flex-direction: column; gap: 1rem; padding: 1rem;";
 
         let viewpointIndex = 0;
         for (const viewpointGuid of selectedTopic.viewpoints) {
@@ -451,7 +452,8 @@ export function BCFPanel({
               const url = URL.createObjectURL(blob);
 
               const snapshotContainer = document.createElement("div");
-              snapshotContainer.style.cssText = "display: flex; flex-direction: column; gap: 0.5rem;";
+              snapshotContainer.style.cssText =
+                "display: flex; flex-direction: column; gap: 0.5rem;";
 
               // Add viewpoint label
               const label = document.createElement("div");
