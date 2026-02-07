@@ -14,10 +14,7 @@ export default async function VerifyEmailPage({
     include: { user: true },
   });
 
-  if (
-    !verificationToken ||
-    verificationToken.type !== "EMAIL_VERIFICATION"
-  ) {
+  if (!verificationToken || verificationToken.type !== "EMAIL_VERIFICATION") {
     notFound();
   }
 

@@ -1,22 +1,41 @@
 "use client";
 
 import { useSession } from "next-auth/react";
-import { useState } from "react";
-import Link from "next/link";
+import { useState, useEffect } from "react";
 
 export function EmailVerificationBanner() {
   const { data: session } = useSession();
   const [dismissed, setDismissed] = useState(false);
   const [resending, setResending] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [isVerified, setIsVerified] = useState<boolean | null>(null);
 
-  // Don't show if dismissed or no session
-  if (dismissed || !session?.user?.email) {
+  // Fetch verification status
+  useEffect(() => {
+    if (!session?.user?.email) {
+      setIsVerified(null);
+      return;
+    }
+
+    const checkVerification = async () => {
+      try {
+        const response = await fetch("/api/auth/verification-status");
+        if (response.ok) {
+          const data = await response.json();
+          setIsVerified(data.emailVerified);
+        }
+      } catch (error) {
+        console.error("Failed to check verification status:", error);
+      }
+    };
+
+    checkVerification();
+  }, [session?.user?.email]);
+
+  // Don't show if dismissed, no session, or email is verified
+  if (dismissed || !session?.user?.email || isVerified === true || isVerified === null) {
     return null;
   }
-
-  // Check if email is verified (we'll need to add this to the session)
-  // For now, we'll create a separate component that fetches this
 
   const handleResend = async () => {
     setResending(true);
@@ -42,11 +61,11 @@ export function EmailVerificationBanner() {
   };
 
   return (
-    <div className="bg-yellow-50 border-b border-yellow-200">
+    <div className="bg-yellow-50 border-b border-yellow-200 w-full">
       <div className="max-w-7xl mx-auto py-3 px-3 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between flex-wrap">
-          <div className="w-0 flex-1 flex items-center">
-            <span className="flex p-2 rounded-lg bg-yellow-100">
+        <div className="flex items-center justify-between flex-wrap gap-3">
+          <div className="flex items-center flex-1 min-w-0">
+            <span className="flex p-2 rounded-lg bg-yellow-100 flex-shrink-0">
               <svg
                 className="h-5 w-5 text-yellow-600"
                 fill="none"
@@ -61,28 +80,28 @@ export function EmailVerificationBanner() {
                 />
               </svg>
             </span>
-            <p className="ml-3 font-medium text-yellow-800 text-sm">
-              <span>
+            <div className="ml-3 flex-1 min-w-0">
+              <p className="font-medium text-yellow-800 text-sm">
                 Please verify your email address to access all features.
-              </span>
+              </p>
               {message && (
-                <span className="block sm:inline sm:ml-2 text-yellow-700">
+                <p className="text-sm text-yellow-700 mt-1">
                   {message}
-                </span>
+                </p>
               )}
-            </p>
+            </div>
           </div>
-          <div className="flex-shrink-0 flex items-center space-x-2">
+          <div className="flex items-center space-x-3 flex-shrink-0">
             <button
               onClick={handleResend}
               disabled={resending}
-              className="text-sm font-medium text-yellow-800 hover:text-yellow-900 underline disabled:opacity-50"
+              className="text-sm font-medium text-yellow-800 hover:text-yellow-900 underline disabled:opacity-50 whitespace-nowrap"
             >
               {resending ? "Sending..." : "Resend Email"}
             </button>
             <button
               onClick={() => setDismissed(true)}
-              className="p-1 rounded-md hover:bg-yellow-100"
+              className="p-1 rounded-md hover:bg-yellow-100 flex-shrink-0"
             >
               <svg
                 className="h-4 w-4 text-yellow-600"
