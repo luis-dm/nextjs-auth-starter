@@ -25,9 +25,12 @@ const workspace = new Workspace({
 // Action tools for 3D viewer manipulation
 const selectElementsTool = createTool({
   id: "select-elements",
-  description: "Select/highlight elements in the 3D viewer. Use the localId field from query results.",
+  description:
+    "Select/highlight elements in the 3D viewer. Use the localId field from query results.",
   inputSchema: z.object({
-    elementIds: z.array(z.number()).describe("Array of element IDs (localId field) to select"),
+    elementIds: z
+      .array(z.number())
+      .describe("Array of element IDs (localId field) to select"),
   }),
   outputSchema: z.object({
     action: z.literal("select"),
@@ -45,9 +48,12 @@ const selectElementsTool = createTool({
 
 const hideElementsTool = createTool({
   id: "hide-elements",
-  description: "Hide elements from the 3D viewer. Use the localId field from query results.",
+  description:
+    "Hide elements from the 3D viewer. Use the localId field from query results.",
   inputSchema: z.object({
-    elementIds: z.array(z.number()).describe("Array of element IDs (localId field) to hide"),
+    elementIds: z
+      .array(z.number())
+      .describe("Array of element IDs (localId field) to hide"),
   }),
   outputSchema: z.object({
     action: z.literal("hide"),
@@ -65,9 +71,12 @@ const hideElementsTool = createTool({
 
 const showElementsTool = createTool({
   id: "show-elements",
-  description: "Show previously hidden elements. Use the localId field from query results.",
+  description:
+    "Show previously hidden elements. Use the localId field from query results.",
   inputSchema: z.object({
-    elementIds: z.array(z.number()).describe("Array of element IDs (localId field) to show"),
+    elementIds: z
+      .array(z.number())
+      .describe("Array of element IDs (localId field) to show"),
   }),
   outputSchema: z.object({
     action: z.literal("show"),
@@ -85,9 +94,12 @@ const showElementsTool = createTool({
 
 const isolateElementsTool = createTool({
   id: "isolate-elements",
-  description: "Hide all elements except the specified ones (focus mode). Use the localId field from query results.",
+  description:
+    "Hide all elements except the specified ones (focus mode). Use the localId field from query results.",
   inputSchema: z.object({
-    elementIds: z.array(z.number()).describe("Array of element IDs (localId field) to keep visible"),
+    elementIds: z
+      .array(z.number())
+      .describe("Array of element IDs (localId field) to keep visible"),
   }),
   outputSchema: z.object({
     action: z.literal("isolate"),
