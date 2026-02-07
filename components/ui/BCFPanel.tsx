@@ -52,7 +52,7 @@ export function BCFPanel({
     try {
       const allTopics = [...bcfTopicsRef.current.list.values()];
       console.log("Saving BCF to database - Topics count:", allTopics.length);
-      
+
       // Allow saving even when there are 0 topics (to clear the BCF file)
       if (allTopics.length === 0) {
         console.log("No topics - will save empty BCF to clear data");
