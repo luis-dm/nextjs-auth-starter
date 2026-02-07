@@ -22,7 +22,25 @@ export async function GET(req: NextRequest) {
     const organizationId = searchParams.get("organizationId");
     const page = parseInt(searchParams.get("page") || "1");
     const limit = parseInt(searchParams.get("limit") || "7");
+    const sort = searchParams.get("sort") || "date-desc";
     const skip = (page - 1) * limit;
+
+    // Determine sort order
+    let orderBy: any = { createdAt: "desc" };
+    switch (sort) {
+      case "name-asc":
+        orderBy = { name: "asc" };
+        break;
+      case "name-desc":
+        orderBy = { name: "desc" };
+        break;
+      case "date-asc":
+        orderBy = { createdAt: "asc" };
+        break;
+      case "date-desc":
+        orderBy = { createdAt: "desc" };
+        break;
+    }
 
     // Get the user's organizations with selective fields
     const user = await prisma.user.findUnique({
@@ -80,7 +98,7 @@ export async function GET(req: NextRequest) {
           createdAt: true,
           organizationId: true,
         },
-        orderBy: { createdAt: "desc" },
+        orderBy,
         skip,
         take: limit,
       }),

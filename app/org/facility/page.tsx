@@ -57,7 +57,7 @@ function FacilityList() {
         // Fetch organizations and facilities in parallel
         const [orgsResponse, facilitiesResponse] = await Promise.all([
           fetch("/api/organizations"),
-          fetch(`/api/facilities?page=${page}&limit=${itemsPerPage}`),
+          fetch(`/api/facilities?page=${page}&limit=${itemsPerPage}&sort=${sortOption}`),
         ]);
 
         if (orgsResponse.ok) {
@@ -79,7 +79,7 @@ function FacilityList() {
     };
 
     fetchData();
-  }, [page, itemsPerPage]);
+  }, [page, itemsPerPage, sortOption]);
 
   // Fetch facilities when organization changes
   useEffect(() => {
@@ -89,7 +89,7 @@ function FacilityList() {
       setIsLoading(true);
       try {
         const response = await fetch(
-          `/api/facilities?organizationId=${organization.id}&page=${page}&limit=${itemsPerPage}`,
+          `/api/facilities?organizationId=${organization.id}&page=${page}&limit=${itemsPerPage}&sort=${sortOption}`,
         );
         if (response.ok) {
           const data = await response.json();
@@ -104,7 +104,7 @@ function FacilityList() {
     };
 
     fetchFacilitiesForOrg();
-  }, [organization?.id, page, itemsPerPage]);
+  }, [organization?.id, page, itemsPerPage, sortOption]);
 
   // Facilities are already paginated and sorted from server
   const paginatedFacilities = facilities;
