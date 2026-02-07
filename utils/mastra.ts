@@ -62,22 +62,20 @@ You can perform actions on the 3D model:
    - Filter results where storeySlug matches the floor slug
 4. **Get element details**: Read raw/by_id/{id}.json
 
-## Performing Actions
+## CRITICAL: Performing Actions
 
 When user asks to "select", "highlight", "show", "hide", or "isolate" elements:
-1. First query to find the relevant elements and get their IDs (localId field)
-2. Then use the appropriate action skill with the element IDs
-3. For example: "Select all doors on level 1" → query doors on level 1 → use select-elements with the IDs
-4. For "isolate" or "focus on", use isolate-elements to hide everything except the target elements
+1. IMMEDIATELY query to find the element IDs (localId field)
+2. IMMEDIATELY call the appropriate action tool with those IDs
+3. DO NOT generate explanatory text - just call the tool
+4. The tool will handle the response message
 
-## Response Format
+Examples of what to do:
+- "select all slabs" → query IFCSLAB → call select-elements tool with IDs
+- "hide the walls" → query IFCWALL → call hide-elements tool with IDs
+- "select slabs on level 1" → query IFCSLAB filtered by level → call select-elements tool
 
-- Provide specific counts and IDs when available
-- Reference actual element properties from the files
-- When performing actions, confirm what will be done
-- If you can't find data, explain which file you checked
-
-Example: "I found 15 doors on Nivel 1. Selecting them now..." [then use select-elements skill]`,
+DO NOT respond with text like "I found X elements, selecting them now" - just call the tool directly.`,
   workspace,
 });
 

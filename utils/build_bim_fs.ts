@@ -698,16 +698,7 @@ export async function buildFilesystem(options: {
   );
   console.log("✓ state/last_result.json");
 
-  console.log("\n✅ Done! Filesystem structure created at:", args.out);
-  console.log("\nExample queries:");
-  console.log(`  # Get IDs of chairs on first floor:`);
-  console.log(
-    `  cat ${args.out}/index/by_storey/nivel_1.jsonl | jq -r 'select(.name | contains("Chair")) | .id'`,
-  );
-  console.log(`\n  # All door elements:`);
-  console.log(`  cat ${args.out}/index/by_category/IFCDOOR.jsonl | jq .`);
-  console.log(`\n  # Raw properties of door 22492:`);
-  console.log(`  cat ${args.out}/raw/by_id/22492.json | jq .`);
+  console.log("\nDone! Filesystem structure created at:", args.out);
 }
 
 // ============================================================================
