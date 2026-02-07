@@ -264,7 +264,7 @@ export function BCFPanel({
               await viewpoint.updateSnapshot();
             }
             topic.viewpoints.add(viewpoint.guid);
-            
+
             // Trigger update to ensure snapshot is shown
             setSnapshotUpdateTrigger((prev) => prev + 1);
           }
