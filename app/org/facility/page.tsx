@@ -13,6 +13,7 @@ import FacilitySorter, {
 } from "@/components/facility-list/FacilitySorter";
 import { EmailVerificationBanner } from "@/components/EmailVerificationBanner";
 import { Users, Plus, ChevronDown } from "lucide-react";
+import toast from "react-hot-toast";
 
 interface Facility {
   id: string;
@@ -166,10 +167,11 @@ function FacilityList() {
 
         // Close modal after successful upload
         setIsModalOpen(false);
+        toast.success(`Facility "${name}" registered successfully`);
       } else {
         const error = await response.json();
         console.error("Failed to register facility:", error);
-        alert("Failed to register facility: " + error.error);
+        toast.error("Failed to register facility: " + error.error);
         throw new Error("Failed to register facility");
       }
     } catch (error) {

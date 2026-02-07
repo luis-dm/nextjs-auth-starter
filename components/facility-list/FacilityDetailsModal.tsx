@@ -82,13 +82,14 @@ export default function FacilityDetailsModal({
       if (response.ok) {
         // Refresh facility details
         await fetchFacilityDetails();
+        toast.success(`Member role updated to ${newRole}`);
       } else {
         const error = await response.json();
-        alert(error.error || "Failed to update member role");
+        toast.error(error.error || "Failed to update member role");
       }
     } catch (error) {
       console.error("Error updating member role:", error);
-      alert("Error updating member role");
+      toast.error("Error updating member role");
     } finally {
       setUpdatingMember(null);
     }

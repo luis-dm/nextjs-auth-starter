@@ -210,13 +210,13 @@ export default function RegisterFacilityModal({
               `Converted ${selectedFile.name} to fragments (${(result.fragmentBytes.byteLength / 1024 / 1024).toFixed(2)} MB)`,
             );
           } else {
-            alert("Failed to convert IFC file to fragments");
+            toast.error("Failed to convert IFC file");
             setIsConverting(false);
             return;
           }
         } catch (error) {
           console.error("Error converting IFC:", error);
-          alert("Error converting IFC file");
+          toast.error("Error converting IFC file");
           setIsConverting(false);
           return;
         }
@@ -249,7 +249,7 @@ export default function RegisterFacilityModal({
     if (file && file.name.endsWith(".ifc")) {
       setSelectedFile(file);
     } else if (file) {
-      alert("Please select a valid IFC file");
+      toast.error("Please select a valid IFC file");
       e.target.value = "";
     }
   };

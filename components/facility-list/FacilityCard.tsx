@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Building2, Trash2, Pencil, Info } from "lucide-react";
 import { useState } from "react";
+import toast from "react-hot-toast";
 
 interface FacilityCardProps {
   id: string;
@@ -48,13 +49,14 @@ export default function FacilityCard({
 
       if (response.ok) {
         onDelete?.(id);
+        toast.success(`Facility "${name}" deleted successfully`);
       } else {
         const error = await response.json();
-        alert(error.error || "Failed to delete facility");
+        toast.error(error.error || "Failed to delete facility");
       }
     } catch (error) {
       console.error("Error deleting facility:", error);
-      alert("Error deleting facility");
+      toast.error("Error deleting facility");
     } finally {
       setIsDeleting(false);
     }

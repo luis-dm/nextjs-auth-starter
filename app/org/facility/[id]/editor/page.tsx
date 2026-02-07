@@ -242,7 +242,7 @@ export default function BIMEditPage() {
             console.log(`Model "${fileName}" loaded successfully`);
           } catch (error) {
             console.error("Error loading model:", error);
-            alert("Error loading the fragment model.");
+            console.log("Error loading the fragment model.");
           }
         };
 
@@ -389,7 +389,7 @@ export default function BIMEditPage() {
             } catch (error) {
               console.error("Error saving model:", error);
               document.body.removeChild(loadingOverlay);
-              alert("Error saving the model. Please try again.");
+              console.log("Error saving the model. Please try again.");
             }
           };
 
@@ -440,7 +440,7 @@ export default function BIMEditPage() {
             const data = await response.json();
 
             if (!data.fragmentPath) {
-              alert(
+              console.log(
                 "No fragment file associated with this facility. Please upload one from the viewer page.",
               );
               return;
@@ -536,7 +536,7 @@ export default function BIMEditPage() {
             setIsLoading(false);
           } catch (error) {
             console.error("Error loading facility fragment:", error);
-            alert("Error loading the facility fragment file.");
+            console.log("Error loading the facility fragment file.");
             setIsLoading(false);
           }
         };

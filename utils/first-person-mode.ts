@@ -722,9 +722,6 @@ export const enterFirstPersonMode = async (configParam: FirstPersonConfig) => {
     }
   } catch (error) {
     console.error("Failed to load PointerLockControls:", error);
-    alert(
-      "First Person View requires PointerLockControls from Three.js examples. Please ensure it is available.",
-    );
     return;
   }
 
