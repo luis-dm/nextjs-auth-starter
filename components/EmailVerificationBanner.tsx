@@ -33,7 +33,12 @@ export function EmailVerificationBanner() {
   }, [session?.user?.email]);
 
   // Don't show if dismissed, no session, or email is verified
-  if (dismissed || !session?.user?.email || isVerified === true || isVerified === null) {
+  if (
+    dismissed ||
+    !session?.user?.email ||
+    isVerified === true ||
+    isVerified === null
+  ) {
     return null;
   }
 
@@ -65,7 +70,7 @@ export function EmailVerificationBanner() {
       <div className="max-w-7xl mx-auto py-3 px-3 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between flex-wrap gap-3">
           <div className="flex items-center flex-1 min-w-0">
-            <span className="flex p-2 rounded-lg bg-yellow-100 flex-shrink-0">
+            <span className="flex p-2 rounded-lg bg-yellow-100 shrink-0">
               <svg
                 className="h-5 w-5 text-yellow-600"
                 fill="none"
@@ -85,13 +90,11 @@ export function EmailVerificationBanner() {
                 Please verify your email address to access all features.
               </p>
               {message && (
-                <p className="text-sm text-yellow-700 mt-1">
-                  {message}
-                </p>
+                <p className="text-sm text-yellow-700 mt-1">{message}</p>
               )}
             </div>
           </div>
-          <div className="flex items-center space-x-3 flex-shrink-0">
+          <div className="flex items-center space-x-3 shrink-0">
             <button
               onClick={handleResend}
               disabled={resending}
@@ -101,7 +104,7 @@ export function EmailVerificationBanner() {
             </button>
             <button
               onClick={() => setDismissed(true)}
-              className="p-1 rounded-md hover:bg-yellow-100 flex-shrink-0"
+              className="p-1 rounded-md hover:bg-yellow-100 shrink-0"
             >
               <svg
                 className="h-4 w-4 text-yellow-600"
