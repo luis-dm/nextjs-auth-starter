@@ -413,7 +413,7 @@ export function BCFPanel({
       // Create a container div and append all sections with headers
       const detailsContainer = document.createElement("div");
       detailsContainer.style.cssText =
-        "display: flex; flex-direction: column; min-height: min-content;";
+        "display: flex; flex-direction: column; padding-bottom: 2rem;";
 
       // Create section wrappers with headers
       const createSection = (
@@ -428,11 +428,14 @@ export function BCFPanel({
         return section;
       };
 
-      // Create viewpoint snapshots section
-      const snapshotSections: HTMLElement[] = [];
+      // Create combined snapshots section
+      let snapshotsSection: HTMLElement | null = null;
       if (selectedTopic.viewpoints.size > 0) {
         const OBC = await import("@thatopen/components");
         const viewpointsComponent = components.get(OBC.Viewpoints);
+
+        const allSnapshotsContainer = document.createElement("div");
+        allSnapshotsContainer.style.cssText = "display: flex; flex-direction: column; gap: 1rem; padding: 1rem;";
 
         let viewpointIndex = 0;
         for (const viewpointGuid of selectedTopic.viewpoints) {
@@ -448,13 +451,13 @@ export function BCFPanel({
               const url = URL.createObjectURL(blob);
 
               const snapshotContainer = document.createElement("div");
-              snapshotContainer.style.cssText = "padding: 1rem;";
+              snapshotContainer.style.cssText = "display: flex; flex-direction: column; gap: 0.5rem;";
 
               // Add viewpoint label
               const label = document.createElement("div");
               label.textContent = `Viewpoint ${viewpointIndex}`;
               label.style.cssText =
-                "font-weight: 600; margin-bottom: 0.5rem; color: #1c1b1f; font-size: 0.875rem;";
+                "font-weight: 600; color: #1c1b1f; font-size: 0.875rem;";
               snapshotContainer.appendChild(label);
 
               const img = document.createElement("img");
@@ -464,15 +467,17 @@ export function BCFPanel({
                 "width: 100%; max-width: 100%; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);";
 
               snapshotContainer.appendChild(img);
-              snapshotSections.push(
-                createSection(
-                  `Snapshot ${viewpointIndex}`,
-                  "tabler:photo",
-                  snapshotContainer,
-                ),
-              );
+              allSnapshotsContainer.appendChild(snapshotContainer);
             }
           }
+        }
+
+        if (allSnapshotsContainer.children.length > 0) {
+          snapshotsSection = createSection(
+            "Snapshots",
+            "tabler:photo",
+            allSnapshotsContainer,
+          );
         }
       }
 
@@ -482,9 +487,9 @@ export function BCFPanel({
       detailsContainer.appendChild(
         createSection("Comments", "majesticons:comment-line", comments),
       );
-      snapshotSections.forEach((section) => {
-        detailsContainer.appendChild(section);
-      });
+      if (snapshotsSection) {
+        detailsContainer.appendChild(snapshotsSection);
+      }
       detailsContainer.appendChild(
         createSection("Viewpoints", "tabler:camera", viewpoints),
       );
