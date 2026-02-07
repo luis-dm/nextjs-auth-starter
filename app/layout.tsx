@@ -1,7 +1,7 @@
 // app/layout.tsx
 import "./globals.css";
 import Header from "./Header";
-import { Providers } from "./providers";
+import Providers from "./providers";
 import { Toaster } from "react-hot-toast";
 
 export const metadata = {
