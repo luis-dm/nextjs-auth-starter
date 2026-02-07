@@ -145,7 +145,7 @@ export function PropertiesPanel({
                 placeholder="Search"
                 value={searchQuery}
                 onChange={handleSearch}
-                className="w-full py-1.5 pl-4 pr-20 border border-gray-200 rounded-3xl text-sm text-gray-800 bg-white transition-colors duration-200 ease-in-out placeholder:text-gray-400 focus:outline-none focus:border-primary"
+                className="w-full py-1.5 pl-4 pr-20 border border-gray-200 rounded-3xl text-sm text-gray-800 bg-white transition-colors duration-200 ease-in-out placeholder:text-gray-400 focus:outline-none focus:border-gray-800"
               />
               <button
                 className="absolute right-3 bg-none border-none text-lg text-gray-500 cursor-pointer rounded flex items-center justify-center w-6 h-6 hover:text-gray-700"

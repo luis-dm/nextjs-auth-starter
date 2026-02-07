@@ -219,12 +219,12 @@ export const chatbotPanelTemplate: BUI.StatefullComponent<ChatbotPanelState> = (
         <!-- Input Area -->
         <div class="flex gap-2 mb-2 mx-2">
           <textarea
-            class="flex-1 p-3 border border-gray-200 rounded-lg text-sm outline-none transition-all duration-200 bg-gray-50 text-gray-800 resize-none min-h-5 max-h-20 focus:border-primary focus:shadow-sm focus:shadow-primary/10"
+            class="flex-1 p-3 border border-gray-200 rounded-lg text-sm outline-none transition-all duration-200 bg-gray-50 text-gray-800 resize-none min-h-5 max-h-20 focus:border-gray-800 focus:shadow-sm focus:shadow-gray-500/10"
             placeholder="Type your message..."
             @keypress=${onKeyPress}
             rows="1"
           ></textarea>
-          <button class="rounded-lg bg-primary text-white px-4 py-3 border border-primary cursor-pointer text-sm font-normal transition-all duration-200 hover:bg-gray-700 hover:border-gray-700 disabled:opacity-50 disabled:cursor-not-allowed" @click=${handleSendMessage} ?disabled=${isLoading}>
+          <button class="rounded-lg text-white px-4 py-3 border border-gray-800 cursor-pointer text-sm font-normal transition-all duration-200 bg-gray-800 hover:bg-gray-500 disabled:opacity-50 disabled:cursor-not-allowed" @click=${handleSendMessage} ?disabled=${isLoading}>
             ${isLoading ? "Processing..." : "Send"}
           </button>
         </div>
