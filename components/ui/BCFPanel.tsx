@@ -256,8 +256,12 @@ export function BCFPanel({
           if (topic.viewpoints.size === 0) {
             // Create single viewpoint for this topic
             const viewpoint = viewpoints.create();
-            await viewpoint.updateCamera();
-            await viewpoint.updateSnapshot();
+            if (typeof viewpoint.updateCamera === 'function') {
+              await viewpoint.updateCamera();
+            }
+            if (typeof viewpoint.updateSnapshot === 'function') {
+              await viewpoint.updateSnapshot();
+            }
             topic.viewpoints.add(viewpoint.guid);
           }
         });
@@ -268,8 +272,12 @@ export function BCFPanel({
             const viewpointGuid = Array.from(topic.viewpoints)[0];
             const viewpoint = viewpoints.list.get(viewpointGuid);
             if (viewpoint) {
-              await viewpoint.updateCamera();
-              await viewpoint.updateSnapshot();
+              if (typeof viewpoint.updateCamera === 'function') {
+                await viewpoint.updateCamera();
+              }
+              if (typeof viewpoint.updateSnapshot === 'function') {
+                await viewpoint.updateSnapshot();
+              }
             }
           }
         });

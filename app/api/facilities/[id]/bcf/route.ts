@@ -77,10 +77,8 @@ export async function GET(
     });
   } catch (error) {
     console.error("Error loading BCF data:", error);
-    return NextResponse.json(
-      { error: "Failed to load BCF data" },
-      { status: 500 },
-    );
+    // Return null instead of error for missing BCF files
+    return NextResponse.json({ bcfData: null });
   }
 }
 
