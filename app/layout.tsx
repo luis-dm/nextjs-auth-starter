@@ -29,24 +29,25 @@ export default function RootLayout({
             <main className="flex-1 overflow-hidden">{children}</main>
           </div>
           <Toaster
-            position="top-right"
+            position="top-center"
             toastOptions={{
-              duration: 3000,
+              duration: 1800,
               style: {
-                background: "#1f2937",
-                color: "#fff",
+                background: "#fff",
+                color: "#000",
+                border: "1px solid #000",
                 borderRadius: "0.5rem",
               },
               success: {
                 iconTheme: {
-                  primary: "#fff",
-                  secondary: "#1f2937",
+                  primary: "#000",
+                  secondary: "#fff",
                 },
               },
               error: {
                 iconTheme: {
-                  primary: "#fff",
-                  secondary: "#1f2937",
+                  primary: "#000",
+                  secondary: "#fff",
                 },
               },
             }}
