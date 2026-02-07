@@ -246,8 +246,9 @@ export function BCFPanel({
         viewpointsRef.current = viewpoints;
 
         // Listen for snapshot updates to refresh the details panel
-        viewpoints.list.onItemUpdated.add(() => {
+        viewpoints.list.onItemUpdated.add(({ value: viewpoint }: any) => {
           // Trigger re-render of details panel when viewpoint is updated
+          console.log("Viewpoint updated:", viewpoint.guid);
           setSnapshotUpdateTrigger((prev) => prev + 1);
         });
 
@@ -263,6 +264,9 @@ export function BCFPanel({
               await viewpoint.updateSnapshot();
             }
             topic.viewpoints.add(viewpoint.guid);
+            
+            // Trigger update to ensure snapshot is shown
+            setSnapshotUpdateTrigger((prev) => prev + 1);
           }
         });
 
