@@ -145,9 +145,10 @@ export default function FacilityCard({
               Delete Facility
             </h3>
             <p className="text-gray-600 mb-6">
-              Are you sure you want to delete <span className="font-semibold">"{name}"</span>? 
-              This will permanently delete all associated data including IFC files, BCF topics, and fragments. 
-              This action cannot be undone.
+              Are you sure you want to delete{" "}
+              <span className="font-semibold">"{name}"</span>? This will
+              permanently delete all associated data including IFC files, BCF
+              topics, and fragments. This action cannot be undone.
             </p>
             <div className="flex justify-end gap-3">
               <button
