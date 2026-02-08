@@ -352,7 +352,12 @@ export class BimChatbot {
     }
 
     try {
-      console.log("BimChatbot: Sending message:", message, "for facility:", facilityId);
+      console.log(
+        "BimChatbot: Sending message:",
+        message,
+        "for facility:",
+        facilityId,
+      );
       const response = await fetch("/api/bim/chat", {
         method: "POST",
         headers: {

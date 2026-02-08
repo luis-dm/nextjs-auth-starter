@@ -106,7 +106,7 @@ const updateChatHistory = () => {
 export const loadSpatialStructureAfterModel = async (facilityId: string) => {
   // Store the facilityId for later use in sendMessage
   currentFacilityId = facilityId;
-  
+
   if (bimChatbotInstance) {
     try {
       console.log("Loading spatial structure after model load...");
@@ -193,7 +193,10 @@ export const chatbotPanelTemplate: BUI.StatefullComponent<ChatbotPanelState> = (
     try {
       // Use the BIM chatbot to send message to Mastra agent
       if (bimChatbotInstance && currentFacilityId) {
-        const response = await bimChatbotInstance.sendMessage(userMessage, currentFacilityId);
+        const response = await bimChatbotInstance.sendMessage(
+          userMessage,
+          currentFacilityId,
+        );
 
         // Remove loading message and add actual response
         messages = messages.filter((m) => m.id !== loadingMessageId);
@@ -201,10 +204,10 @@ export const chatbotPanelTemplate: BUI.StatefullComponent<ChatbotPanelState> = (
       } else {
         messages = messages.filter((m) => m.id !== loadingMessageId);
         addMessage(
-          currentFacilityId 
-            ? "Chatbot is still initializing. Please wait..." 
+          currentFacilityId
+            ? "Chatbot is still initializing. Please wait..."
             : "Please load a facility first.",
-          false
+          false,
         );
       }
     } catch (error) {
