@@ -23,6 +23,7 @@ export default function FacilityCard({
   onDetails,
 }: FacilityCardProps) {
   const [isDeleting, setIsDeleting] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   // Format the date
   const formattedDate = new Date(createdAt).toLocaleDateString("en-US", {
@@ -36,11 +37,11 @@ export default function FacilityCard({
   const handleDelete = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+    setShowDeleteModal(true);
+  };
 
-    if (!confirm(`Are you sure you want to delete "${name}"?`)) {
-      return;
-    }
-
+  const confirmDelete = async () => {
+    setShowDeleteModal(false);
     setIsDeleting(true);
     try {
       const response = await fetch(`/api/facilities/${id}`, {
@@ -75,64 +76,104 @@ export default function FacilityCard({
   };
 
   return (
-    <Link href={`/org/facility/${id}/viewer`} className="group block">
-      <div className="flex items-center gap-4 p-4 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 hover:shadow-md transition-all duration-200">
-        {/* Icon/Thumbnail */}
-        <div className="shrink-0 w-10 h-10 bg-linear-to-br from-gray-100 to-gray-200 rounded flex items-center justify-center">
-          <Building2 className="w-6 h-6 text-gray-700" />
+    <>
+      <Link href={`/org/facility/${id}/viewer`} className="group block">
+        <div className="flex items-center gap-4 p-4 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 hover:shadow-md transition-all duration-200">
+          {/* Icon/Thumbnail */}
+          <div className="shrink-0 w-10 h-10 bg-linear-to-br from-gray-100 to-gray-200 rounded flex items-center justify-center">
+            <Building2 className="w-6 h-6 text-gray-700" />
+          </div>
+
+          {/* Content */}
+          <div className="flex-1 min-w-0">
+            <h3 className="font-medium text-sm text-gray-900 group-hover:text-gray-700 transition-colors truncate">
+              {name}
+            </h3>
+            <p className="text-xs text-gray-500 truncate">
+              {ifcFileName || "No IFC File Yet"}
+            </p>
+          </div>
+
+          {/* Date */}
+          <div className="shrink-0 text-xs text-gray-500">{formattedDate}</div>
+
+          {/* Info Button */}
+          {onDetails && (
+            <button
+              onClick={handleDetails}
+              className="shrink-0 p-2 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded transition-colors"
+              title="View details"
+            >
+              <Info className="w-4 h-4" />
+            </button>
+          )}
+
+          {/* Edit Button */}
+          {onEdit && (
+            <button
+              onClick={handleEdit}
+              className="shrink-0 p-2 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded transition-colors"
+              title="Edit facility"
+            >
+              <Pencil className="w-4 h-4" />
+            </button>
+          )}
+
+          {/* Delete Button */}
+          {onDelete && (
+            <button
+              onClick={handleDelete}
+              disabled={isDeleting}
+              className="shrink-0 p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors disabled:opacity-50"
+              title="Delete facility"
+            >
+              {isDeleting ? (
+                <div className="w-4 h-4 border-2 border-red-500 border-t-transparent rounded-full animate-spin" />
+              ) : (
+                <Trash2 className="w-4 h-4" />
+              )}
+            </button>
+          )}
         </div>
+      </Link>
 
-        {/* Content */}
-        <div className="flex-1 min-w-0">
-          <h3 className="font-medium text-sm text-gray-900 group-hover:text-gray-700 transition-colors truncate">
-            {name}
-          </h3>
-          <p className="text-xs text-gray-500 truncate">
-            {ifcFileName || "No IFC File Yet"}
-          </p>
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              Delete Facility
+            </h3>
+            <p className="text-gray-600 mb-6">
+              Are you sure you want to delete <span className="font-semibold">"{name}"</span>? 
+              This will permanently delete all associated data including IFC files, BCF topics, and fragments. 
+              This action cannot be undone.
+            </p>
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setShowDeleteModal(false);
+                }}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  confirmDelete();
+                }}
+                className="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-md transition-colors"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
         </div>
-
-        {/* Date */}
-        <div className="shrink-0 text-xs text-gray-500">{formattedDate}</div>
-
-        {/* Info Button */}
-        {onDetails && (
-          <button
-            onClick={handleDetails}
-            className="shrink-0 p-2 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded transition-colors"
-            title="View details"
-          >
-            <Info className="w-4 h-4" />
-          </button>
-        )}
-
-        {/* Edit Button */}
-        {onEdit && (
-          <button
-            onClick={handleEdit}
-            className="shrink-0 p-2 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded transition-colors"
-            title="Edit facility"
-          >
-            <Pencil className="w-4 h-4" />
-          </button>
-        )}
-
-        {/* Delete Button */}
-        {onDelete && (
-          <button
-            onClick={handleDelete}
-            disabled={isDeleting}
-            className="shrink-0 p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors disabled:opacity-50"
-            title="Delete facility"
-          >
-            {isDeleting ? (
-              <div className="w-4 h-4 border-2 border-red-500 border-t-transparent rounded-full animate-spin" />
-            ) : (
-              <Trash2 className="w-4 h-4" />
-            )}
-          </button>
-        )}
-      </div>
-    </Link>
+      )}
+    </>
   );
 }
