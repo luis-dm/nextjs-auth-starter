@@ -5,6 +5,7 @@ import { BimChatbot } from "@/utils/bimchatbot";
 export interface ChatbotPanelState {
   components: OBC.Components;
   world?: OBC.World;
+  facilityId?: string;
 }
 
 interface ChatMessage {
@@ -18,6 +19,7 @@ interface ChatMessage {
 let messages: ChatMessage[] = [];
 let isLoading = false;
 let bimChatbotInstance: BimChatbot | null = null;
+let currentFacilityId: string | null = null;
 
 const initializeMessages = () => {
   if (messages.length === 0) {
@@ -102,6 +104,9 @@ const updateChatHistory = () => {
 
 // Export function to load spatial structure after model is loaded
 export const loadSpatialStructureAfterModel = async (facilityId: string) => {
+  // Store the facilityId for later use in sendMessage
+  currentFacilityId = facilityId;
+  
   if (bimChatbotInstance) {
     try {
       console.log("Loading spatial structure after model load...");
@@ -187,15 +192,20 @@ export const chatbotPanelTemplate: BUI.StatefullComponent<ChatbotPanelState> = (
 
     try {
       // Use the BIM chatbot to send message to Mastra agent
-      if (bimChatbotInstance) {
-        const response = await bimChatbotInstance.sendMessage(userMessage);
+      if (bimChatbotInstance && currentFacilityId) {
+        const response = await bimChatbotInstance.sendMessage(userMessage, currentFacilityId);
 
         // Remove loading message and add actual response
         messages = messages.filter((m) => m.id !== loadingMessageId);
         addMessage(response, false);
       } else {
         messages = messages.filter((m) => m.id !== loadingMessageId);
-        addMessage("Chatbot is still initializing. Please wait...", false);
+        addMessage(
+          currentFacilityId 
+            ? "Chatbot is still initializing. Please wait..." 
+            : "Please load a facility first.",
+          false
+        );
       }
     } catch (error) {
       console.error("Error sending message:", error);

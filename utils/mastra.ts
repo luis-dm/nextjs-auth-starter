@@ -115,6 +115,14 @@ const isolateElementsTool = createTool({
   },
 });
 
+// Export the action tools so they can be reused
+export {
+  selectElementsTool,
+  hideElementsTool,
+  showElementsTool,
+  isolateElementsTool,
+};
+
 const bimAgent = new Agent({
   id: "bimAgent",
   name: "BIM Query Assistant",

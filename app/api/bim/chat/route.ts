@@ -1,9 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
-import { mastra } from "@/utils/mastra";
+import { Agent } from "@mastra/core/agent";
+import { Workspace, LocalFilesystem } from "@mastra/core/workspace";
+import { openai } from "@ai-sdk/openai";
+import {
+  selectElementsTool,
+  hideElementsTool,
+  showElementsTool,
+  isolateElementsTool,
+} from "@/utils/mastra";
 
 export async function POST(req: NextRequest) {
   try {
-    const { message } = await req.json();
+    const { message, facilityId } = await req.json();
 
     if (!message) {
       return NextResponse.json(
@@ -12,15 +20,53 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Get the BIM agent from Mastra
-    const agent = mastra.getAgent("bimAgent");
-
-    if (!agent) {
+    if (!facilityId) {
       return NextResponse.json(
-        { error: "BIM agent not found" },
-        { status: 500 },
+        { error: "Facility ID is required" },
+        { status: 400 },
       );
     }
+
+    console.log("Chat API: Processing message for facility:", facilityId);
+
+    // Create facility-specific workspace
+    const BIM_DATA_PATH = process.env.BIM_DATA_PATH || "./public/bim_data";
+    const basePath = `${BIM_DATA_PATH}/${facilityId}/ai/bim_fs`;
+    console.log("Creating workspace with basePath:", basePath);
+
+    const workspace = new Workspace({
+      filesystem: new LocalFilesystem({
+        basePath,
+        readOnly: true,
+      }),
+      skills: ["./skills"],
+    });
+
+    // Create agent with facility-specific workspace
+    const agent = new Agent({
+      id: "bimAgent",
+      name: "BIM Agent",
+      model: openai("gpt-4o"),
+      instructions: `You are a helpful BIM assistant. When users ask to select, hide, show, or isolate elements:
+1. Query the workspace to find relevant elements and their localId values
+2. Extract the localId field from the results
+3. IMMEDIATELY call the appropriate action tool with the element IDs
+4. DO NOT generate explanatory text without calling the tool
+5. Always call the action tool when the user wants to perform a selection or visibility action
+
+Available actions:
+- select-elements: Highlight elements in the viewer
+- hide-elements: Hide elements from view
+- show-elements: Make hidden elements visible
+- isolate-elements: Show only the specified elements`,
+      workspace,
+      tools: {
+        selectElementsTool,
+        hideElementsTool,
+        showElementsTool,
+        isolateElementsTool,
+      },
+    });
 
     // Use streaming to get tool results
     console.log("Generating response for message:", message);

@@ -346,19 +346,19 @@ export class BimChatbot {
     }
   }
 
-  async sendMessage(message: string): Promise<string> {
+  async sendMessage(message: string, facilityId: string): Promise<string> {
     if (!this.isFilesystemReady) {
       return "Please wait for the model to finish loading...";
     }
 
     try {
-      console.log("BimChatbot: Sending message:", message);
+      console.log("BimChatbot: Sending message:", message, "for facility:", facilityId);
       const response = await fetch("/api/bim/chat", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ message }),
+        body: JSON.stringify({ message, facilityId }),
       });
 
       if (!response.ok) {
