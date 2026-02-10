@@ -39,14 +39,13 @@ export async function POST(req: NextRequest) {
         basePath,
         readOnly: true,
       }),
-      skills: ["./skills"],
     });
 
     // Create agent with facility-specific workspace
     const agent = new Agent({
       id: "bimAgent",
       name: "BIM Agent",
-      model: openai("gpt-4o"),
+      model: openai("gpt-5"),
       instructions: `You are a BIM assistant with access to IFC model data and 3D viewer controls.
 
 ## Data Access (via workspace skills)
