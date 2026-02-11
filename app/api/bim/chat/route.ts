@@ -39,10 +39,10 @@ export async function POST(req: NextRequest) {
     console.log("Creating workspace with basePath:", basePath);
 
     const workspace = new Workspace({
-      filesystem: new LocalFilesystem({
-        basePath,
-        readOnly: true,
-      }),
+      // filesystem: new LocalFilesystem({
+      //   basePath,
+      //   readOnly: true,
+      // }),
       sandbox: new LocalSandbox({
         workingDirectory: basePath,
       }),
