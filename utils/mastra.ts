@@ -19,7 +19,6 @@ const workspace = new Workspace({
     basePath,
     readOnly: true,
   }),
-  skills: ["./skills"],
 });
 
 // Action tools for 3D viewer manipulation

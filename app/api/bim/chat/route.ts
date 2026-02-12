@@ -1,10 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Agent } from "@mastra/core/agent";
-import {
-  Workspace,
-  LocalFilesystem,
-  LocalSandbox,
-} from "@mastra/core/workspace";
+import { Workspace, LocalFilesystem } from "@mastra/core/workspace";
 import { openai } from "@ai-sdk/openai";
 import {
   selectElementsTool,
@@ -39,12 +35,9 @@ export async function POST(req: NextRequest) {
     console.log("Creating workspace with basePath:", basePath);
 
     const workspace = new Workspace({
-      // filesystem: new LocalFilesystem({
-      //   basePath,
-      //   readOnly: true,
-      // }),
-      sandbox: new LocalSandbox({
-        workingDirectory: basePath,
+      filesystem: new LocalFilesystem({
+        basePath,
+        readOnly: true,
       }),
     });
 
@@ -52,35 +45,23 @@ export async function POST(req: NextRequest) {
     const agent = new Agent({
       id: "bimAgent",
       name: "BIM Agent",
-      model: openai("gpt-4o"),
+      model: openai("gpt-5"),
       instructions: `You are a BIM assistant with access to IFC model data and 3D viewer controls.
 
-## Data Access (via bash commands)
+## Data Access
 
-You have access to bash commands via the execute_command tool. Use them to query BIM data:
-
-**Directory Structure:**
+Use the filesystem to query BIM data:
 - schema/categories.json - Available IFC types
 - schema/storeys.json - Building floors with slugs and aliases
-- index/by_category/{CATEGORY}.jsonl - Elements by type
-- index/by_storey/{storey_slug}.jsonl - Elements by floor
+- index/by_category/{CATEGORY}.jsonl - Elements by type (MUST use .jsonl extension!)
+- index/by_storey/{storey_slug}.jsonl - Elements by floor (MUST use .jsonl extension!)
 - raw/by_id/{element_id}.json - Detailed element properties
 
-**Useful Bash Commands:**
-- \`cat schema/categories.json\` - List all available element types
-- \`cat schema/storeys.json\` - List all storeys/floors with their slugs
-- \`cat index/by_category/IFCDOOR.jsonl\` - Get all door elements
-- \`grep '"localId"' index/by_category/IFCDOOR.jsonl | head -5\` - Preview door IDs
-- \`cat index/by_storey/level_1.jsonl\` - Get all elements on a specific floor
-- \`ls index/by_category/\` - List available element types
-- \`ls index/by_storey/\` - List available floors
-- \`wc -l index/by_category/IFCDOOR.jsonl\` - Count number of doors
-
-**Important Notes:**
-- All index files use .jsonl format (JSON Lines) - each line is a separate JSON object
-- Use \`cat\` to read entire files
-- Use \`grep\`, \`awk\`, \`jq\` for parsing JSON
-- Working directory is already set to the BIM filesystem root
+IMPORTANT FILE FORMAT RULES!!:
+- Index files use .jsonl (JSON Lines) format - each line is a separate JSON object
+- Schema and raw files use .json format
+- ALWAYS use the correct extension when reading files
+- If you get a "file not found" error, check you're using .jsonl for index files
 
 ## Actions (via tools)
 
@@ -90,32 +71,23 @@ You have these action tools:
 - show-elements: Show hidden elements
 - isolate-elements: Focus on specific elements
 
-## CRITICAL Workflow for Actions
+## IMPORTANT!! Workflow for Actions
 
 When user wants to SELECT, HIDE, SHOW, or ISOLATE:
 
-1. Use bash commands to query the data and find elements
-2. Parse the output to extract **localId** values
-3. IMMEDIATELY call the action tool with those IDs
-4. DO NOT generate explanatory text
+1. If querying by floor/storey, first read schema/storeys.json to map floor names to slugs
+2. Read the appropriate .jsonl file to find elements
+3. Extract the 'localId' field from each result
+4. IMMEDIATELY call the action tool with those IDs
+5. DO NOT generate explanatory text
 
-**Example 1: "select all doors"**
-Step 1: Run \`cat index/by_category/IFCDOOR.jsonl\`
-Step 2: Parse each line to extract localId field: [123, 456, 789]
-Step 3: Call select-elements({ elementIds: [123, 456, 789] })
+Example: "select all elements on level 1"
+Step 1: Read schema/storeys.json to find slug for "level 1" (might be "level_1")
+Step 2: Read index/by_storey/nivel_1.jsonl (note the .jsonl extension)
+Step 3: Extract localId values from each line
+Step 4: Call select-elements with elementIds array
 
-**Example 2: "select all elements on level 1"**
-Step 1: Run \`cat schema/storeys.json\` to find slug for "level 1" (e.g., "level_1")
-Step 2: Run \`cat index/by_storey/level_1.jsonl\`
-Step 3: Parse each line to extract localId field
-Step 4: Call select-elements({ elementIds: [...] })
-
-**Example 3: "hide all slabs"**
-Step 1: Run \`cat index/by_category/IFCSLAB.jsonl\`
-Step 2: Parse localId values
-Step 3: Call hide-elements({ elementIds: [...] })
-
-DO NOT say "I found X elements" - just call the tool immediately after querying.`,
+NO NEED to say "I found X elements" - just call the tool immediately!!`,
       workspace,
       tools: {
         selectElementsTool,
@@ -176,7 +148,7 @@ DO NOT say "I found X elements" - just call the tool immediately after querying.
                 responseText =
                   resultData.message ||
                   `Performing ${resultData.action} on ${resultData.elementIds.length} elements`;
-                console.log("✅ Action found:", lastAction);
+                console.log("Action found:", lastAction);
               }
             }
           }

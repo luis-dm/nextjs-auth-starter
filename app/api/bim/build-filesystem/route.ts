@@ -45,13 +45,11 @@ export async function POST(req: NextRequest) {
       fs.mkdirSync(aiDir, { recursive: true });
     }
 
-    // Write the enhanced structure to a temporary file
     const tempFile = path.join(
       os.tmpdir(),
       `enhanced_structure_${facilityId}_${Date.now()}.json`,
     );
     fs.writeFileSync(tempFile, JSON.stringify(structure, null, 2));
-    console.log("Temporary structure file written:", tempFile);
 
     // Build the filesystem using the build_bim_fs utility
     await buildFilesystem({
@@ -61,7 +59,6 @@ export async function POST(req: NextRequest) {
       pretty: false,
     });
 
-    // Clean up temp file
     fs.unlinkSync(tempFile);
     console.log("BIM filesystem built successfully at:", facilityBasePath);
 
@@ -72,7 +69,6 @@ export async function POST(req: NextRequest) {
       facilityId,
     });
   } catch (error) {
-    console.error("Error saving BIM structure:", error);
     const errorMessage = error instanceof Error ? error.message : String(error);
     const errorStack = error instanceof Error ? error.stack : undefined;
 

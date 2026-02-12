@@ -46,7 +46,7 @@ export class BimChatbot {
       // Apply selection
       await highlighter.highlightByID("select", selection);
 
-      console.log(`✅ Selected ${elementIds.length} elements`);
+      console.log(`Selected ${elementIds.length} elements`);
     } catch (error) {
       console.error("Error selecting elements:", error);
       throw error;
