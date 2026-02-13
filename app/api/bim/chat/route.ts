@@ -42,46 +42,55 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Extract action from steps if present (only for successful results)
-    if (workflowResult.status === "success") {
-      // Check result.steps for agent steps with tool results
-      if (
-        workflowResult.result?.steps &&
-        Array.isArray(workflowResult.result.steps)
-      ) {
-        for (const step of workflowResult.result.steps) {
-          if (step.toolResults) {
-            for (const toolResult of step.toolResults) {
-              let resultData = toolResult as any;
+    // Check for other non-success statuses
+    if (workflowResult.status !== "success") {
+      console.warn("⚠️ Workflow status:", workflowResult.status);
+      return NextResponse.json(
+        {
+          error: `Workflow ended with status: ${workflowResult.status}`,
+        },
+        { status: 500 },
+      );
+    }
 
-              // Unwrap payload.result if needed
-              if (resultData.payload?.result) {
-                resultData = resultData.payload.result;
-              }
+    // NOW TypeScript knows it's a success result
+    const result = workflowResult.result;
 
-              // Check if it's an action
-              if (resultData.action && resultData.elementIds) {
-                console.log("✅ Action found:", resultData);
-                return NextResponse.json({
-                  response: resultData.message,
-                  action: resultData.action,
-                  elementIds: resultData.elementIds,
-                });
-              }
+    console.log("📦 Full result object:", JSON.stringify(result, null, 2));
+    console.log("📝 Result text:", result?.text);
+    console.log("📝 Result keys:", Object.keys(result || {}));
+
+    // Check result.steps for agent steps with tool results
+    if (result?.steps && Array.isArray(result.steps)) {
+      console.log("🔍 Checking steps for actions...");
+      for (const step of result.steps) {
+        console.log("Step:", step);
+        if (step.toolResults) {
+          for (const toolResult of step.toolResults) {
+            let resultData = toolResult as any;
+
+            // Unwrap payload.result if needed
+            if (resultData.payload?.result) {
+              resultData = resultData.payload.result;
+            }
+
+            // Check if it's an action
+            if (resultData.action && resultData.elementIds) {
+              console.log("✅ Action found:", resultData);
+              return NextResponse.json({
+                response: resultData.message,
+                action: resultData.action,
+                elementIds: resultData.elementIds,
+              });
             }
           }
         }
       }
-
-      // Return text response
-      return NextResponse.json({
-        response: workflowResult.result?.text || "No response generated",
-      });
     }
 
-    // Fallback (shouldn't reach here)
+    // Return text response
     return NextResponse.json({
-      response: "Workflow completed with unknown status",
+      response: result?.text || "No response generated",
     });
   } catch (error) {
     console.error("❌ Workflow error:", error);
