@@ -29,8 +29,14 @@ const createExtractIdsFromFileTool = (workspace: Workspace) => ({
     elementIds: z.array(z.number()),
     count: z.number(),
   }),
-  execute: async ({ inputData }: any) => {
-    const { filePath } = inputData;
+  execute: async (params: any) => {
+    // Handle both { inputData } and direct params
+    const filePath = params.inputData?.filePath || params.filePath;
+
+    if (!filePath) {
+      console.error("No filePath provided:", params);
+      return { elementIds: [], count: 0 };
+    }
 
     try {
       const sandbox = workspace.sandbox as LocalSandbox;
@@ -53,6 +59,8 @@ const createExtractIdsFromFileTool = (workspace: Workspace) => ({
         .filter((line) => line.length > 0)
         .map((line) => parseInt(line.trim(), 10))
         .filter((id) => !isNaN(id));
+
+      console.log(`✅ Extracted ${ids.length} IDs from ${filePath}`);
 
       return {
         elementIds: ids,
