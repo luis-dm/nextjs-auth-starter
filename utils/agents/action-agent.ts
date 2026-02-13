@@ -126,56 +126,47 @@ export function createActionAgent(facilityId: string) {
 
 ## Tool Usage
 
-**Extract IDs from a file:**
+**Extract IDs and select in one step:**
 \`\`\`
-extract-ids-from-file({ 
-  filePath: "index/by_category/IFCWINDOW.jsonl" 
-})
-→ Returns: { elementIds: [6518, 6563, 6595], count: 3 }
+Step 1: extract-ids-from-file({ filePath: "index/by_category/IFCWINDOW.jsonl" })
+Returns: { elementIds: [6518, 6563, 6595], count: 3 }
+
+Step 2: IMMEDIATELY pass elementIds to action tool:
+select-elements({ elementIds: result.elementIds })
 \`\`\`
 
-**Get all elements on a floor:**
-\`\`\`
-extract-ids-from-file({ 
-  filePath: "index/by_storey/gl.jsonl" 
-})
-→ Returns: { elementIds: [...], count: 537 }
-\`\`\`
+CRITICAL: The elementIds array is already formatted - just pass it directly to the action tool!
 
 ## Example Workflows
 
 **User: "select all windows"**
 \`\`\`
-Step 1: extract-ids-from-file({ filePath: "index/by_category/IFCWINDOW.jsonl" })
-Step 2: Receive { elementIds: [6518, 6563, 6595], count: 3 }
-Step 3: select-elements({ elementIds: [6518, 6563, 6595] })
+1. extract-ids-from-file({ filePath: "index/by_category/IFCWINDOW.jsonl" })
+2. Take result.elementIds → select-elements({ elementIds: result.elementIds })
 \`\`\`
 
 **User: "select gl level"**
 \`\`\`
-Step 1: Read "schema/storeys.json"
-Step 2: Find storey matching "gl" → slug is "gl"
-Step 3: extract-ids-from-file({ filePath: "index/by_storey/gl.jsonl" })
-Step 4: Receive { elementIds: [...], count: 537 }
-Step 5: select-elements({ elementIds: [...] })
+1. Read "schema/storeys.json" → Find slug "gl"
+2. extract-ids-from-file({ filePath: "index/by_storey/gl.jsonl" })
+3. Take result.elementIds → select-elements({ elementIds: result.elementIds })
 \`\`\`
 
 **User: "hide walls on floor 2"**
 \`\`\`
-Step 1: Read "schema/storeys.json" to get slug
-Step 2: Read "index/by_storey/{slug}.jsonl"
-Step 3: Parse JSONL manually, filter for IFCWALL
-Step 4: Extract IDs from filtered lines
-Step 5: hide-elements({ elementIds: [...] })
+1. Read "schema/storeys.json" → Get slug
+2. Read "index/by_storey/{slug}.jsonl"
+3. Parse JSONL, filter for IFCWALL, extract IDs
+4. hide-elements({ elementIds: [id1, id2, ...] })
 \`\`\`
 
 ## Rules
 
-1. ✅ For floors: ALWAYS read schema/storeys.json FIRST
-2. ✅ Use extract-ids-from-file for simple queries (entire file)
-3. ✅ For filtered queries (type on floor): read + parse manually
-4. ✅ Never parse grep output yourself - use extract-ids-from-file
-5. ✅ Call action tool IMMEDIATELY with elementIds
+1. ✅ extract-ids-from-file returns READY-TO-USE array
+2. ✅ Take result.elementIds and pass directly to action tool
+3. ✅ DO NOT reformat, DO NOT parse - just pipe it through!
+4. ✅ For floors: Read schema/storeys.json first
+5. ✅ For filtered queries: read + parse manually
 
 ## Storey Matching
 
