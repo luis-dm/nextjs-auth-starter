@@ -65,7 +65,7 @@ export async function POST(req: NextRequest) {
 
     console.log("📝 Last step result:", lastStepResult);
 
-    // Check if there are steps with tool results (for actions)
+    // Check if there are steps with tool results (for actions or quick-action)
     if (lastStepResult?.steps && Array.isArray(lastStepResult.steps)) {
       console.log("🔍 Checking steps for actions...");
       for (const step of lastStepResult.steps) {
@@ -78,7 +78,21 @@ export async function POST(req: NextRequest) {
               resultData = resultData.payload.result;
             }
 
-            // Check if it's an action
+            // Check if it's a quick-action result (NEW!)
+            if (
+              resultData.action &&
+              resultData.elementIds &&
+              resultData.message
+            ) {
+              console.log("✅ Quick action found:", resultData);
+              return NextResponse.json({
+                response: resultData.message,
+                action: resultData.action,
+                elementIds: resultData.elementIds,
+              });
+            }
+
+            // Check if it's an action (legacy)
             if (resultData.action && resultData.elementIds) {
               console.log("✅ Action found:", resultData);
               return NextResponse.json({
