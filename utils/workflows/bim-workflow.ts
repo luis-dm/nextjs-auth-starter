@@ -4,6 +4,7 @@ import {
   createRouterAgent,
   createQueryAgent,
   createActionAgent,
+  createChatAgent,
 } from "@/utils/agents";
 
 export function createBIMWorkflow(facilityId: string) {
@@ -11,6 +12,7 @@ export function createBIMWorkflow(facilityId: string) {
   const routerAgent = createRouterAgent();
   const queryAgent = createQueryAgent(facilityId);
   const actionAgent = createActionAgent(facilityId);
+  const chatAgent = createChatAgent();
 
   // Step 1: Route the request
   const routeStep = createStep({
@@ -86,10 +88,12 @@ export function createBIMWorkflow(facilityId: string) {
     outputSchema: z.object({
       text: z.string(),
     }),
-    execute: async () => {
-      console.log("💬 General chat response");
+    execute: async ({ inputData }) => {
+      console.log("💬 General chat response for:", inputData.message);
+      const result = await chatAgent.generate(inputData.message);
+      console.log("💬 Chat result:", result.text);
       return {
-        text: "¡Hola! Soy tu asistente BIM. Puedo ayudarte a consultar datos del modelo o manipular el visor 3D. Por ejemplo: 'selecciona todas las puertas' o '¿cuántas ventanas hay?'",
+        text: result.text || "Hi! How can I help you?",
       };
     },
   });
