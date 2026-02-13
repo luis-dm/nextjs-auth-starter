@@ -1,5 +1,5 @@
 import { Agent } from "@mastra/core/agent";
-import { Workspace, LocalFilesystem } from "@mastra/core/workspace";
+import { Workspace, LocalSandbox } from "@mastra/core/workspace";
 import { openai } from "@ai-sdk/openai";
 import {
   selectElementsTool,
@@ -13,9 +13,8 @@ export function createActionAgent(facilityId: string) {
   const basePath = `${BIM_DATA_PATH}/${facilityId}/ai/bim_fs`;
 
   const workspace = new Workspace({
-    filesystem: new LocalFilesystem({
-      basePath,
-      readOnly: true,
+    sandbox: new LocalSandbox({
+      workingDirectory: basePath,
     }),
   });
 
@@ -23,68 +22,72 @@ export function createActionAgent(facilityId: string) {
     id: "action",
     name: "Viewer Action Agent",
     model: openai("gpt-4o-mini"),
-    instructions: `You control 3D viewer actions. Execute user requests IMMEDIATELY without explanation.
+    instructions: `You control 3D viewer actions using bash commands.
 
-## Available Data
+## Bash Commands for Getting IDs
 
-**File Structure:**
-- schema/categories.json - Available IFC types
-- schema/storeys.json - Floors with slugs
-- index/by_category/{TYPE}.jsonl - Elements by type
-- index/by_storey/{storey_slug}.jsonl - Elements by floor
+Use execute_command tool with these bash commands:
 
-**JSONL Format:**
-Each line: {"id":6518,"category":"IFCWINDOW","name":"...","storey":"Nivel 1"}
-Extract the "id" field for elementIds.
+**Get all elements of a type:**
+\`\`\`bash
+grep -o '"id":[0-9]*' index/by_category/IFCDOOR.jsonl | cut -d: -f2
+\`\`\`
 
-## Action Tools
+**Get elements on a specific floor:**
+\`\`\`bash
+grep -o '"id":[0-9]*' index/by_storey/nivel_1.jsonl | cut -d: -f2
+\`\`\`
 
-You have 4 tools:
-- select-elements: Highlight elements (yellow)
-- hide-elements: Make elements invisible
-- show-elements: Make hidden elements visible
-- isolate-elements: Hide everything except specified elements
+**Get specific type on a floor:**
+\`\`\`bash
+grep 'IFCWALL' index/by_storey/nivel_1.jsonl | grep -o '"id":[0-9]*' | cut -d: -f2
+\`\`\`
 
-## Workflow (CRITICAL)
+**List available categories:**
+\`\`\`bash
+cat schema/categories.json
+\`\`\`
 
-1. Parse user request:
-   - Action: select/hide/show/isolate
-   - Target: doors/windows/walls/level/etc.
+**List available floors:**
+\`\`\`bash
+cat schema/storeys.json
+\`\`\`
 
-2. Query filesystem to get element IDs:
-   - By type: Read index/by_category/{TYPE}.jsonl
-   - By floor: Read schema/storeys.json for slug, then index/by_storey/{slug}.jsonl
+## Workflow
 
-3. Extract "id" field from each line
-
-4. IMMEDIATELY call the action tool with elementIds array
-
-5. DO NOT generate explanatory text - just call the tool
+1. **Identify action**: select/hide/show/isolate
+2. **Identify target**: doors/windows/walls/level X/etc.
+3. **Run bash command** to extract IDs (output is one ID per line)
+4. **Parse output** into array: split by newline, convert to numbers
+5. **IMMEDIATELY call action tool** with elementIds
 
 ## Examples
 
-**"select all doors"**
-→ Read index/by_category/IFCDOOR.jsonl
-→ Extract ids: [123, 456, 789]
-→ Call select-elements({ elementIds: [123, 456, 789] })
+**"select all windows"**
+Step 1: Run \`grep -o '"id":[0-9]*' index/by_category/IFCWINDOW.jsonl | cut -d: -f2\`
+Step 2: Output is:
+\`\`\`
+6518
+6563
+6595
+\`\`\`
+Step 3: Parse to array: [6518, 6563, 6595]
+Step 4: Call select-elements({ elementIds: [6518, 6563, 6595] })
 
-**"hide walls"**
-→ Read index/by_category/IFCWALL.jsonl
-→ Extract ids
-→ Call hide-elements({ elementIds: [...] })
+**"hide walls on level 1"**
+Step 1: Run \`grep 'IFCWALL' index/by_storey/nivel_1.jsonl | grep -o '"id":[0-9]*' | cut -d: -f2\`
+Step 2: Parse output
+Step 3: Call hide-elements({ elementIds: [...] })
 
-**"show level 1"**
-→ Read schema/storeys.json → find "level 1" → slug: "nivel_1"
-→ Read index/by_storey/nivel_1.jsonl
-→ Extract ids
-→ Call show-elements({ elementIds: [...] })
+**"isolate doors"**
+Step 1: Run \`grep -o '"id":[0-9]*' index/by_category/IFCDOOR.jsonl | cut -d: -f2\`
+Step 2: Parse output
+Step 3: Call isolate-elements({ elementIds: [...] })
 
-**"isolate windows"**
-→ Read index/by_category/IFCWINDOW.jsonl
-→ Extract ids
-→ Call isolate-elements({ elementIds: [...] })
-
-REMEMBER: NEVER say "I found X elements" - ONLY call the tool!`,
+CRITICAL:
+- Use bash to extract IDs (fast!)
+- Parse the number-per-line output into array
+- Call tool immediately - NO explanations!`,
     workspace,
     tools: {
       selectElementsTool,
