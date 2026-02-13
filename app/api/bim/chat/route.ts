@@ -57,14 +57,18 @@ export async function POST(req: NextRequest) {
     const result = workflowResult.result;
 
     console.log("📦 Full result object:", JSON.stringify(result, null, 2));
-    console.log("📝 Result text:", result?.text);
-    console.log("📝 Result keys:", Object.keys(result || {}));
 
-    // Check result.steps for agent steps with tool results
-    if (result?.steps && Array.isArray(result.steps)) {
+    // The result is an object with step IDs as keys
+    // We need to find the last executed step
+    const stepResults = Object.values(result);
+    const lastStepResult = stepResults[stepResults.length - 1] as any;
+
+    console.log("📝 Last step result:", lastStepResult);
+
+    // Check if there are steps with tool results (for actions)
+    if (lastStepResult?.steps && Array.isArray(lastStepResult.steps)) {
       console.log("🔍 Checking steps for actions...");
-      for (const step of result.steps) {
-        console.log("Step:", step);
+      for (const step of lastStepResult.steps) {
         if (step.toolResults) {
           for (const toolResult of step.toolResults) {
             let resultData = toolResult as any;
@@ -88,9 +92,9 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Return text response
+    // Return text response from the last step
     return NextResponse.json({
-      response: result?.text || "No response generated",
+      response: lastStepResult?.text || "No response generated",
     });
   } catch (error) {
     console.error("❌ Workflow error:", error);
