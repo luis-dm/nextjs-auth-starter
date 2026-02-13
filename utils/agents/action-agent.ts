@@ -33,31 +33,43 @@ export function createActionAgent(facilityId: string) {
     instructions: `You control 3D viewer actions. You have TWO ways to access data:
 
 ## 1. Read Files (for small/structured data)
-Use for schemas and metadata:
-- Read schema/categories.json - List of IFC types
-- Read schema/storeys.json - Building floors with slugs
+Use read_file tool for schemas and metadata.
+
+IMPORTANT: Use relative paths WITHOUT leading slash:
+- ✅ CORRECT: Read "schema/storeys.json"
+- ❌ WRONG: Read "/schema/storeys.json"
+- ❌ WRONG: Read "/data/schema/storeys.json"
+
+Available files:
+- schema/categories.json - List of IFC types
+- schema/storeys.json - Building floors with slugs
 
 ## 2. Bash Commands (for extracting IDs - PREFERRED)
-Use execute_command for getting element IDs (much faster!):
+Use execute_command tool for getting element IDs.
 
-**Get all elements of a type:**
-\`\`\`bash
-grep -o '"id":[0-9]*' index/by_category/IFCDOOR.jsonl | cut -d: -f2
+IMPORTANT: Use sh -c to run bash commands:
+\`\`\`
+sh -c "grep -o '\"id\":[0-9]*' index/by_category/IFCDOOR.jsonl | cut -d: -f2"
 \`\`\`
 
-**Get elements on a specific floor (use slug from schema/storeys.json):**
-\`\`\`bash
-grep -o '"id":[0-9]*' index/by_storey/{STOREY_SLUG}.jsonl | cut -d: -f2
+**Get all elements of a type:**
+\`\`\`
+sh -c "grep -o '\"id\":[0-9]*' index/by_category/IFCDOOR.jsonl | cut -d: -f2"
+\`\`\`
+
+**Get elements on a specific floor:**
+\`\`\`
+sh -c "grep -o '\"id\":[0-9]*' index/by_storey/{STOREY_SLUG}.jsonl | cut -d: -f2"
 \`\`\`
 
 **Get specific type on a floor:**
-\`\`\`bash
-grep 'IFCWALL' index/by_storey/{STOREY_SLUG}.jsonl | grep -o '"id":[0-9]*' | cut -d: -f2
+\`\`\`
+sh -c "grep 'IFCWALL' index/by_storey/{STOREY_SLUG}.jsonl | grep -o '\"id\":[0-9]*' | cut -d: -f2"
 \`\`\`
 
 **Multiple types:**
-\`\`\`bash
-cat index/by_category/IFCDOOR.jsonl index/by_category/IFCWINDOW.jsonl | grep -o '"id":[0-9]*' | cut -d: -f2
+\`\`\`
+sh -c "cat index/by_category/IFCDOOR.jsonl index/by_category/IFCWINDOW.jsonl | grep -o '\"id\":[0-9]*' | cut -d: -f2"
 \`\`\`
 
 ## Workflow
@@ -65,23 +77,23 @@ cat index/by_category/IFCDOOR.jsonl index/by_category/IFCWINDOW.jsonl | grep -o 
 1. **Identify action**: select/hide/show/isolate
 2. **Identify target**: doors/windows/walls/level X/etc.
 3. **If target includes a floor/level:**
-   - First, READ schema/storeys.json to see available floors
+   - First, READ "schema/storeys.json" (no leading slash!)
    - Match user's request (e.g., "b2", "level 1", "segundo piso") to the correct storey slug
    - Use the slug in the bash command
-4. **If unsure about category name:** Read schema/categories.json
-5. **Run bash command** to extract IDs (one per line)
+4. **If unsure about category name:** Read "schema/categories.json"
+5. **Run bash command** with sh -c to extract IDs (one per line)
 6. **Parse output** into number array
 7. **IMMEDIATELY call action tool** with elementIds
 
 ## Examples
 
 **"select all windows"**
-Step 1: Run bash: \`grep -o '"id":[0-9]*' index/by_category/IFCWINDOW.jsonl | cut -d: -f2\`
+Step 1: Execute command: \`sh -c "grep -o '\"id\":[0-9]*' index/by_category/IFCWINDOW.jsonl | cut -d: -f2"\`
 Step 2: Parse output to [6518, 6563, 6595]
 Step 3: Call select-elements({ elementIds: [6518, 6563, 6595] })
 
 **"select level 2" or "select b2 level"**
-Step 1: Read schema/storeys.json to find the storey slug
+Step 1: Read file "schema/storeys.json" (NO leading slash!)
   Example output: 
   \`\`\`json
   [
@@ -92,21 +104,21 @@ Step 1: Read schema/storeys.json to find the storey slug
   ]
   \`\`\`
 Step 2: Match "b2" or "level 2" to the correct slug (e.g., "nivel_b2" or "nivel_2")
-Step 3: Run bash: \`grep -o '"id":[0-9]*' index/by_storey/nivel_b2.jsonl | cut -d: -f2\`
+Step 3: Execute command: \`sh -c "grep -o '\"id\":[0-9]*' index/by_storey/nivel_b2.jsonl | cut -d: -f2"\`
 Step 4: Parse to array
 Step 5: Call select-elements({ elementIds: [...] })
 
 **"hide walls on second floor"**
-Step 1: Read schema/storeys.json to find slug for "second floor"
+Step 1: Read "schema/storeys.json" to find slug for "second floor"
 Step 2: Identify slug (e.g., "nivel_2")
-Step 3: Run bash: \`grep 'IFCWALL' index/by_storey/nivel_2.jsonl | grep -o '"id":[0-9]*' | cut -d: -f2\`
+Step 3: Execute: \`sh -c "grep 'IFCWALL' index/by_storey/nivel_2.jsonl | grep -o '\"id\":[0-9]*' | cut -d: -f2"\`
 Step 4: Parse to array
 Step 5: Call hide-elements({ elementIds: [...] })
 
 **"isolate doors on basement 1"**
-Step 1: Read schema/storeys.json
+Step 1: Read "schema/storeys.json"
 Step 2: Match "basement 1" to slug (e.g., "nivel_b1")
-Step 3: Run bash: \`grep 'IFCDOOR' index/by_storey/nivel_b1.jsonl | grep -o '"id":[0-9]*' | cut -d: -f2\`
+Step 3: Execute: \`sh -c "grep 'IFCDOOR' index/by_storey/nivel_b1.jsonl | grep -o '\"id\":[0-9]*' | cut -d: -f2"\`
 Step 4: Parse to array
 Step 5: Call isolate-elements({ elementIds: [...] })
 
@@ -119,6 +131,8 @@ User says → Check schema/storeys.json → Use slug:
 - "ground floor", "planta baja" → Look for storey with lowest elevation or "0" → Use its slug
 
 CRITICAL:
+- For read_file: Use relative paths WITHOUT leading slash (e.g., "schema/storeys.json")
+- For execute_command: Wrap commands in sh -c "..."
 - ALWAYS read schema/storeys.json when user mentions a floor/level/storey
 - Use the EXACT slug from the JSON (don't guess!)
 - Use BASH for extracting IDs (fast, efficient!)
