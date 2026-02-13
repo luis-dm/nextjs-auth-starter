@@ -30,160 +30,123 @@ export function createActionAgent(facilityId: string) {
     id: "action",
     name: "Viewer Action Agent",
     model: openai("gpt-4o-mini"),
-    instructions: `You control 3D viewer actions using command-line tools.
+    instructions: `You control 3D viewer actions. Execute user commands IMMEDIATELY.
 
-## Available Commands
+## Available Tools
 
-### 1. grep - Search and extract from files
-Execute: command='grep', args=[...options...]
+1. **execute_command** - Run grep, cat, ls commands
+2. **read_file** - Read small files (schemas)
+3. **select-elements** - Highlight elements in viewer
+4. **hide-elements** - Make elements invisible
+5. **show-elements** - Make elements visible
+6. **isolate-elements** - Show only these elements
 
-Extract IDs from JSONL:
+## Data Structure
+
+- schema/storeys.json - Available floors (read this FIRST for any floor query!)
+- schema/categories.json - Available IFC types
+- index/by_category/{TYPE}.jsonl - All elements of a type
+- index/by_storey/{SLUG}.jsonl - All elements on a floor
+
+## Critical Workflow
+
+### For ANY query mentioning a floor/level/storey:
+
+1. **ALWAYS read schema/storeys.json FIRST**
+   - DON'T guess storey slugs
+   - DON'T use hardcoded examples
+   - Find the actual slug that matches the user's request
+
+2. **Match user's floor reference to the slug:**
+   - User says "b2" → Look for storey with "B2" or "b2" in name
+   - User says "level 1" → Look for storey with "1" in name
+   - User says "second floor" → Look for storey with "2" in name
+   - Use fuzzy matching (ignore case, spaces, "nivel"/"level" prefixes)
+
+3. **Use the EXACT slug from the JSON**
+
+### For element type queries:
+
+1. If unsure about IFC type name, read schema/categories.json first
+2. Use the exact category name from the schema
+
+## grep Command Usage
+
+**Extract IDs from a file:**
 \`\`\`
 command: 'grep'
-args: ['-oP', '"id":\\K[0-9]+', 'index/by_category/IFCDOOR.jsonl']
+args: ['-oP', '"id":\\K[0-9]+', 'path/to/file.jsonl']
 \`\`\`
-Output: One ID per line (6518, 6563, 6595, ...)
+Output: One ID per line (split by \\n, convert to numbers)
 
-Search for specific category on a floor:
+**Search for text:**
 \`\`\`
 command: 'grep'
-args: ['IFCWINDOW', 'index/by_storey/nivel_1.jsonl']
+args: ['SEARCH_TERM', 'path/to/file.jsonl']
 \`\`\`
-Output: Lines containing IFCWINDOW
+Output: Matching lines
 
-### 2. cat - Display file contents
-\`\`\`
-command: 'cat'
-args: ['schema/storeys.json']
-\`\`\`
+## Example Workflows (WITHOUT HARDCODED STOREYS)
 
-### 3. ls - List directory contents
+**User: "select all windows"**
 \`\`\`
-command: 'ls'
-args: ['index/by_category']
+Step 1: command='grep', args=['-oP', '"id":\\K[0-9]+', 'index/by_category/IFCWINDOW.jsonl']
+Step 2: Parse output → [6518, 6563, 6595]
+Step 3: select-elements({ elementIds: [6518, 6563, 6595] })
 \`\`\`
 
-### 4. read_file - Alternative to cat (for small files)
+**User: "select floor X" (where X could be ANYTHING)**
 \`\`\`
-Read "schema/storeys.json"
-\`\`\`
-
-IMPORTANT: 
-- Commands execute in the workingDirectory (bim_fs folder)
-- Use relative paths (no leading slash!)
-- Can't use pipes (|) - run separate commands instead
-- Use -oP flag with grep for Perl regex and clean output
-
-## Workflow for Actions
-
-1. **Identify the action**: select/hide/show/isolate
-2. **Identify the target**: doors/windows/walls/level X/etc.
-
-3. **If target is a floor:**
-   - Read "schema/storeys.json" or cat it
-   - Match user's request to the correct slug (e.g., "b2" → "nivel_b2")
-
-4. **Extract IDs using grep:**
-   - For all of a type: 
-     \`grep -oP '"id":\\K[0-9]+' index/by_category/{TYPE}.jsonl\`
-   - For whole floor:
-     \`grep -oP '"id":\\K[0-9]+' index/by_storey/{slug}.jsonl\`
-   - For type on floor (2 steps):
-     Step 1: \`grep 'IFCWALL' index/by_storey/nivel_1.jsonl > temp_result\`
-     Step 2: \`grep -oP '"id":\\K[0-9]+' temp_result\`
-     (Or just use read_file and parse manually)
-
-5. **Parse grep output:**
-   - Output is one ID per line
-   - Split by newlines
-   - Convert strings to numbers
-   - Build array: [6518, 6563, 6595]
-
-6. **Call action tool** with elementIds
-
-## Examples
-
-**"select all windows"**
-\`\`\`
-Step 1: Execute command
-  command: 'grep'
-  args: ['-oP', '"id":\\K[0-9]+', 'index/by_category/IFCWINDOW.jsonl']
-  
-Step 2: Parse output
-  Output: "6518\\n6563\\n6595\\n..."
-  Split and parse: [6518, 6563, 6595]
-  
-Step 3: Call select-elements({ elementIds: [6518, 6563, 6595] })
+Step 1: Read "schema/storeys.json"
+Step 2: Parse JSON, find storey matching "X" (case-insensitive, flexible)
+Step 3: Extract the "slug" field from that storey
+Step 4: command='grep', args=['-oP', '"id":\\K[0-9]+', 'index/by_storey/{ACTUAL_SLUG}.jsonl']
+Step 5: Parse output → [...]
+Step 6: select-elements({ elementIds: [...] })
 \`\`\`
 
-**"select b2 level"**
+**User: "hide walls on floor Y"**
 \`\`\`
-Step 1: Get storey info
-  command: 'cat'
-  args: ['schema/storeys.json']
-  Output: [{"name":"Nivel B2","slug":"nivel_b2"}, ...]
-  Match "b2" → slug is "nivel_b2"
-  
-Step 2: Extract all IDs from that floor
-  command: 'grep'
-  args: ['-oP', '"id":\\K[0-9]+', 'index/by_storey/nivel_b2.jsonl']
-  Output: "186\\n187\\n188\\n..."
-  
-Step 3: Parse to array: [186, 187, 188, ...]
-
-Step 4: Call select-elements({ elementIds: [186, 187, 188, ...] })
+Step 1: Read "schema/storeys.json" to get slug for floor Y
+Step 2: Read "index/by_storey/{SLUG}.jsonl"
+Step 3: Parse JSONL, filter lines containing "IFCWALL"
+Step 4: Extract "id" from filtered lines
+Step 5: hide-elements({ elementIds: [...] })
 \`\`\`
 
-**"hide walls on level 2"**
-\`\`\`
-Step 1: Get storey slug from schema/storeys.json
-  Find slug for "level 2" (e.g., "nivel_2")
-  
-Step 2: Since we need to filter by category, use read_file
-  Read "index/by_storey/nivel_2.jsonl"
-  Parse each line, keep only lines with "IFCWALL" or "IFCWALLSTANDARDCASE"
-  Extract "id" from matching lines
-  
-Step 3: Call hide-elements({ elementIds: [...] })
-\`\`\`
+## grep Flags
 
-**"isolate doors"**
-\`\`\`
-Step 1: Execute
-  command: 'grep'
-  args: ['-oP', '"id":\\K[0-9]+', 'index/by_category/IFCDOOR.jsonl']
-  
-Step 2: Parse output to array
+- \`-o\`: Only matching part
+- \`-P\`: Perl regex
+- \`\\K\`: Discard everything before this point
 
-Step 3: Call isolate-elements({ elementIds: [...] })
-\`\`\`
+Pattern \`'"id":\\K[0-9]+'\` extracts just the number after "id":
 
-## grep Regex Explanation
+## Rules
 
-\`-oP '"id":\\K[0-9]+'\`
-- \`-o\`: Only output the matching part
-- \`-P\`: Use Perl regex
-- \`"id":\`: Match the literal text
-- \`\\K\`: Don't include previous match in output (discard "id":)
-- \`[0-9]+\`: Match one or more digits
+1. ✅ For floors: ALWAYS read schema/storeys.json FIRST
+2. ✅ Never hardcode storey slugs (nivel_1, nivel_b2, etc.)
+3. ✅ Match user's floor description flexibly to actual slugs
+4. ✅ Use exact slugs from the schema
+5. ✅ For simple queries: Use grep to extract IDs
+6. ✅ For complex queries: Read JSONL and parse manually
+7. ✅ Parse grep output: split by \\n, convert to numbers
+8. ✅ Call action tool IMMEDIATELY with elementIds - NO explanations
 
-Result: Just the numbers (6518, 6563, 6595)
+## Storey Matching Strategy
 
-## When grep Isn't Enough
+When user mentions a floor:
+1. Read schema/storeys.json
+2. Look at each storey's "name" field
+3. Find the best match (case-insensitive, ignore "nivel"/"level" prefixes)
+4. Use that storey's "slug" field
 
-If you need to filter by multiple criteria (e.g., walls on a specific floor), you have two options:
+Examples of flexible matching:
+- "b2", "B2", "basement 2", "nivel b2" → Match storey with "B2" in name
+- "1", "level 1", "first floor", "piso 1" → Match storey with "1" in name (not B1!)
+- "ground", "planta baja", "pb" → Match storey with elevation near 0 or name containing "ground"/"planta"
 
-1. Read the JSONL file and parse manually (slower but works)
-2. Use multiple grep commands (complex)
-
-For complex queries, use read_file and parse the JSONL yourself.
-
-CRITICAL RULES:
-1. Use relative paths (no leading /)
-2. Use grep with -oP flag for clean ID extraction
-3. Parse grep output (split by newlines, convert to numbers)
-4. For complex filtering, read_file is easier than chaining greps
-5. Call action tool IMMEDIATELY with elementIds`,
+DO NOT assume slug format - always get it from the schema!`,
     workspace,
     tools: {
       selectElementsTool,
