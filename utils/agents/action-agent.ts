@@ -5,12 +5,65 @@ import {
   LocalSandbox,
 } from "@mastra/core/workspace";
 import { openai } from "@ai-sdk/openai";
+import { z } from "zod";
 import {
   selectElementsTool,
   hideElementsTool,
   showElementsTool,
   isolateElementsTool,
 } from "@/utils/mastra";
+
+// Helper tool: Extract IDs from JSONL file without LLM parsing
+const createExtractIdsFromFileTool = (workspace: Workspace) => ({
+  id: "extract-ids-from-file",
+  description:
+    "Extract element IDs from a JSONL file using grep. Returns an array of numbers ready to use. Much faster than parsing manually.",
+  inputSchema: z.object({
+    filePath: z
+      .string()
+      .describe(
+        'Path to JSONL file (e.g., "index/by_category/IFCDOOR.jsonl" or "index/by_storey/gl.jsonl")',
+      ),
+  }),
+  outputSchema: z.object({
+    elementIds: z.array(z.number()),
+    count: z.number(),
+  }),
+  execute: async ({ inputData }: any) => {
+    const { filePath } = inputData;
+
+    try {
+      const sandbox = workspace.sandbox as LocalSandbox;
+
+      // Run grep command to extract IDs
+      const result = await sandbox.executeCommand(
+        "grep",
+        ["-oP", '"id":\\K[0-9]+', filePath],
+        {},
+      );
+
+      if (!result?.stdout) {
+        return { elementIds: [], count: 0 };
+      }
+
+      // Parse output in JavaScript (not by LLM!)
+      const ids = result.stdout
+        .trim()
+        .split("\n")
+        .filter((line) => line.length > 0)
+        .map((line) => parseInt(line.trim(), 10))
+        .filter((id) => !isNaN(id));
+
+      return {
+        elementIds: ids,
+        count: ids.length,
+      };
+    } catch (error) {
+      console.error("Failed to extract IDs:", error);
+      return { elementIds: [], count: 0 };
+    }
+  },
+});
 
 export function createActionAgent(facilityId: string) {
   const BIM_DATA_PATH = process.env.BIM_DATA_PATH || "./public/bim_data";
@@ -29,13 +82,13 @@ export function createActionAgent(facilityId: string) {
   return new Agent({
     id: "action",
     name: "Viewer Action Agent",
-    model: openai("gpt-5-nano"),
+    model: openai("gpt-4o-mini"),
     instructions: `You control 3D viewer actions. Execute user commands IMMEDIATELY.
 
 ## Available Tools
 
-1. **execute_command** - Run grep, cat, ls commands
-2. **read_file** - Read small files (schemas)
+1. **read_file** - Read small files (schemas only!)
+2. **extract-ids-from-file** - Get element IDs from JSONL (USE THIS!)
 3. **select-elements** - Highlight elements in viewer
 4. **hide-elements** - Make elements invisible
 5. **show-elements** - Make elements visible
@@ -43,7 +96,7 @@ export function createActionAgent(facilityId: string) {
 
 ## Data Structure
 
-- schema/storeys.json - Available floors (read this FIRST for any floor query!)
+- schema/storeys.json - Available floors (read for any floor query!)
 - schema/categories.json - Available IFC types
 - index/by_category/{TYPE}.jsonl - All elements of a type
 - index/by_storey/{SLUG}.jsonl - All elements on a floor
@@ -53,102 +106,85 @@ export function createActionAgent(facilityId: string) {
 ### For ANY query mentioning a floor/level/storey:
 
 1. **ALWAYS read schema/storeys.json FIRST**
-   - DON'T guess storey slugs
-   - DON'T use hardcoded examples
-   - Find the actual slug that matches the user's request
-
-2. **Match user's floor reference to the slug:**
-   - User says "b2" → Look for storey with "B2" or "b2" in name
-   - User says "level 1" → Look for storey with "1" in name
-   - User says "second floor" → Look for storey with "2" in name
-   - Use fuzzy matching (ignore case, spaces, "nivel"/"level" prefixes)
-
-3. **Use the EXACT slug from the JSON**
+2. **Match user's floor to the slug** (case-insensitive, flexible)
+3. **Use extract-ids-from-file** with the correct path
+4. **Call action tool** with the returned elementIds
 
 ### For element type queries:
 
-1. If unsure about IFC type name, read schema/categories.json first
-2. Use the exact category name from the schema
+1. If unsure about IFC type, read schema/categories.json first
+2. Use extract-ids-from-file to get IDs
+3. Call action tool immediately
 
-## grep Command Usage
+## Tool Usage
 
 **Extract IDs from a file:**
 \`\`\`
-command: 'grep'
-args: ['-oP', '"id":\\K[0-9]+', 'path/to/file.jsonl']
+extract-ids-from-file({ 
+  filePath: "index/by_category/IFCWINDOW.jsonl" 
+})
+→ Returns: { elementIds: [6518, 6563, 6595], count: 3 }
 \`\`\`
-Output: One ID per line (split by \\n, convert to numbers)
 
-**Search for text:**
+**Get all elements on a floor:**
 \`\`\`
-command: 'grep'
-args: ['SEARCH_TERM', 'path/to/file.jsonl']
+extract-ids-from-file({ 
+  filePath: "index/by_storey/gl.jsonl" 
+})
+→ Returns: { elementIds: [...], count: 537 }
 \`\`\`
-Output: Matching lines
 
-## Example Workflows (WITHOUT HARDCODED STOREYS)
+## Example Workflows
 
 **User: "select all windows"**
 \`\`\`
-Step 1: command='grep', args=['-oP', '"id":\\K[0-9]+', 'index/by_category/IFCWINDOW.jsonl']
-Step 2: Parse output → [6518, 6563, 6595]
+Step 1: extract-ids-from-file({ filePath: "index/by_category/IFCWINDOW.jsonl" })
+Step 2: Receive { elementIds: [6518, 6563, 6595], count: 3 }
 Step 3: select-elements({ elementIds: [6518, 6563, 6595] })
 \`\`\`
 
-**User: "select floor X" (where X could be ANYTHING)**
+**User: "select gl level"**
 \`\`\`
 Step 1: Read "schema/storeys.json"
-Step 2: Parse JSON, find storey matching "X" (case-insensitive, flexible)
-Step 3: Extract the "slug" field from that storey
-Step 4: command='grep', args=['-oP', '"id":\\K[0-9]+', 'index/by_storey/{ACTUAL_SLUG}.jsonl']
-Step 5: Parse output → [...]
-Step 6: select-elements({ elementIds: [...] })
+Step 2: Find storey matching "gl" → slug is "gl"
+Step 3: extract-ids-from-file({ filePath: "index/by_storey/gl.jsonl" })
+Step 4: Receive { elementIds: [...], count: 537 }
+Step 5: select-elements({ elementIds: [...] })
 \`\`\`
 
-**User: "hide walls on floor Y"**
+**User: "hide walls on floor 2"**
 \`\`\`
-Step 1: Read "schema/storeys.json" to get slug for floor Y
-Step 2: Read "index/by_storey/{SLUG}.jsonl"
-Step 3: Parse JSONL, filter lines containing "IFCWALL"
-Step 4: Extract "id" from filtered lines
+Step 1: Read "schema/storeys.json" to get slug
+Step 2: Read "index/by_storey/{slug}.jsonl"
+Step 3: Parse JSONL manually, filter for IFCWALL
+Step 4: Extract IDs from filtered lines
 Step 5: hide-elements({ elementIds: [...] })
 \`\`\`
-
-## grep Flags
-
-- \`-o\`: Only matching part
-- \`-P\`: Perl regex
-- \`\\K\`: Discard everything before this point
-
-Pattern \`'"id":\\K[0-9]+'\` extracts just the number after "id":
 
 ## Rules
 
 1. ✅ For floors: ALWAYS read schema/storeys.json FIRST
-2. ✅ Never hardcode storey slugs (nivel_1, nivel_b2, etc.)
-3. ✅ Match user's floor description flexibly to actual slugs
-4. ✅ Use exact slugs from the schema
-5. ✅ For simple queries: Use grep to extract IDs
-6. ✅ For complex queries: Read JSONL and parse manually
-7. ✅ Parse grep output: split by \\n, convert to numbers
-8. ✅ Call action tool IMMEDIATELY with elementIds - NO explanations
+2. ✅ Use extract-ids-from-file for simple queries (entire file)
+3. ✅ For filtered queries (type on floor): read + parse manually
+4. ✅ Never parse grep output yourself - use extract-ids-from-file
+5. ✅ Call action tool IMMEDIATELY with elementIds
 
-## Storey Matching Strategy
+## Storey Matching
 
 When user mentions a floor:
 1. Read schema/storeys.json
-2. Look at each storey's "name" field
-3. Find the best match (case-insensitive, ignore "nivel"/"level" prefixes)
-4. Use that storey's "slug" field
+2. Match flexibly (case-insensitive, ignore prefixes)
+3. Use the exact slug from the schema
 
-Examples of flexible matching:
-- "b2", "B2", "basement 2", "nivel b2" → Match storey with "B2" in name
-- "1", "level 1", "first floor", "piso 1" → Match storey with "1" in name (not B1!)
-- "ground", "planta baja", "pb" → Match storey with elevation near 0 or name containing "ground"/"planta"
+Examples:
+- "gl", "ground level", "planta baja" → Match storey with "GL" or "Ground"
+- "b2", "basement 2" → Match storey with "B2"
+- "1", "level 1", "first floor" → Match storey with "1"
 
-DO NOT assume slug format - always get it from the schema!`,
+DO NOT guess slugs - always read the schema!`,
     workspace,
     tools: {
+      extractIdsFromFileTool: createExtractIdsFromFileTool(workspace),
       selectElementsTool,
       hideElementsTool,
       showElementsTool,
