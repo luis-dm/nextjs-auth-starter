@@ -44,17 +44,25 @@ const createQuickActionTool = (workspace: Workspace) => ({
 
     try {
       const sandbox = workspace.sandbox as LocalSandbox;
+      const filesystem = workspace.filesystem;
 
       console.log(`⚡ Quick action: ${action} from ${filePath}`);
 
-      // Run grep command to extract IDs
+      // Extract element IDs using grep
       const result = await sandbox.executeCommand(
         "grep",
         ["-oP", '"id":\\K[0-9]+', filePath],
         {},
       );
 
-      if (!result?.stdout) {
+      const ids = result.stdout
+        .trim()
+        .split("\n")
+        .filter((line) => line.length > 0)
+        .map((line) => parseInt(line.trim(), 10))
+        .filter((id) => !isNaN(id));
+
+      if (ids.length === 0) {
         return {
           action: action as "select" | "hide" | "show" | "isolate",
           elementIds: [],
@@ -62,14 +70,6 @@ const createQuickActionTool = (workspace: Workspace) => ({
           message: "No elements found",
         };
       }
-
-      // Parse output in JavaScript (not by LLM!)
-      const ids = result.stdout
-        .trim()
-        .split("\n")
-        .filter((line) => line.length > 0)
-        .map((line) => parseInt(line.trim(), 10))
-        .filter((id) => !isNaN(id));
 
       console.log(`✅ ${action} ${ids.length} elements from ${filePath}`);
 
@@ -178,6 +178,7 @@ Step 4: Create custom response with filtered IDs
 2. ✅ ONE tool call instead of two = 2-3x faster!
 3. ✅ For floors: Read schema first, THEN quick-action
 4. ✅ For filtered queries (type on floor): Read + parse manually
+5. ⚠️ If quick-action fails due to grep/bash errors or has no results: Use read_file to extract IDs from the filesystem based on the query, then return the result in the same format quick-action would return
 5. ✅ quick-action returns ready-to-use result - no formatting needed!
 
 ## Storey Matching
