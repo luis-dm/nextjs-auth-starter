@@ -7,114 +7,11 @@ import {
 import { openai } from "@ai-sdk/openai";
 import { z } from "zod";
 
-// Fast semantic search tool using grep with patterns
-const createSemanticSearchTool = (workspace: Workspace) => ({
-  id: "semantic-search",
-  description:
-    "Search for elements by keywords in their names using grep patterns. Use this when users describe elements by function, appearance, or semantic meaning rather than exact IFC types.",
-  inputSchema: z.object({
-    category: z
-      .string()
-      .optional()
-      .describe(
-        'IFC category to narrow search (e.g., "IFCFURNITURE"), or omit to search all',
-      ),
-    keywords: z
-      .array(z.string())
-      .describe(
-        "Keywords that might appear in element names. Think about synonyms, variations, and related terms.",
-      ),
-    action: z
-      .enum(["select", "hide", "show", "isolate"])
-      .describe("Action to perform on matching elements"),
-  }),
-  outputSchema: z.object({
-    action: z.enum(["select", "hide", "show", "isolate"]),
-    elementIds: z.array(z.number()),
-    count: z.number(),
-    message: z.string(),
-  }),
-  execute: async (params: any) => {
-    const category = params.inputData?.category || params.category;
-    const keywords = params.inputData?.keywords || params.keywords;
-    const action = params.inputData?.action || params.action;
-
-    if (!keywords || keywords.length === 0 || !action) {
-      throw new Error("Missing keywords or action parameters");
-    }
-
-    const sandbox = workspace.sandbox as LocalSandbox;
-
-    console.log(
-      `🔍 Semantic search: ${keywords.join(", ")} in ${category || "all categories"}`,
-    );
-
-    try {
-      // Build grep pattern: case-insensitive OR of all keywords
-      const pattern = keywords.map((k: string) => k.toLowerCase()).join("|");
-
-      // Determine which files to search
-      let filesToSearch: string[] = [];
-      if (category) {
-        filesToSearch = [`index/by_category/${category}.jsonl`];
-      }
-      const allIds: number[] = [];
-
-      // Search each file
-      for (const file of filesToSearch) {
-        try {
-          const grepResult = await sandbox.executeCommand(
-            "grep",
-            ["-iE", pattern, file],
-            {},
-          );
-
-          if (grepResult?.stdout && grepResult.stdout.trim().length > 0) {
-            const lines = grepResult.stdout.trim().split("\n");
-            for (const line of lines) {
-              try {
-                const obj = JSON.parse(line);
-                if (obj.id && typeof obj.id === "number") {
-                  allIds.push(obj.id);
-                }
-              } catch (e) {
-                continue;
-              }
-            }
-          }
-        } catch (e) {
-          continue;
-        }
-      }
-
-      if (allIds.length === 0) {
-        throw new Error(
-          `No elements found matching keywords: ${keywords.join(", ")}`,
-        );
-      }
-
-      console.log(
-        `✅ Found ${allIds.length} elements matching: ${keywords.join(", ")}`,
-      );
-
-      return {
-        action: action as "select" | "hide" | "show" | "isolate",
-        elementIds: allIds,
-        count: allIds.length,
-        message: `${action.charAt(0).toUpperCase() + action.slice(1)}ed ${allIds.length} elements matching: ${keywords.join(", ")}`,
-      };
-    } catch (error) {
-      console.error("Semantic search failed:", error);
-      throw error;
-    }
-  },
-});
-
-// Quick action tool
+// NEW: All-in-one tool that extracts AND performs action
 const createQuickActionTool = (workspace: Workspace) => ({
   id: "quick-action",
   description:
-    "Extract all element IDs from a JSONL file and perform an action. Fast for simple queries that target entire categories or floors.",
+    "Extract element IDs from a JSONL file and immediately perform an action (select/hide/show/isolate). ONE TOOL CALL instead of two - much faster! Only works for simple queries (entire file). For complex queries that need filtering or semantic search, this will fail and you should use read_file instead.",
   inputSchema: z.object({
     filePath: z
       .string()
@@ -143,6 +40,7 @@ const createQuickActionTool = (workspace: Workspace) => ({
 
     console.log(`⚡ Quick action: ${action} from ${filePath}`);
 
+    // Extract element IDs using grep
     const result = await sandbox.executeCommand(
       "grep",
       ["-oP", '"id":\\K[0-9]+', filePath],
@@ -150,7 +48,9 @@ const createQuickActionTool = (workspace: Workspace) => ({
     );
 
     if (!result?.stdout || result.stdout.trim().length === 0) {
-      throw new Error(`No elements found in ${filePath}`);
+      throw new Error(
+        `No elements found in ${filePath} - this may require semantic search or filtering. Use read_file fallback.`,
+      );
     }
 
     const ids = result.stdout
@@ -161,11 +61,14 @@ const createQuickActionTool = (workspace: Workspace) => ({
       .filter((id) => !isNaN(id));
 
     if (ids.length === 0) {
-      throw new Error(`Could not extract valid IDs from ${filePath}`);
+      throw new Error(
+        `Could not extract valid IDs from ${filePath} - may need manual parsing`,
+      );
     }
 
     console.log(`✅ ${action} ${ids.length} elements from ${filePath}`);
 
+    // Return with action ready for frontend
     return {
       action: action as "select" | "hide" | "show" | "isolate",
       elementIds: ids,
@@ -193,120 +96,116 @@ export function createActionAgent(facilityId: string) {
     id: "action",
     name: "Viewer Action Agent",
     model: openai("gpt-4o-mini"),
-    instructions: `You control 3D viewer actions. Choose the right tool based on query complexity.
+    instructions: `You control 3D viewer actions. Execute commands efficiently.
 
 ## Available Tools
 
-1. **quick-action** - When targeting entire categories or floors
-2. **semantic-search** - When filtering by semantic meaning or keywords
-3. **read_file** - Last resort for multi-criteria filtering
+1. **quick-action** - Extract IDs + perform action in ONE STEP (for simple queries)
+2. **read_file** - Read and parse files manually (for complex queries)
 
-## Data Sources
+## Data Structure
 
-- schema/storeys.json - Building floors with slugs
-- schema/categories.json - Available IFC element types
-- index/by_category/{TYPE}.jsonl - All elements of a specific type
-- index/by_storey/{SLUG}.jsonl - All elements on a specific floor
+- schema/storeys.json - Available floors
+- schema/categories.json - Available IFC types
+- index/by_category/{TYPE}.jsonl - All elements of a type
+- index/by_storey/{SLUG}.jsonl - All elements on a floor
 
-## Decision Framework
+## Strategy
 
-Ask yourself: **What is the user targeting?**
+### Simple Queries (use quick-action):
+- "select all windows" → quick-action with IFCWINDOW.jsonl
+- "hide level 1" → quick-action with nivel_1.jsonl
+- "isolate doors" → quick-action with IFCDOOR.jsonl
 
-### Use quick-action when:
-- Target is an **entire IFC category** (all windows, all doors, all furniture)
-- Target is an **entire floor/level** (level 1, basement 2, ground floor)
-- User says "all X" where X is a category or floor
-- No filtering or semantic interpretation needed
+### Complex Queries (use read_file fallback):
+- "select elements I can sit on" → Need to read files and filter by name/category
+- "hide structural elements" → Need semantic understanding
+- "show furniture on floor 2" → Need to filter by category AND floor
 
-### Use semantic-search when:
-- User describes elements by **function** (things I can sit on, walkable surfaces)
-- User describes by **appearance** (red elements, glass items)
-- User describes by **purpose** (structural elements, decorative items)
-- User uses **natural language** instead of technical terms
-- You need to **match keywords** in element names
+## Workflow
 
-### Use read_file when:
-- Need to combine **multiple criteria** (doors on floor 2, red furniture in room A)
-- Need to filter by **properties not in the name** (elements over certain size)
-- semantic-search returns too many/few results and needs refinement
+1. **Determine query type**: Simple (entire file) or Complex (needs filtering)?
 
-## Keyword Generation Strategy
+2. **For simple queries**:
+   - Try quick-action first
+   - If it fails, fall back to read_file
 
-When using semantic-search, think broadly about what terms might appear in element names:
+3. **For complex queries** (semantic/filtering):
+   - Skip quick-action entirely
+   - Read relevant files with read_file
+   - Parse JSONL line by line
+   - Filter based on semantic meaning (names, categories, properties)
+   - Extract matching IDs
+   - Return result in same format as quick-action:
+     \`\`\`json
+     {
+       "action": "select",
+       "elementIds": [...],
+       "count": 123,
+       "message": "Selected 123 elements matching: sit on"
+     }
+     \`\`\`
 
-**Process:**
-1. **Identify the core concept** from user's query
-2. **List synonyms and variations** (sit → chair, bench, sofa, seat, stool)
-3. **Consider related terms** (kitchen → sink, counter, cabinet, refrigerator)
-4. **Think about technical terms** (structural → beam, column, foundation, truss)
-5. **Include common abbreviations** (AC → air conditioner, HVAC)
+## Examples
 
-**Generate 3-8 keywords** that maximize coverage while staying relevant.
-
-## Workflow Patterns
-
-### Pattern 1: Simple Category/Floor
+**Simple: "select all windows"**
 \`\`\`
-User: "select all windows"
-→ quick-action({ filePath: "index/by_category/IFCWINDOW.jsonl", action: "select" })
-\`\`\`
-
-### Pattern 2: Semantic Description
-\`\`\`
-User: "select elements I can sit on"
-→ Think: What keywords? chair, bench, sofa, seat, stool, couch
-→ semantic-search({ keywords: ["chair", "bench", "sofa", "seat", "stool", "couch"], action: "select" })
+quick-action({ 
+  filePath: "index/by_category/IFCWINDOW.jsonl",
+  action: "select"
+})
 \`\`\`
 
-### Pattern 3: Floor Query
+**Complex queries:"**
 \`\`\`
-User: "hide level 2"
-→ Read "schema/storeys.json" to get slug
-→ quick-action({ filePath: "index/by_storey/{slug}.jsonl", action: "hide" })
-\`\`\`
-
-### Pattern 4: Multi-Criteria (Complex)
-\`\`\`
-User: "show furniture on floor 2"
-→ Read "schema/storeys.json" to get slug
-→ Read "index/by_storey/{slug}.jsonl"
-→ Parse JSONL, filter for IFCFURNITURE category
-→ Extract IDs, return formatted result
-\`\`\`
-
-## Error Handling
-
-If quick-action fails:
-- Try semantic-search if query might need keyword matching
-- Fall back to read_file for manual parsing
-
-If semantic-search returns 0 results:
-- Try broader/different keywords
-- Consider using read_file to inspect what's actually in the files
-
-## Output Format
-
-Always return:
-\`\`\`json
+Step 1: Identify semantic meaning
+Step 2: Read "schema/categories.json" → Find relevant types
+Step 3: Read "index/by_category/[catname].jsonl"
+Step 4: Parse JSONL, filter by name containing inferred keywords
+Step 5: Extract IDs from matching elements
+Step 6: Return formatted result:
 {
-  "action": "select" | "hide" | "show" | "isolate",
-  "elementIds": [123, 456, 789],
-  "count": 3,
-  "message": "Selected 3 elements"
+  "action": "select",
+  "elementIds": [456, 789, ...],
+  "count": 15,
+  "message": "Selected 15 elements"
 }
 \`\`\`
 
-## Storey Handling
+**Simple with fallback: "hide gl level"**
+\`\`\`
+Step 1: Read "schema/storeys.json" → Find slug "gl"
+Step 2: Try quick-action({ filePath: "index/by_storey/gl.jsonl", action: "hide" })
+Step 3: If it fails → Read file manually and extract IDs
+\`\`\`
 
-For any floor/level query:
-1. **Always read schema/storeys.json first**
-2. Match user's term flexibly (case-insensitive, ignore prefixes like "nivel"/"level")
+## Quick-Action Failure Handling
+
+When quick-action fails (throws error):
+1. The error message tells you WHY it failed
+2. Use read_file to manually parse the JSONL
+3. Extract IDs based on the query context
+4. Return result in the same format as quick-action
+
+## Rules
+
+1. ✅ Try quick-action for simple queries (fastest)
+2. ✅ If quick-action throws error → Use read_file fallback
+3. ✅ For complex semantic queries → Skip quick-action, use read_file directly
+4. ✅ Always return consistent format: { action, elementIds, count, message }
+5. ✅ For floors: Read schema/storeys.json first to get correct slug
+
+## Storey Matching
+
+When user mentions a floor:
+1. Read schema/storeys.json
+2. Match flexibly (case-insensitive)
 3. Use the exact slug from the schema
-4. Never hardcode or guess storey slugs`,
+
+DO NOT guess slugs - always read the schema!`,
     workspace,
     tools: {
       quickActionTool: createQuickActionTool(workspace),
-      semanticSearchTool: createSemanticSearchTool(workspace),
     },
   });
 }
