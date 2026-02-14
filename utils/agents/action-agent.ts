@@ -11,7 +11,7 @@ import { z } from "zod";
 const createQuickActionTool = (workspace: Workspace) => ({
   id: "quick-action",
   description:
-    "Extract element IDs from a JSONL file and immediately perform an action (select/hide/show/isolate). ONE TOOL CALL instead of two - much faster!",
+    "Extract element IDs from a JSONL file and immediately perform an action (select/hide/show/isolate). ONE TOOL CALL instead of two - much faster! Only works for simple queries (entire file). For complex queries that need filtering or semantic search, this will fail and you should use read_file instead.",
   inputSchema: z.object({
     filePath: z
       .string()
@@ -33,62 +33,48 @@ const createQuickActionTool = (workspace: Workspace) => ({
     const action = params.inputData?.action || params.action;
 
     if (!filePath || !action) {
-      console.error("Missing filePath or action:", params);
-      return {
-        action: action || "select",
-        elementIds: [],
-        count: 0,
-        message: "Error: Missing parameters",
-      };
+      throw new Error("Missing filePath or action parameters");
     }
 
-    try {
-      const sandbox = workspace.sandbox as LocalSandbox;
-      const filesystem = workspace.filesystem;
+    const sandbox = workspace.sandbox as LocalSandbox;
 
-      console.log(`⚡ Quick action: ${action} from ${filePath}`);
+    console.log(`⚡ Quick action: ${action} from ${filePath}`);
 
-      // Extract element IDs using grep
-      const result = await sandbox.executeCommand(
-        "grep",
-        ["-oP", '"id":\\K[0-9]+', filePath],
-        {},
+    // Extract element IDs using grep
+    const result = await sandbox.executeCommand(
+      "grep",
+      ["-oP", '"id":\\K[0-9]+', filePath],
+      {},
+    );
+
+    if (!result?.stdout || result.stdout.trim().length === 0) {
+      throw new Error(
+        `No elements found in ${filePath} - this may require semantic search or filtering. Use read_file fallback.`,
       );
-
-      const ids = result.stdout
-        .trim()
-        .split("\n")
-        .filter((line) => line.length > 0)
-        .map((line) => parseInt(line.trim(), 10))
-        .filter((id) => !isNaN(id));
-
-      if (ids.length === 0) {
-        return {
-          action: action as "select" | "hide" | "show" | "isolate",
-          elementIds: [],
-          count: 0,
-          message: "No elements found",
-        };
-      }
-
-      console.log(`✅ ${action} ${ids.length} elements from ${filePath}`);
-
-      // Return with action ready for frontend
-      return {
-        action: action as "select" | "hide" | "show" | "isolate",
-        elementIds: ids,
-        count: ids.length,
-        message: `${action.charAt(0).toUpperCase() + action.slice(1)}ed ${ids.length} elements`,
-      };
-    } catch (error) {
-      console.error("Failed quick action:", error);
-      return {
-        action: action as "select" | "hide" | "show" | "isolate",
-        elementIds: [],
-        count: 0,
-        message: "Error performing action",
-      };
     }
+
+    const ids = result.stdout
+      .trim()
+      .split("\n")
+      .filter((line) => line.length > 0)
+      .map((line) => parseInt(line.trim(), 10))
+      .filter((id) => !isNaN(id));
+
+    if (ids.length === 0) {
+      throw new Error(
+        `Could not extract valid IDs from ${filePath} - may need manual parsing`,
+      );
+    }
+
+    console.log(`✅ ${action} ${ids.length} elements from ${filePath}`);
+
+    // Return with action ready for frontend
+    return {
+      action: action as "select" | "hide" | "show" | "isolate",
+      elementIds: ids,
+      count: ids.length,
+      message: `${action.charAt(0).toUpperCase() + action.slice(1)}ed ${ids.length} elements`,
+    };
   },
 });
 
@@ -110,88 +96,111 @@ export function createActionAgent(facilityId: string) {
     id: "action",
     name: "Viewer Action Agent",
     model: openai("gpt-4o-mini"),
-    instructions: `You control 3D viewer actions. Execute commands in ONE TOOL CALL.
+    instructions: `You control 3D viewer actions. Execute commands efficiently.
 
 ## Available Tools
 
-1. **quick-action** - Extract IDs + perform action in ONE STEP (ALWAYS USE THIS!)
-2. **read_file** - Read schemas only
+1. **quick-action** - Extract IDs + perform action in ONE STEP (for simple queries)
+2. **read_file** - Read and parse files manually (for complex queries)
 
 ## Data Structure
 
-- schema/storeys.json - Available floors (read for any floor query!)
+- schema/storeys.json - Available floors
 - schema/categories.json - Available IFC types
 - index/by_category/{TYPE}.jsonl - All elements of a type
 - index/by_storey/{SLUG}.jsonl - All elements on a floor
 
-## Critical Workflow - ONE TOOL CALL!
+## Strategy
 
-### For ANY action (select/hide/show/isolate):
+### Simple Queries (use quick-action):
+- "select all windows" → quick-action with IFCWINDOW.jsonl
+- "hide level 1" → quick-action with nivel_1.jsonl
+- "isolate doors" → quick-action with IFCDOOR.jsonl
 
-1. **If floor mentioned**: Read schema/storeys.json to get slug
-2. **Call quick-action({ filePath, action })** - ONE CALL, DONE!
+### Complex Queries (use read_file fallback):
+- "select elements I can sit on" → Need to read files and filter by name/category
+- "hide structural elements" → Need semantic understanding
+- "show furniture on floor 2" → Need to filter by category AND floor
 
-That's it! No second tool call needed.
+## Workflow
+
+1. **Determine query type**: Simple (entire file) or Complex (needs filtering)?
+
+2. **For simple queries**:
+   - Try quick-action first
+   - If it fails, fall back to read_file
+
+3. **For complex queries** (semantic/filtering):
+   - Skip quick-action entirely
+   - Read relevant files with read_file
+   - Parse JSONL line by line
+   - Filter based on semantic meaning (names, categories, properties)
+   - Extract matching IDs
+   - Return result in same format as quick-action:
+     \`\`\`json
+     {
+       "action": "select",
+       "elementIds": [...],
+       "count": 123,
+       "message": "Selected 123 elements matching: sit on"
+     }
+     \`\`\`
 
 ## Examples
 
-**User: "select all windows"**
+**Simple: "select all windows"**
 \`\`\`
 quick-action({ 
   filePath: "index/by_category/IFCWINDOW.jsonl",
   action: "select"
 })
-→ DONE!
 \`\`\`
 
-**User: "hide gl level"**
+**Complex queries:"**
+\`\`\`
+Step 1: Identify semantic meaning
+Step 2: Read "schema/categories.json" → Find relevant types
+Step 3: Read "index/by_category/[catname].jsonl"
+Step 4: Parse JSONL, filter by name containing inferred keywords
+Step 5: Extract IDs from matching elements
+Step 6: Return formatted result:
+{
+  "action": "select",
+  "elementIds": [456, 789, ...],
+  "count": 15,
+  "message": "Selected 15 elements"
+}
+\`\`\`
+
+**Simple with fallback: "hide gl level"**
 \`\`\`
 Step 1: Read "schema/storeys.json" → Find slug "gl"
-Step 2: quick-action({ 
-  filePath: "index/by_storey/gl.jsonl",
-  action: "hide"
-})
-→ DONE!
+Step 2: Try quick-action({ filePath: "index/by_storey/gl.jsonl", action: "hide" })
+Step 3: If it fails → Read file manually and extract IDs
 \`\`\`
 
-**User: "isolate doors"**
-\`\`\`
-quick-action({ 
-  filePath: "index/by_category/IFCDOOR.jsonl",
-  action: "isolate"
-})
-→ DONE!
-\`\`\`
+## Quick-Action Failure Handling
 
-**User: "show walls on floor 2"**
-\`\`\`
-Step 1: Read "schema/storeys.json" → Get slug (e.g., "nivel_2")
-Step 2: Read "index/by_storey/nivel_2.jsonl"
-Step 3: Parse JSONL, filter for IFCWALL
-Step 4: Create custom response with filtered IDs
-(Complex filtered queries need manual handling)
-\`\`\`
+When quick-action fails (throws error):
+1. The error message tells you WHY it failed
+2. Use read_file to manually parse the JSONL
+3. Extract IDs based on the query context
+4. Return result in the same format as quick-action
 
 ## Rules
 
-1. ✅ ALWAYS use quick-action for simple queries (entire file)
-2. ✅ ONE tool call instead of two = 2-3x faster!
-3. ✅ For floors: Read schema first, THEN quick-action
-4. ✅ For filtered queries (type on floor): Read + parse manually
-5. ⚠️ If quick-action fails due to grep/bash errors or has no results: Use read_file to extract IDs from the filesystem based on the query, then return the result in the same format quick-action would return
-5. ✅ quick-action returns ready-to-use result - no formatting needed!
+1. ✅ Try quick-action for simple queries (fastest)
+2. ✅ If quick-action throws error → Use read_file fallback
+3. ✅ For complex semantic queries → Skip quick-action, use read_file directly
+4. ✅ Always return consistent format: { action, elementIds, count, message }
+5. ✅ For floors: Read schema/storeys.json first to get correct slug
 
 ## Storey Matching
 
 When user mentions a floor:
 1. Read schema/storeys.json
-2. Match flexibly (case-insensitive, ignore "nivel"/"level" prefixes)
+2. Match flexibly (case-insensitive)
 3. Use the exact slug from the schema
-
-Examples:
-- "gl", "ground", "planta baja" → Match storey with "GL"
-- "b2", "basement 2" → Match storey with "B2"
-- "1", "level 1", "first floor" → Match storey with "1" (not B1!)
 
 DO NOT guess slugs - always read the schema!`,
     workspace,
