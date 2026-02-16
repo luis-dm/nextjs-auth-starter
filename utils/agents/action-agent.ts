@@ -95,7 +95,7 @@ export function createActionAgent(facilityId: string) {
   return new Agent({
     id: "action",
     name: "Viewer Action Agent",
-    model: openai("gpt-4o-mini"),
+    model: openai("gpt-5-nano"),
     instructions: `You control 3D viewer actions. Execute commands efficiently.
 
 ## Available Tools

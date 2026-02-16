@@ -5,7 +5,7 @@ export function createChatAgent() {
   return new Agent({
     id: "chat",
     name: "General Chat Agent",
-    model: openai("gpt-4o-mini"),
+    model: openai("gpt-5-nano"),
     instructions: `You are a helpful BIM (Building Information Modeling) assistant.
 
 Your role is to:

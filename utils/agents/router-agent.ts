@@ -5,7 +5,7 @@ export function createRouterAgent() {
   return new Agent({
     id: "router",
     name: "Intent Classifier",
-    model: openai("gpt-4o-mini"),
+    model: openai("gpt-5-nano"),
     instructions: `You are an intent classifier for a BIM (Building Information Modeling) assistant.
 
 Classify the user's message into ONE category and respond with ONLY that word:

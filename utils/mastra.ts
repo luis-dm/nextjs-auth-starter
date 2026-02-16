@@ -125,7 +125,7 @@ export {
 const bimAgent = new Agent({
   id: "bimAgent",
   name: "BIM Query Assistant",
-  model: openai("gpt-4o"),
+  model: openai("gpt-5-nano"),
   instructions: `You are a BIM assistant with access to IFC model data and 3D viewer controls.
 
 ## Data Access (via workspace skills)
