@@ -47,7 +47,13 @@ export function createBIMWorkflow(facilityId: string) {
     }),
     execute: async ({ inputData }) => {
       console.log("📊 Executing query agent");
-      const result = await queryAgent.generate(inputData.message);
+      const result = await queryAgent.generate(inputData.message, {
+        providerOptions: {
+          openai: {
+            reasoningEffort: "high",
+          },
+        },
+      });
       console.log("📊 Query result:", result.text);
       return {
         text: result.text || "No response",
