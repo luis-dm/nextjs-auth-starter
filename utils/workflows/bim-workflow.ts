@@ -50,7 +50,7 @@ export function createBIMWorkflow(facilityId: string) {
       const result = await queryAgent.generate(inputData.message, {
         providerOptions: {
           openai: {
-            reasoningEffort: "high",
+            reasoningEffort: "low",
           },
         },
       });

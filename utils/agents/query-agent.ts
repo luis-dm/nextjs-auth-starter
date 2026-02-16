@@ -61,7 +61,7 @@ export function createQueryAgent(facilityId: string) {
   return new Agent({
     id: "query",
     name: "BIM Query Agent",
-    model: openai("gpt-5-nano"),
+    model: openai("gpt-5-mini"),
     instructions: `You are a BIM data query assistant. Answer questions about building model data clearly and concisely.
 
 ## Available Data
