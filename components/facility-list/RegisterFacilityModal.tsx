@@ -391,7 +391,7 @@ export default function RegisterFacilityModal({
                 ? "Converting..."
                 : isUploadingInternal
                   ? "Uploading..."
-                  : "Register Facility"}
+                  : "Upload Model"}
             </button>
           </div>
         </form>

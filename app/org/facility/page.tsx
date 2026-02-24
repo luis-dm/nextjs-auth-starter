@@ -170,9 +170,9 @@ function FacilityList() {
         toast.success(`Facility "${name}" registered successfully`);
       } else {
         const error = await response.json();
-        console.error("Failed to register facility:", error);
-        toast.error("Failed to register facility: " + error.error);
-        throw new Error("Failed to register facility");
+        console.error("Failed to upload model:", error);
+        toast.error("Failed to upload model: " + error.error);
+        throw new Error("Failed to upload model");
       }
     } catch (error) {
       console.error("Error registering facility:", error);
@@ -241,7 +241,7 @@ function FacilityList() {
                 className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 text-gray-700 text-sm font-medium rounded-md hover:bg-gray-50 transition-colors"
               >
                 <Plus className="w-4 h-4 text-gray-600" />
-                Register Facility
+                Upload Model
               </button>
             </div>
           </div>
@@ -295,7 +295,7 @@ function FacilityList() {
         </>
       )}
 
-      {/* Register Facility Modal */}
+      {/* Upload Model Modal */}
       <RegisterFacilityModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
