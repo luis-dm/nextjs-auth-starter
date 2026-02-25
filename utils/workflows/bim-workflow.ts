@@ -26,10 +26,10 @@ export function createBIMWorkflow(facilityId: string) {
       message: z.string(),
     }),
     execute: async ({ inputData }) => {
-      console.log("🔀 Routing intent for:", inputData.message);
+      console.log("Routing intent for:", inputData.message);
       const result = await routerAgent.generate(inputData.message);
       const intent = result.text?.trim().toUpperCase() || "CHAT";
-      console.log("📍 Intent:", intent);
+      console.log("Intent:", intent);
       return { intent, message: inputData.message };
     },
   });
@@ -46,7 +46,7 @@ export function createBIMWorkflow(facilityId: string) {
       steps: z.any().optional(),
     }),
     execute: async ({ inputData }) => {
-      console.log("📊 Executing query agent");
+      console.log("Executing query agent");
       const result = await queryAgent.generate(inputData.message, {
         providerOptions: {
           openai: {
@@ -54,7 +54,7 @@ export function createBIMWorkflow(facilityId: string) {
           },
         },
       });
-      console.log("📊 Query result:", result.text);
+      console.log("Query result:", result.text);
       return {
         text: result.text || "No response",
         steps: result.steps,
@@ -74,9 +74,9 @@ export function createBIMWorkflow(facilityId: string) {
       steps: z.any().optional(),
     }),
     execute: async ({ inputData }) => {
-      console.log("🎬 Executing action agent");
+      console.log("Executing action agent");
       const result = await actionAgent.generate(inputData.message);
-      console.log("🎬 Action result:", result.text);
+      console.log("Action result:", result.text);
       return {
         text: result.text || "Action completed",
         steps: result.steps,
@@ -95,9 +95,9 @@ export function createBIMWorkflow(facilityId: string) {
       text: z.string(),
     }),
     execute: async ({ inputData }) => {
-      console.log("💬 General chat response for:", inputData.message);
+      console.log("General chat response for:", inputData.message);
       const result = await chatAgent.generate(inputData.message);
-      console.log("💬 Chat result:", result.text);
+      console.log("Chat result:", result.text);
       return {
         text: result.text || "Hi! How can I help you?",
       };
@@ -121,21 +121,21 @@ export function createBIMWorkflow(facilityId: string) {
       [
         // Check the inputData which should have intent from routeStep output
         async ({ inputData }) => {
-          console.log("🔍 Branch checking QUERY, inputData:", inputData);
+          console.log("Branch checking QUERY, inputData:", inputData);
           return (inputData as any).intent?.includes("QUERY");
         },
         queryStep,
       ],
       [
         async ({ inputData }) => {
-          console.log("🔍 Branch checking ACTION, inputData:", inputData);
+          console.log("Branch checking ACTION, inputData:", inputData);
           return (inputData as any).intent?.includes("ACTION");
         },
         actionStep,
       ],
       [
         async ({ inputData }) => {
-          console.log("🔍 Branch checking CHAT, inputData:", inputData);
+          console.log("Branch checking CHAT, inputData:", inputData);
           return (
             (inputData as any).intent?.includes("CHAT") ||
             !(inputData as any).intent

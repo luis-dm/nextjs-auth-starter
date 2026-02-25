@@ -306,12 +306,33 @@ export class BimChatbot {
       this.spatialStructure as IFCNode,
     );
 
+    // Download enhanced structure as JSON before building filesystem
+    this.downloadEnhancedStructure(facilityId);
+
     // Build the BIM filesystem from the enhanced structure
     await this.buildBimFilesystem(this.enhancedStructure, facilityId);
 
     console.log("Enhanced spatial structure loaded and filesystem built");
 
     return this.enhancedStructure;
+  }
+
+  private downloadEnhancedStructure(facilityId: string): void {
+    try {
+      const json = JSON.stringify(this.enhancedStructure, null, 2);
+      const blob = new Blob([json], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `enhanced_structure_${facilityId}_${Date.now()}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      console.log("Enhanced structure downloaded successfully");
+    } catch (error) {
+      console.error("Error downloading enhanced structure:", error);
+    }
   }
 
   private async buildBimFilesystem(

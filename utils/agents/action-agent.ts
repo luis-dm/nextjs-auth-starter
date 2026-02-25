@@ -7,7 +7,6 @@ import {
 import { openai } from "@ai-sdk/openai";
 import { z } from "zod";
 
-// NEW: All-in-one tool that extracts AND performs action
 const createQuickActionTool = (workspace: Workspace) => ({
   id: "quick-action",
   description:
@@ -66,14 +65,14 @@ const createQuickActionTool = (workspace: Workspace) => ({
       );
     }
 
-    console.log(`✅ ${action} ${ids.length} elements from ${filePath}`);
+    console.log(`${action} ${ids.length} elements from ${filePath}`);
 
     // Return with action ready for frontend
     return {
       action: action as "select" | "hide" | "show" | "isolate",
       elementIds: ids,
       count: ids.length,
-      message: `${action.charAt(0).toUpperCase() + action.slice(1)}ed ${ids.length} elements`,
+      message: `${action.charAt(0).toUpperCase() + action.slice(1)} operation done on ${ids.length} elements`,
     };
   },
 });
