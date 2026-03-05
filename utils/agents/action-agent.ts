@@ -213,61 +213,47 @@ const createQuickActionTool = (workspace: Workspace) => ({
     const filePath = params.inputData?.filePath || params.filePath;
     const action = params.inputData?.action || params.action;
 
-    const sandbox = workspace.sandbox as LocalSandbox;
-
     console.log(`[Quick Action] Action: ${action}, File: ${filePath}`);
 
-    // Debug: Check if file exists
-    const checkFile = await sandbox.executeCommand(
-      "test",
-      ["-f", filePath],
-      {},
-    );
-    console.log(
-      `[Quick Action] File exists check (exit code):`,
-      checkFile?.exitCode,
-    );
-
-    // Debug: List directory contents
-    const lsResult = await sandbox.executeCommand(
-      "ls",
-      ["-la", "index/by_category/"],
-      {},
-    );
-    console.log(`[Quick Action] Directory listing:`, lsResult?.stdout);
-
-    // Use jq to extract _localId - works on macOS/Linux
-    const result = await sandbox.executeCommand(
-      "jq",
-      ["-r", "._localId", filePath],
-      {},
-    );
-
-    console.log(
-      `[Quick Action] jq result - stdout:`,
-      result?.stdout?.substring(0, 200),
-    );
-    console.log(`[Quick Action] jq result - stderr:`, result?.stderr);
-    console.log(`[Quick Action] jq result - exitCode:`, result?.exitCode);
-
-    if (!result?.stdout || result.stdout.trim().length === 0) {
-      throw new Error(
-        `No elements in ${filePath}. File may be empty or path incorrect.`,
-      );
+    // Read and parse JSONL file using filesystem (no external tools needed)
+    if (!workspace.filesystem) {
+      throw new Error("Filesystem not available");
     }
 
-    const ids = result.stdout
-      .trim()
-      .split("\n")
-      .filter((line) => line.length > 0)
-      .map((line) => parseInt(line.trim(), 10))
-      .filter((id) => !isNaN(id));
+    const fileContent = await workspace.filesystem.readFile(filePath);
+    const content =
+      typeof fileContent === "string" ? fileContent : fileContent.toString();
+
+    if (!content || content.trim().length === 0) {
+      throw new Error(`File ${filePath} is empty`);
+    }
+
+    // Parse JSONL and extract _localId from each line
+    const ids: number[] = [];
+    const lines = content.trim().split("\n");
+
+    for (const line of lines) {
+      if (line.trim().length === 0) continue;
+      try {
+        const obj = JSON.parse(line);
+        if (obj._localId !== undefined) {
+          ids.push(obj._localId);
+        }
+      } catch (e) {
+        console.warn(
+          `[Quick Action] Failed to parse line in ${filePath}:`,
+          line.substring(0, 100),
+        );
+      }
+    }
 
     if (ids.length === 0) {
-      throw new Error(`Could not extract valid IDs from ${filePath}`);
+      throw new Error(`No valid elements with _localId found in ${filePath}`);
     }
 
-    // console.log(`${action} ${ids.length} elements from ${filePath}`);
+    console.log(
+      `[Quick Action] Extracted ${ids.length} element IDs from ${filePath}`,
+    );
 
     return {
       action: action as "select" | "hide" | "show" | "isolate",
