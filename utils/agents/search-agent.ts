@@ -1,9 +1,5 @@
 import { Agent } from "@mastra/core/agent";
-import {
-  Workspace,
-  LocalFilesystem,
-  LocalSandbox,
-} from "@mastra/core/workspace";
+import { Workspace, LocalFilesystem } from "@mastra/core/workspace";
 import { openai } from "@ai-sdk/openai";
 import { z } from "zod";
 
@@ -35,31 +31,45 @@ const createSemanticSearchTool = (workspace: Workspace) => ({
   execute: async (params: any) => {
     const query = params.inputData?.query || params.query;
     const keywords = params.inputData?.keywords || params.keywords;
-    const sandbox = workspace.sandbox as LocalSandbox;
 
     console.log(
       `[Search Agent] Searching "${query}" with keywords: [${keywords.join(", ")}]`,
     );
 
-    let searchResult = null;
+    if (!workspace.filesystem) {
+      throw new Error("Filesystem not available");
+    }
+
+    // Read object_types.json
+    const objectTypesFile = await workspace.filesystem.readFile(
+      "schema/object_types.json",
+    );
+    const objectTypesContent =
+      typeof objectTypesFile === "string"
+        ? objectTypesFile
+        : objectTypesFile.toString();
+    const objectTypes = JSON.parse(objectTypesContent);
+
+    let matchingTypes: any[] = [];
     let usedKeyword = "";
 
     // Try each keyword until we get a hit
     for (const keyword of keywords) {
-      searchResult = await sandbox.executeCommand(
-        "./skills/bim-query/scripts/search_by_name.sh",
-        [keyword],
-        {},
+      const keywordLower = keyword.toLowerCase();
+      matchingTypes = objectTypes.filter((ot: any) =>
+        ot.objectType.toLowerCase().includes(keywordLower),
       );
 
-      if (searchResult?.stdout?.trim()) {
+      if (matchingTypes.length > 0) {
         usedKeyword = keyword;
-        console.log(`[Search Agent] Found matches using: "${keyword}"`);
+        console.log(
+          `[Search Agent] Found ${matchingTypes.length} object type(s) using: "${keyword}"`,
+        );
         break;
       }
     }
 
-    if (!searchResult?.stdout?.trim()) {
+    if (matchingTypes.length === 0) {
       console.log(`[Search Agent] No matches found for any keywords`);
       return {
         matches: [],
@@ -70,58 +80,45 @@ const createSemanticSearchTool = (workspace: Workspace) => ({
       };
     }
 
-    // 2. Parse matches (format: "CATEGORY|ObjectType|Count")
-    const matchLines = searchResult.stdout
-      .trim()
-      .split("\n")
-      .filter((line) => line.length > 0);
-
-    console.log(
-      `[Search Agent] Found ${matchLines.length} object type(s) using "${usedKeyword}"`,
-    );
-
     const matches = [];
     const allIds: number[] = [];
 
-    // 3. Get IDs for each matching ObjectType
-    for (const line of matchLines) {
-      const [category, objectType, count] = line.split("|");
+    // Get IDs for each matching ObjectType by reading flat/all_elements.jsonl
+    const allElementsFile = await workspace.filesystem.readFile(
+      "flat/all_elements.jsonl",
+    );
+    const allElementsContent =
+      typeof allElementsFile === "string"
+        ? allElementsFile
+        : allElementsFile.toString();
 
-      if (!objectType || !category) {
-        console.log(`Skipping malformed line: "${line}"`);
-        continue;
+    const lines = allElementsContent.trim().split("\n");
+
+    for (const matchingType of matchingTypes) {
+      const typeIds: number[] = [];
+
+      for (const line of lines) {
+        if (line.trim().length === 0) continue;
+        try {
+          const element = JSON.parse(line);
+          if (
+            element.type === matchingType.objectType &&
+            element._localId !== undefined
+          ) {
+            typeIds.push(element._localId);
+          }
+        } catch (e) {
+          // Skip invalid lines
+        }
       }
 
-      //   console.log(`Getting IDs for: ${objectType} (${category})`);
-
-      const idsResult = await sandbox.executeCommand(
-        "./skills/bim-query/scripts/get_ids_by_object_type.sh",
-        [objectType], // Only pass objectType, script looks up category itself
-        {},
-      );
-
-      //   console.log(`Script result:`, {
-      //     hasStdout: !!idsResult?.stdout,
-      //     stdoutLength: idsResult?.stdout?.length || 0,
-      //     stderr: idsResult?.stderr?.substring(0, 100),
-      //   });
-
-      if (idsResult?.stdout?.trim()) {
-        const ids = idsResult.stdout
-          .trim()
-          .split("\n")
-          .map((id) => parseInt(id.trim(), 10))
-          .filter((id) => !isNaN(id));
-
-        allIds.push(...ids);
+      if (typeIds.length > 0) {
+        allIds.push(...typeIds);
         matches.push({
-          objectType,
-          category,
-          count: ids.length,
+          objectType: matchingType.objectType,
+          category: matchingType.category,
+          count: typeIds.length,
         });
-        // console.log(`${objectType} (${category}): ${ids.length} elements`);
-      } else {
-        console.log(`No IDs found for ${objectType} (${category})`);
       }
     }
 
@@ -139,18 +136,17 @@ const createSemanticSearchTool = (workspace: Workspace) => ({
   },
 });
 
-export function createSearchAgent() {
-  const basePath = "./bim_fs";
+export function createSearchAgent(facilityId?: string) {
+  const BIM_DATA_PATH = process.env.BIM_DATA_PATH || "./public/bim_data";
+  const basePath = facilityId
+    ? `${BIM_DATA_PATH}/${facilityId}/ai/bim_fs`
+    : "./bim_fs";
 
   const workspace = new Workspace({
     filesystem: new LocalFilesystem({
       basePath,
       readOnly: true,
     }),
-    sandbox: new LocalSandbox({
-      workingDirectory: basePath,
-    }),
-    skills: ["/skills"],
   });
 
   return new Agent({

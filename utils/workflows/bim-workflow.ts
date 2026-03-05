@@ -11,7 +11,7 @@ import {
 export function createBIMWorkflow(facilityId: string) {
   // Create agents
   const routerAgent = createRouterAgent();
-  const searchAgent = createSearchAgent();
+  const searchAgent = createSearchAgent(facilityId);
   const queryAgent = createQueryAgent(facilityId, searchAgent);
   const actionAgent = createActionAgent(facilityId, searchAgent);
   const chatAgent = createChatAgent();
