@@ -400,7 +400,7 @@ export class BimChatbot {
           `BimChatbot: Executing action "${data.action}" with ${data.elementIds?.length} elements:`,
           data.elementIds,
         );
-        
+
         try {
           switch (data.action) {
             case "select":
@@ -415,7 +415,9 @@ export class BimChatbot {
               return data.response || `Hid ${data.elementIds.length} elements`;
             case "show":
               await this.showElements(data.elementIds);
-              return data.response || `Showed ${data.elementIds.length} elements`;
+              return (
+                data.response || `Showed ${data.elementIds.length} elements`
+              );
             case "isolate":
               await this.isolateElements(data.elementIds);
               return (
@@ -427,7 +429,7 @@ export class BimChatbot {
           }
         } catch (actionError) {
           console.error("BimChatbot: Error executing action:", actionError);
-          return `Failed to ${data.action} elements: ${actionError instanceof Error ? actionError.message : 'Unknown error'}`;
+          return `Failed to ${data.action} elements: ${actionError instanceof Error ? actionError.message : "Unknown error"}`;
         }
       }
 
