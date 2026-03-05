@@ -129,10 +129,9 @@ export function createBIMWorkflow(facilityId: string) {
             }
           : {};
 
-      const result = await actionAgent.generate(
-        inputData.message,
-        memoryConfig,
-      );
+      const result = await actionAgent.generate(inputData.message, {
+        ...memoryConfig,
+      });
 
       console.log("Action result:", result.text);
       if (result.usage) {
@@ -170,7 +169,9 @@ export function createBIMWorkflow(facilityId: string) {
             }
           : {};
 
-      const result = await chatAgent.generate(inputData.message, memoryConfig);
+      const result = await chatAgent.generate(inputData.message, {
+        ...memoryConfig,
+      });
 
       console.log("Chat result:", result.text);
       if (result.usage) {
