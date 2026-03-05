@@ -63,11 +63,11 @@ export async function POST(req: NextRequest) {
     const stepResults = Object.values(result);
     const lastStepResult = stepResults[stepResults.length - 1] as any;
 
-    // console.log("📝 Last step result:", lastStepResult);
+    console.log("📝 Last step result:", lastStepResult);
 
     // Check if there are steps with tool results (for actions or quick-action)
     if (lastStepResult?.steps && Array.isArray(lastStepResult.steps)) {
-      // console.log("🔍 Checking steps for actions...");
+      console.log("🔍 Checking steps for actions...");
       for (const step of lastStepResult.steps) {
         if (step.toolResults) {
           for (const toolResult of step.toolResults) {
@@ -78,28 +78,28 @@ export async function POST(req: NextRequest) {
               resultData = resultData.payload.result;
             }
 
-            // Check if it's a quick-action result (NEW!)
+            // Check if it's a quick-action result
             if (
               resultData.action &&
               resultData.elementIds &&
               resultData.message
             ) {
-              // console.log("✅ Quick action found:", resultData);
-              // return NextResponse.json({
-              //   response: resultData.message,
-              //   action: resultData.action,
-              //   elementIds: resultData.elementIds,
-              // });
+              console.log("✅ Quick action found:", resultData);
+              return NextResponse.json({
+                response: resultData.message,
+                action: resultData.action,
+                elementIds: resultData.elementIds,
+              });
             }
 
             // Check if it's an action (legacy)
             if (resultData.action && resultData.elementIds) {
-              // console.log("✅ Action found:", resultData);
-              // return NextResponse.json({
-              //   response: resultData.message,
-              //   action: resultData.action,
-              //   elementIds: resultData.elementIds,
-              // });
+              console.log("✅ Action found:", resultData);
+              return NextResponse.json({
+                response: resultData.message,
+                action: resultData.action,
+                elementIds: resultData.elementIds,
+              });
             }
           }
         }
