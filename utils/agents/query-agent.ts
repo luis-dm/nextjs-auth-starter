@@ -1,4 +1,5 @@
 import { Agent } from "@mastra/core/agent";
+import { Memory } from "@mastra/memory";
 import { Workspace, LocalFilesystem } from "@mastra/core/workspace";
 import { openai } from "@ai-sdk/openai";
 import { z } from "zod";
@@ -225,6 +226,7 @@ export function createQueryAgent(facilityId: string, searchAgent: Agent) {
     name: "BIM Query Agent",
     model: openai("gpt-5-nano"),
     mastra,
+    memory: new Memory(),
     instructions: `You are a BIM data query assistant. Answer questions about building model data clearly and concisely.
 
 ## Query Strategy

@@ -1,4 +1,5 @@
 import { Agent } from "@mastra/core/agent";
+import { Memory } from "@mastra/memory";
 import {
   Workspace,
   LocalFilesystem,
@@ -287,6 +288,7 @@ export function createActionAgent(facilityId: string, searchAgent: Agent) {
     name: "Viewer Action Agent",
     model: openai("gpt-5-nano"),
     mastra,
+    memory: new Memory(),
     instructions: `You control 3D viewer actions. Execute commands efficiently.
 
     ## Tool Priority

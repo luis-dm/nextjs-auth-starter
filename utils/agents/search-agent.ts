@@ -1,4 +1,5 @@
 import { Agent } from "@mastra/core/agent";
+import { Memory } from "@mastra/memory";
 import { Workspace, LocalFilesystem } from "@mastra/core/workspace";
 import { openai } from "@ai-sdk/openai";
 import { z } from "zod";
@@ -166,6 +167,7 @@ export function createSearchAgent(facilityId?: string) {
     name: "Semantic Search Agent",
     model: openai("gpt-4o-mini"),
     mastra,
+    memory: new Memory(),
     instructions: `Extract relevant keywords from user queries and search for BIM elements.
 
 **Your job:**
