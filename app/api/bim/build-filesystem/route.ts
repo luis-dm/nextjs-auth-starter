@@ -3,6 +3,7 @@ import fs from "fs";
 import path from "path";
 import { buildFilesystem } from "@/utils/build_bim_fs";
 import os from "os";
+import archiver from "archiver";
 
 export async function POST(req: NextRequest) {
   try {
@@ -88,6 +89,38 @@ export async function POST(req: NextRequest) {
       console.log("Skills folder copied and scripts made executable");
     } else {
       console.warn("Skills folder not found at:", sourceSkillsPath);
+    }
+
+    // Check if download is requested
+    const shouldDownload = req.nextUrl.searchParams.get("download") === "true";
+
+    if (shouldDownload) {
+      console.log("Creating zip archive for download...");
+
+      // Create a zip archive
+      const archive = archiver("zip", {
+        zlib: { level: 9 }, // Maximum compression
+      });
+
+      // Set up response headers for file download
+      const headers = new Headers();
+      headers.set("Content-Type", "application/zip");
+      headers.set(
+        "Content-Disposition",
+        `attachment; filename="bim_fs_${facilityId}_${Date.now()}.zip"`,
+      );
+
+      // Create a readable stream from the archive
+      const { readable, writable } = new TransformStream();
+      archive.pipe(writable as any);
+
+      // Add the bim_fs directory to the archive
+      archive.directory(facilityBasePath, "bim_fs");
+
+      // Finalize the archive
+      archive.finalize();
+
+      return new NextResponse(readable, { headers });
     }
 
     return NextResponse.json({
