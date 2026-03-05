@@ -217,12 +217,38 @@ const createQuickActionTool = (workspace: Workspace) => ({
 
     console.log(`[Quick Action] Action: ${action}, File: ${filePath}`);
 
+    // Debug: Check if file exists
+    const checkFile = await sandbox.executeCommand(
+      "test",
+      ["-f", filePath],
+      {},
+    );
+    console.log(
+      `[Quick Action] File exists check (exit code):`,
+      checkFile?.exitCode,
+    );
+
+    // Debug: List directory contents
+    const lsResult = await sandbox.executeCommand(
+      "ls",
+      ["-la", "index/by_category/"],
+      {},
+    );
+    console.log(`[Quick Action] Directory listing:`, lsResult?.stdout);
+
     // Use jq to extract _localId - works on macOS/Linux
     const result = await sandbox.executeCommand(
       "jq",
       ["-r", "._localId", filePath],
       {},
     );
+
+    console.log(
+      `[Quick Action] jq result - stdout:`,
+      result?.stdout?.substring(0, 200),
+    );
+    console.log(`[Quick Action] jq result - stderr:`, result?.stderr);
+    console.log(`[Quick Action] jq result - exitCode:`, result?.exitCode);
 
     if (!result?.stdout || result.stdout.trim().length === 0) {
       throw new Error(
