@@ -16,7 +16,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    console.log("🚀 Processing message:", message, "for facility:", facilityId);
+    // console.log("🚀 Processing message:", message, "for facility:", facilityId);
 
     // Create workflow
     const workflow = createBIMWorkflow(facilityId);
@@ -56,18 +56,18 @@ export async function POST(req: NextRequest) {
     // NOW TypeScript knows it's a success result
     const result = workflowResult.result;
 
-    console.log("📦 Full result object:", JSON.stringify(result, null, 2));
+    // console.log("📦 Full result object:", JSON.stringify(result, null, 2));
 
     // The result is an object with step IDs as keys
     // We need to find the last executed step
     const stepResults = Object.values(result);
     const lastStepResult = stepResults[stepResults.length - 1] as any;
 
-    console.log("📝 Last step result:", lastStepResult);
+    // console.log("📝 Last step result:", lastStepResult);
 
     // Check if there are steps with tool results (for actions or quick-action)
     if (lastStepResult?.steps && Array.isArray(lastStepResult.steps)) {
-      console.log("🔍 Checking steps for actions...");
+      // console.log("🔍 Checking steps for actions...");
       for (const step of lastStepResult.steps) {
         if (step.toolResults) {
           for (const toolResult of step.toolResults) {
@@ -84,22 +84,22 @@ export async function POST(req: NextRequest) {
               resultData.elementIds &&
               resultData.message
             ) {
-              console.log("✅ Quick action found:", resultData);
-              return NextResponse.json({
-                response: resultData.message,
-                action: resultData.action,
-                elementIds: resultData.elementIds,
-              });
+              // console.log("✅ Quick action found:", resultData);
+              // return NextResponse.json({
+              //   response: resultData.message,
+              //   action: resultData.action,
+              //   elementIds: resultData.elementIds,
+              // });
             }
 
             // Check if it's an action (legacy)
             if (resultData.action && resultData.elementIds) {
-              console.log("✅ Action found:", resultData);
-              return NextResponse.json({
-                response: resultData.message,
-                action: resultData.action,
-                elementIds: resultData.elementIds,
-              });
+              // console.log("✅ Action found:", resultData);
+              // return NextResponse.json({
+              //   response: resultData.message,
+              //   action: resultData.action,
+              //   elementIds: resultData.elementIds,
+              // });
             }
           }
         }
