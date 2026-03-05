@@ -1,9 +1,5 @@
 import { Agent } from "@mastra/core/agent";
-import {
-  Workspace,
-  LocalFilesystem,
-  LocalSandbox,
-} from "@mastra/core/workspace";
+import { Workspace, LocalFilesystem } from "@mastra/core/workspace";
 import { openai } from "@ai-sdk/openai";
 import { z } from "zod";
 
@@ -166,40 +162,49 @@ const createGetPropertiesTool = (workspace: Workspace) => ({
   },
 });
 
-// Fast counting tool using wc -l
+// Fast counting tool using filesystem (no shell dependencies)
 const createCountTool = (workspace: Workspace) => ({
   id: "count-elements",
   description:
-    "Fast counting of elements in JSONL files using wc -l. Much faster than reading entire files.",
+    "Count elements in JSONL files. Use for queries like 'how many doors' or 'count of elements on floor 2'.",
   inputSchema: z.object({
-    filePaths: z.array(z.string()).describe("JSONL files to count"),
+    filePath: z
+      .string()
+      .describe(
+        "JSONL file path (e.g., 'index/by_category/IFCDOOR.jsonl' or 'index/by_storey/2fl.jsonl')",
+      ),
   }),
   outputSchema: z.object({
-    counts: z.record(z.number()),
-    total: z.number(),
+    count: z.number(),
+    filePath: z.string(),
   }),
   execute: async (params: any) => {
-    const filePaths = params.inputData?.filePaths || params.filePaths;
-    const sandbox = workspace.sandbox as LocalSandbox;
+    const filePath = params.inputData?.filePath || params.filePath;
 
-    const counts: Record<string, number> = {};
-    let total = 0;
-
-    for (const filePath of filePaths) {
-      try {
-        const result = await sandbox.executeCommand("wc", ["-l", filePath], {});
-        const count = parseInt(result.stdout.trim().split(/\s+/)[0], 10);
-
-        counts[filePath] = count;
-        total += count;
-        console.log(`  ✓ ${filePath}: ${count} elements`);
-      } catch (error) {
-        console.warn(`  ✗ ${filePath}: count failed`);
-        counts[filePath] = 0;
-      }
+    if (!workspace.filesystem) {
+      throw new Error("Filesystem not available");
     }
 
-    return { counts, total };
+    try {
+      const fileContent = await workspace.filesystem.readFile(filePath);
+      const content =
+        typeof fileContent === "string" ? fileContent : fileContent.toString();
+
+      // Count non-empty lines
+      const count = content
+        .split("\n")
+        .filter((line) => line.trim().length > 0).length;
+
+      console.log(`[Count] ${filePath}: ${count} elements`);
+
+      return { count, filePath };
+    } catch (error) {
+      console.warn(
+        `[Count] Could not read ${filePath}:`,
+        error instanceof Error ? error.message : String(error),
+      );
+      return { count: 0, filePath };
+    }
   },
 });
 
@@ -211,9 +216,6 @@ export function createQueryAgent(facilityId: string, searchAgent: Agent) {
     filesystem: new LocalFilesystem({
       basePath,
       readOnly: true,
-    }),
-    sandbox: new LocalSandbox({
-      workingDirectory: basePath,
     }),
   });
 
@@ -227,7 +229,7 @@ export function createQueryAgent(facilityId: string, searchAgent: Agent) {
 For generic terms (bim terms):
 1. Call list-available to check what categories/storeys exist
 2. Fuzzy match user term to available names (e.g., "doors" → IFCDOOR)
-3. If match found → use ./skills/bim-query/scripts/count_category.sh {CATEGORY} or count_storey.sh {STOREY} to get count and IDs
+3. If match found → use count-elements with the appropriate file path
 4. If no match → fallback to search-elements
 
 For specific names :
@@ -238,7 +240,14 @@ For specific names :
 "how many doors?" 
 → list-available 
 → find IFCDOOR in categories 
-→ ./skills/bim-query/scripts/count_category.sh IFCDOOR
+→ count-elements("index/by_category/IFCDOOR.jsonl")
+→ return count
+
+"how many elements on second floor?"
+→ list-available
+→ find "2fl" slug in storeys
+→ count-elements("index/by_storey/2fl.jsonl")
+→ return count
 
 "how many Breuer chairs?"
 → search-elements("breuer")
@@ -279,6 +288,7 @@ User: "properties of FIX doors"
       listAvailable: createListAvailableTool(workspace),
       searchElements: createDelegateSearchTool(searchAgent),
       getProperties: createGetPropertiesTool(workspace),
+      countElements: createCountTool(workspace),
     },
   });
 }
