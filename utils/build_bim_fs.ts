@@ -9,7 +9,6 @@
  */
 
 import * as fs from "fs/promises";
-import * as fsSync from "fs";
 import * as path from "path";
 import { createWriteStream, WriteStream } from "fs";
 
@@ -35,19 +34,9 @@ interface Element {
   [key: string]: any;
 }
 
-interface MinimalRecord {
-  id: string;
-  category: string;
-  name: string;
-  objectType: string;
-  storey: string;
-  storeySlug: string;
-}
-
 interface StoreyInfo {
   name: string;
   slug: string;
-  aliases: string[];
   type?:
     | "ground"
     | "basement"
@@ -230,9 +219,6 @@ async function* readInputElements(inputPath: string): AsyncGenerator<Element> {
   const content = await fs.readFile(inputPath, "utf8");
   const data = JSON.parse(content);
 
-  // Detect structure: array or object with nested structure
-  let root: RawElement;
-
   if (Array.isArray(data)) {
     // Array of elements
     for (const item of data) {
@@ -273,192 +259,8 @@ function buildSchemaCounts(
 }
 
 // ============================================================================
-// ALIASES
-// ============================================================================
-
-function getDefaultAliases(): Record<string, string[]> {
-  return {
-    width: ["OverallWidth", "Width", "W"],
-    height: ["OverallHeight", "Height", "H"],
-    length: ["Length", "L", "OverallLength"],
-    area: ["Area", "NetArea", "GrossArea", "OpeningArea"],
-  };
-}
-
-// ============================================================================
 // STOREY MANAGEMENT
 // ============================================================================
-
-function generateStoreyAliases(storeyName: string): string[] {
-  const aliases: Set<string> = new Set();
-  const original = storeyName.trim();
-
-  // Always include normalized versions
-  aliases.add(original.toLowerCase());
-  aliases.add(original.replace(/\s+/g, "_"));
-
-  // ============================================================================
-  // PATTERN 1: Numeric floors (1FL, 2FL, Level 1, Nivel 1, etc.)
-  // ============================================================================
-  const numMatch = original.match(/^[A-Za-z]?(\d+)([A-Za-z]{0,2})?$/);
-  if (numMatch) {
-    const num = numMatch[1];
-    const suffix = numMatch[2] || "";
-    const numInt = parseInt(num, 10);
-
-    // Generate numeric variations
-    aliases.add(`floor_${num}`);
-    aliases.add(`level_${num}`);
-    aliases.add(`${num}fl`);
-    aliases.add(`fl${num}`);
-
-    // Generate ordinal variations (1st, 2nd, 3rd, etc.)
-    const ordinals: { [key: number]: string } = {
-      1: "first",
-      2: "second",
-      3: "third",
-      4: "fourth",
-      5: "fifth",
-      6: "sixth",
-      7: "seventh",
-      8: "eighth",
-      9: "ninth",
-      10: "tenth",
-    };
-
-    if (ordinals[numInt]) {
-      aliases.add(`${ordinals[numInt]}_floor`);
-      aliases.add(`${ordinals[numInt]}_level`);
-      aliases.add(ordinals[numInt]);
-    }
-  }
-
-  // ============================================================================
-  // PATTERN 2: Special basement levels (B1, B2, BFL, Basement, etc.)
-  // ============================================================================
-  if (/^b[a-z]*\s*1?$/i.test(original)) {
-    aliases.add("basement");
-    aliases.add("b1");
-    aliases.add("bfl");
-    aliases.add("basement_level_1");
-
-    const bMatch = original.match(/b(\d+)/i);
-    if (bMatch) {
-      const bNum = bMatch[1];
-      aliases.add(`basement_${bNum}`);
-      aliases.add(`basement_level_${bNum}`);
-      aliases.add(`b${bNum}`);
-    }
-  }
-
-  if (/^b\d+$/i.test(original)) {
-    const bMatch = original.match(/b(\d+)/i)!;
-    const bNum = bMatch[1];
-    aliases.add("basement");
-    aliases.add(`basement_${bNum}`);
-    aliases.add(`basement_level_${bNum}`);
-    aliases.add(`b${bNum}`);
-    aliases.add(`bfl${bNum}`);
-  }
-
-  // ============================================================================
-  // PATTERN 3: Ground floor (G, GF, Ground, Ground Floor, etc.)
-  // ============================================================================
-  if (/^g(round)?f?(loor)?$/i.test(original)) {
-    aliases.add("ground_floor");
-    aliases.add("ground");
-    aliases.add("gf");
-    aliases.add("g");
-    aliases.add("level_0");
-    aliases.add("floor_0");
-    aliases.add("level_g");
-    aliases.add("first_floor");
-  }
-
-  // ============================================================================
-  // PATTERN 4: Roof/Attic (R, RF, RFL, Roof, Attic, etc.)
-  // ============================================================================
-  if (/^(r(oof)?|rfl|attic|a)$/i.test(original)) {
-    aliases.add("roof");
-    aliases.add("rfl");
-    aliases.add("r");
-    aliases.add("attic");
-    aliases.add("top_floor");
-    aliases.add("roof_level");
-  }
-
-  // ============================================================================
-  // PATTERN 5: Parking levels (P1, P2, P-1, Parking, etc.)
-  // ============================================================================
-  if (/^p[a-z]*\s*\d+?$/i.test(original)) {
-    const pMatch = original.match(/p[a-z]*\s*(\d+)/i);
-    if (pMatch) {
-      const pNum = pMatch[1];
-      aliases.add(`parking_${pNum}`);
-      aliases.add(`parking_level_${pNum}`);
-      aliases.add(`p${pNum}`);
-      aliases.add(`p_${pNum}`);
-    }
-  }
-
-  // ============================================================================
-  // PATTERN 6: Mezzanine (M, MZ, Mezz, etc.)
-  // ============================================================================
-  if (/^m(e|ezzanine|z)?$/i.test(original)) {
-    aliases.add("mezzanine");
-    aliases.add("m");
-    aliases.add("mz");
-    aliases.add("mezz");
-    aliases.add("mezzanine_level");
-  }
-
-  // ============================================================================
-  // PATTERN 7: Basement with hyphens (B-1, B-2, BL-01, etc.)
-  // ============================================================================
-  if (/^b[a-z]?[-_]?\d+$/i.test(original)) {
-    const bMatch = original.match(/b[a-z]?[-_]?(\d+)/i);
-    if (bMatch) {
-      const bNum = bMatch[1];
-      aliases.add(`basement_${bNum}`);
-      aliases.add(`basement_level_${bNum}`);
-      aliases.add(`b${bNum}`);
-      aliases.add("basement");
-    }
-  }
-
-  // ============================================================================
-  // PATTERN 8: Generic "Level" or "Story" format
-  // ============================================================================
-  if (/^(level|story|storey|lvl)[-\s]?\d+$/i.test(original)) {
-    const lvlMatch = original.match(/\d+/);
-    if (lvlMatch) {
-      const num = lvlMatch[0];
-      aliases.add(`level_${num}`);
-      aliases.add(`floor_${num}`);
-      aliases.add(`story_${num}`);
-      aliases.add(`storey_${num}`);
-      aliases.add(`lvl_${num}`);
-    }
-  }
-
-  // ============================================================================
-  // Normalize all aliases (lowercase, underscores for spaces)
-  // ============================================================================
-  const normalized = new Set<string>();
-  for (const alias of aliases) {
-    normalized.add(
-      alias
-        .toLowerCase()
-        .replace(/[\s-]/g, "_")
-        .replace(/[^a-z0-9_]/g, ""),
-    );
-  }
-
-  // Remove duplicates and original (we track it separately)
-  normalized.delete(original.toLowerCase());
-
-  return Array.from(normalized).filter((a) => a.length > 0);
-}
 
 function classifyStoreyType(
   storeyName: string,
@@ -517,8 +319,9 @@ export async function buildFilesystem(options: {
   const globalCounts = new Map<string, number>();
   const categoryCounts = new Map<string, Map<string, number>>();
   const storeys = new Map<string, StoreyInfo>();
-  const categoryIndexes = new Map<string, MinimalRecord[]>();
-  const storeyIndexes = new Map<string, MinimalRecord[]>();
+  const categoryIndexes = new Map<string, Element[]>();
+  const storeyIndexes = new Map<string, Element[]>();
+  const objectTypes = new Map<string, { category: string; count: number }>();
 
   // Open flat elements JSONL stream
   const flatStream = createWriteStream(
@@ -548,37 +351,39 @@ export async function buildFilesystem(options: {
         storeys.set(storey, {
           name: storey,
           slug: slugify(storey),
-          aliases: generateStoreyAliases(storey),
           type: classifyStoreyType(storey),
         });
       }
 
       const storeySlug = storey ? slugify(storey) : "unknown";
 
-      // Create minimal record
-      const minimal: MinimalRecord = {
-        id: element._localId,
-        category: element._category,
-        name: element.Name || "",
-        objectType: element.ObjectType || "",
-        storey,
-        storeySlug,
-      };
+      // Add storeySlug to element for convenience
+      element.storeySlug = storeySlug;
 
-      // Write to flat JSONL
-      appendJsonl(flatStream, minimal);
+      // Track object types
+      const objectType = element.ObjectType;
+      if (objectType) {
+        const key = objectType;
+        if (!objectTypes.has(key)) {
+          objectTypes.set(key, { category: element._category, count: 0 });
+        }
+        objectTypes.get(key)!.count++;
+      }
+
+      // Write to flat JSONL - full element
+      appendJsonl(flatStream, element);
 
       // Add to category index
       if (!categoryIndexes.has(element._category)) {
         categoryIndexes.set(element._category, []);
       }
-      categoryIndexes.get(element._category)!.push(minimal);
+      categoryIndexes.get(element._category)!.push(element);
 
       // Add to storey index
       if (!storeyIndexes.has(storeySlug)) {
         storeyIndexes.set(storeySlug, []);
       }
-      storeyIndexes.get(storeySlug)!.push(minimal);
+      storeyIndexes.get(storeySlug)!.push(element);
 
       // Write raw element
       const rawPath = path.join(
@@ -654,6 +459,27 @@ export async function buildFilesystem(options: {
     args.pretty,
   );
   console.log("✓ schema/storeys.json");
+
+  // Object types
+  const objectTypesList = Array.from(objectTypes.entries())
+    .map(([objectType, data]) => ({
+      objectType,
+      category: data.category,
+      count: data.count,
+    }))
+    .sort((a, b) => {
+      // Sort by category first, then by count descending
+      if (a.category !== b.category) {
+        return a.category.localeCompare(b.category);
+      }
+      return b.count - a.count;
+    });
+  await writeJson(
+    path.join(args.out, "schema", "object_types.json"),
+    objectTypesList,
+    args.pretty,
+  );
+  console.log("✓ schema/object_types.json");
 
   // Write indexes
   console.log("\nWriting indexes...");
