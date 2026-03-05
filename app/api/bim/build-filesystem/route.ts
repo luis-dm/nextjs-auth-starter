@@ -62,6 +62,34 @@ export async function POST(req: NextRequest) {
     fs.unlinkSync(tempFile);
     console.log("BIM filesystem built successfully at:", facilityBasePath);
 
+    // Copy skills folder from utils to the built filesystem
+    const sourceSkillsPath = path.join(process.cwd(), "utils", "skills");
+    const destSkillsPath = path.join(facilityBasePath, "skills");
+
+    if (fs.existsSync(sourceSkillsPath)) {
+      console.log("Copying skills folder to filesystem...");
+      
+      // Copy directory recursively
+      fs.cpSync(sourceSkillsPath, destSkillsPath, { recursive: true });
+      
+      // Make all script files executable (chmod +x)
+      const scriptsDir = path.join(destSkillsPath, "bim-query", "scripts");
+      if (fs.existsSync(scriptsDir)) {
+        const scriptFiles = fs.readdirSync(scriptsDir);
+        for (const file of scriptFiles) {
+          if (file.endsWith(".sh")) {
+            const scriptPath = path.join(scriptsDir, file);
+            fs.chmodSync(scriptPath, 0o755); // rwxr-xr-x
+            console.log(`Made executable: ${file}`);
+          }
+        }
+      }
+      
+      console.log("Skills folder copied and scripts made executable");
+    } else {
+      console.warn("Skills folder not found at:", sourceSkillsPath);
+    }
+
     return NextResponse.json({
       success: true,
       message: "BIM filesystem built successfully",
