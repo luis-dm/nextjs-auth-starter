@@ -83,16 +83,23 @@ const createSemanticSearchTool = (workspace: Workspace) => ({
     const matches = [];
     const allIds: number[] = [];
 
-    // Get IDs for each matching ObjectType by reading flat/all_elements.jsonl
-    const allElementsFile = await workspace.filesystem.readFile(
-      "flat/all_elements.jsonl",
-    );
-    const allElementsContent =
-      typeof allElementsFile === "string"
-        ? allElementsFile
-        : allElementsFile.toString();
+    // Get IDs for each matching ObjectType by reading flat/elements.jsonl
+    const flatFile = await workspace.filesystem.readFile("flat/elements.jsonl");
+    const flatContent =
+      typeof flatFile === "string" ? flatFile : flatFile.toString();
 
-    const lines = allElementsContent.trim().split("\n");
+    if (!flatContent || flatContent.trim().length === 0) {
+      console.log(`[Search Agent] Empty or missing flat/elements.jsonl`);
+      return {
+        matches: [],
+        totalIds: 0,
+        allIds: [],
+        query,
+        keywordUsed: usedKeyword,
+      };
+    }
+
+    const lines = flatContent.trim().split("\n");
 
     for (const matchingType of matchingTypes) {
       const typeIds: number[] = [];
@@ -101,11 +108,12 @@ const createSemanticSearchTool = (workspace: Workspace) => ({
         if (line.trim().length === 0) continue;
         try {
           const element = JSON.parse(line);
+          // Match by objectType
           if (
-            element.type === matchingType.objectType &&
+            element.ObjectType === matchingType.objectType &&
             element._localId !== undefined
           ) {
-            typeIds.push(element._localId);
+            typeIds.push(parseInt(element._localId, 10));
           }
         } catch (e) {
           // Skip invalid lines
@@ -119,6 +127,9 @@ const createSemanticSearchTool = (workspace: Workspace) => ({
           category: matchingType.category,
           count: typeIds.length,
         });
+        console.log(
+          `[Search Agent] ${matchingType.objectType}: ${typeIds.length} elements`,
+        );
       }
     }
 
