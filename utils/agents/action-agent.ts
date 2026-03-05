@@ -215,7 +215,7 @@ const createQuickActionTool = (workspace: Workspace) => ({
 
     const sandbox = workspace.sandbox as LocalSandbox;
 
-    // console.log(`Quick action: ${action} from ${filePath}`);
+    console.log(`[Quick Action] Action: ${action}, File: ${filePath}`);
 
     // Use jq to extract _localId - works on macOS/Linux
     const result = await sandbox.executeCommand(
@@ -254,6 +254,10 @@ const createQuickActionTool = (workspace: Workspace) => ({
 export function createActionAgent(facilityId: string, searchAgent: Agent) {
   const BIM_DATA_PATH = process.env.BIM_DATA_PATH || "./public/bim_data";
   const basePath = `${BIM_DATA_PATH}/${facilityId}/ai/bim_fs`;
+
+  console.log(`[Action Agent] Creating agent for facility: ${facilityId}`);
+  console.log(`[Action Agent] BIM_DATA_PATH: ${BIM_DATA_PATH}`);
+  console.log(`[Action Agent] Full basePath: ${basePath}`);
 
   const workspace = new Workspace({
     filesystem: new LocalFilesystem({
