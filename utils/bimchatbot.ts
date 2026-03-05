@@ -307,7 +307,7 @@ export class BimChatbot {
     );
 
     // Download enhanced structure as JSON before building filesystem
-    this.downloadEnhancedStructure(facilityId);
+    // this.downloadEnhancedStructure(facilityId);
 
     // Build the BIM filesystem from the enhanced structure
     await this.buildBimFilesystem(this.enhancedStructure, facilityId);
@@ -317,23 +317,23 @@ export class BimChatbot {
     return this.enhancedStructure;
   }
 
-  private downloadEnhancedStructure(facilityId: string): void {
-    try {
-      const json = JSON.stringify(this.enhancedStructure, null, 2);
-      const blob = new Blob([json], { type: "application/json" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `enhanced_structure_${facilityId}_${Date.now()}.json`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-      console.log("Enhanced structure downloaded successfully");
-    } catch (error) {
-      console.error("Error downloading enhanced structure:", error);
-    }
-  }
+  // private downloadEnhancedStructure(facilityId: string): void {
+  //   try {
+  //     const json = JSON.stringify(this.enhancedStructure, null, 2);
+  //     const blob = new Blob([json], { type: "application/json" });
+  //     const url = URL.createObjectURL(blob);
+  //     const a = document.createElement("a");
+  //     a.href = url;
+  //     a.download = `enhanced_structure_${facilityId}_${Date.now()}.json`;
+  //     document.body.appendChild(a);
+  //     a.click();
+  //     document.body.removeChild(a);
+  //     URL.revokeObjectURL(url);
+  //     console.log("Enhanced structure downloaded successfully");
+  //   } catch (error) {
+  //     console.error("Error downloading enhanced structure:", error);
+  //   }
+  // }
 
   private async buildBimFilesystem(
     structure: IFCNode,
@@ -400,26 +400,34 @@ export class BimChatbot {
           `BimChatbot: Executing action "${data.action}" with ${data.elementIds?.length} elements:`,
           data.elementIds,
         );
-        switch (data.action) {
-          case "select":
-            await this.selectElements(data.elementIds);
-            return (
-              data.response || `Selected ${data.elementIds.length} elements`
-            );
-          case "hide":
-            await this.hideElements(data.elementIds);
-            return data.response || `Hid ${data.elementIds.length} elements`;
-          case "show":
-            await this.showElements(data.elementIds);
-            return data.response || `Showed ${data.elementIds.length} elements`;
-          case "isolate":
-            await this.isolateElements(data.elementIds);
-            return (
-              data.response || `Isolated ${data.elementIds.length} elements`
-            );
-          default:
-            console.log("BimChatbot: Unknown action:", data.action);
-            return data.response || "Action completed";
+        
+        try {
+          switch (data.action) {
+            case "select":
+              console.log("BimChatbot: About to call selectElements");
+              await this.selectElements(data.elementIds);
+              console.log("BimChatbot: selectElements completed successfully");
+              return (
+                data.response || `Selected ${data.elementIds.length} elements`
+              );
+            case "hide":
+              await this.hideElements(data.elementIds);
+              return data.response || `Hid ${data.elementIds.length} elements`;
+            case "show":
+              await this.showElements(data.elementIds);
+              return data.response || `Showed ${data.elementIds.length} elements`;
+            case "isolate":
+              await this.isolateElements(data.elementIds);
+              return (
+                data.response || `Isolated ${data.elementIds.length} elements`
+              );
+            default:
+              console.log("BimChatbot: Unknown action:", data.action);
+              return data.response || "Action completed";
+          }
+        } catch (actionError) {
+          console.error("BimChatbot: Error executing action:", actionError);
+          return `Failed to ${data.action} elements: ${actionError instanceof Error ? actionError.message : 'Unknown error'}`;
         }
       }
 
