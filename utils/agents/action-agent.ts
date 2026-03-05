@@ -349,7 +349,10 @@ After quick-action or search-elements, return ONLY the tool's JSON output. No ex
     `,
     workspace,
     tools: {
-      quickActionTool: createQuickActionTool(workspace),
+      listAvailable: createListAvailableTool(workspace),
+      searchElements: createDelegateSearchTool(searchAgent),
+      quickAction: createQuickActionTool(workspace),
+      formatAction: createFormatActionTool(workspace),
     },
   });
 }
