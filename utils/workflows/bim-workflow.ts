@@ -5,13 +5,15 @@ import {
   createQueryAgent,
   createActionAgent,
   createChatAgent,
+  createSearchAgent,
 } from "@/utils/agents";
 
 export function createBIMWorkflow(facilityId: string) {
   // Create agents
   const routerAgent = createRouterAgent();
-  const queryAgent = createQueryAgent(facilityId);
-  const actionAgent = createActionAgent(facilityId);
+  const searchAgent = createSearchAgent();
+  const queryAgent = createQueryAgent(facilityId, searchAgent);
+  const actionAgent = createActionAgent(facilityId, searchAgent);
   const chatAgent = createChatAgent();
 
   // Step 1: Route the request
@@ -30,6 +32,9 @@ export function createBIMWorkflow(facilityId: string) {
       const result = await routerAgent.generate(inputData.message);
       const intent = result.text?.trim().toUpperCase() || "CHAT";
       console.log("Intent:", intent);
+      if (result.usage) {
+        console.log("Router tokens:", JSON.stringify(result.usage));
+      }
       return { intent, message: inputData.message };
     },
   });
@@ -55,6 +60,15 @@ export function createBIMWorkflow(facilityId: string) {
         },
       });
       console.log("Query result:", result.text);
+      console.log("Steps:", result.steps?.length || 0);
+
+      if (result.usage) {
+        console.log("Query tokens:", JSON.stringify(result.usage));
+      }
+
+      if (!result.text) {
+        console.warn("Empty response from query agent");
+      }
       return {
         text: result.text || "No response",
         steps: result.steps,
@@ -77,6 +91,9 @@ export function createBIMWorkflow(facilityId: string) {
       console.log("Executing action agent");
       const result = await actionAgent.generate(inputData.message);
       console.log("Action result:", result.text);
+      if (result.usage) {
+        console.log("Action tokens:", JSON.stringify(result.usage));
+      }
       return {
         text: result.text || "Action completed",
         steps: result.steps,
@@ -98,6 +115,9 @@ export function createBIMWorkflow(facilityId: string) {
       console.log("General chat response for:", inputData.message);
       const result = await chatAgent.generate(inputData.message);
       console.log("Chat result:", result.text);
+      if (result.usage) {
+        console.log("Chat tokens:", JSON.stringify(result.usage));
+      }
       return {
         text: result.text || "Hi! How can I help you?",
       };

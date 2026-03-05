@@ -7,6 +7,165 @@ import {
 import { openai } from "@ai-sdk/openai";
 import { z } from "zod";
 
+const createDelegateSearchTool = (searchAgent: Agent) => ({
+  id: "search-elements",
+  description:
+    "Search for BIM elements by name/type/description. Returns structured results with IDs and counts. Use for name-based queries like 'Breuer chairs', 'gate valves', 'HC_コンクリート梁'.",
+  inputSchema: z.object({
+    query: z.string().describe("Search term (e.g., 'breuer', 'gate', 'pump')"),
+  }),
+  outputSchema: z.object({
+    matches: z.array(
+      z.object({
+        objectType: z.string(),
+        category: z.string(),
+        count: z.number(),
+      }),
+    ),
+    totalIds: z.number(),
+    allIds: z.array(z.number()),
+    query: z.string(),
+  }),
+  execute: async (params: any) => {
+    const query = params.inputData?.query || params.query;
+    const result = await searchAgent.generate(query);
+
+    // Extract search results from agent response
+    if (result.steps && result.steps.length > 0) {
+      for (const step of result.steps) {
+        if (step.toolResults && step.toolResults.length > 0) {
+          const toolResult = step.toolResults[0];
+          const data =
+            toolResult.payload?.result || toolResult.payload || toolResult;
+          if (data && (data as any).allIds) return data;
+        }
+      }
+    }
+
+    return { matches: [], totalIds: 0, allIds: [], query };
+  },
+});
+
+const createListAvailableTool = (workspace: Workspace) => ({
+  id: "list-available",
+  description:
+    "List available IFC categories and storeys from the current BIM model. Use this to check if a generic term (doors, windows, floors) exists as a category/storey before using scripts.",
+  inputSchema: z.object({
+    type: z
+      .enum(["categories", "storeys", "both"])
+      .optional()
+      .default("both")
+      .describe("What to list"),
+  }),
+  outputSchema: z.object({
+    categories: z
+      .array(
+        z.object({
+          category: z.string(),
+          count: z.number(),
+        }),
+      )
+      .optional(),
+    storeys: z
+      .array(
+        z.object({
+          name: z.string(),
+          slug: z.string(),
+          type: z.string(),
+        }),
+      )
+      .optional(),
+  }),
+  execute: async (params: any) => {
+    const type = params.inputData?.type || params.type || "both";
+    const result: any = {};
+
+    if (!workspace.filesystem) {
+      throw new Error("Filesystem not available");
+    }
+
+    if (type === "categories" || type === "both") {
+      const catFile = await workspace.filesystem.readFile(
+        "schema/categories.json",
+      );
+      const catContent =
+        typeof catFile === "string" ? catFile : catFile.toString();
+      result.categories = JSON.parse(catContent);
+    }
+
+    if (type === "storeys" || type === "both") {
+      const storeyFile = await workspace.filesystem.readFile(
+        "schema/storeys.json",
+      );
+      const storeyContent =
+        typeof storeyFile === "string" ? storeyFile : storeyFile.toString();
+      result.storeys = JSON.parse(storeyContent);
+    }
+
+    return result;
+  },
+});
+
+const createGetPropertiesTool = (workspace: Workspace) => ({
+  id: "get-properties",
+  description:
+    "Get property keys for a specific ObjectType from the JSONL index. Returns list of non-underscore property names.",
+  inputSchema: z.object({
+    objectType: z.string().describe("The ObjectType to get properties for"),
+    category: z
+      .string()
+      .describe("The IFC category (e.g., IFCDOOR, IFCWINDOW)"),
+  }),
+  outputSchema: z.object({
+    properties: z.array(z.string()),
+    sampleElement: z.record(z.any()).optional(),
+  }),
+  execute: async (params: any) => {
+    const objectType = params.inputData?.objectType || params.objectType;
+    const category = params.inputData?.category || params.category;
+
+    if (!workspace.filesystem) {
+      throw new Error("Filesystem not available");
+    }
+
+    // Read the JSONL file for this category
+    const filePath = `index/by_category/${category}.jsonl`;
+    const fileContent = await workspace.filesystem.readFile(filePath);
+    const content =
+      typeof fileContent === "string" ? fileContent : fileContent.toString();
+
+    // Find the first line matching this ObjectType
+    const lines = content.split("\n").filter((line) => line.trim());
+    const matchingLine = lines.find((line) => {
+      try {
+        const obj = JSON.parse(line);
+        return obj.ObjectType === objectType;
+      } catch {
+        return false;
+      }
+    });
+
+    if (!matchingLine) {
+      return {
+        properties: [],
+        error: `No element found with ObjectType: ${objectType}`,
+      };
+    }
+
+    const element = JSON.parse(matchingLine);
+
+    // Extract non-underscore keys
+    const properties = Object.keys(element).filter(
+      (key) => !key.startsWith("_"),
+    );
+
+    return {
+      properties,
+      sampleElement: element,
+    };
+  },
+});
+
 // Fast counting tool using wc -l
 const createCountTool = (workspace: Workspace) => ({
   id: "count-elements",
@@ -44,7 +203,7 @@ const createCountTool = (workspace: Workspace) => ({
   },
 });
 
-export function createQueryAgent(facilityId: string) {
+export function createQueryAgent(facilityId: string, searchAgent: Agent) {
   const BIM_DATA_PATH = process.env.BIM_DATA_PATH || "./public/bim_data";
   const basePath = `${BIM_DATA_PATH}/${facilityId}/ai/bim_fs`;
 
@@ -64,73 +223,48 @@ export function createQueryAgent(facilityId: string) {
     model: openai("gpt-5-nano"),
     instructions: `You are a BIM data query assistant. Answer questions about building model data clearly and concisely.
 
-## Available Data
+## Query Strategy
+For generic terms (bim terms):
+1. Call list-available to check what categories/storeys exist
+2. Fuzzy match user term to available names (e.g., "doors" → IFCDOOR)
+3. If match found → use ./skills/bim-query/scripts/count_category.sh {CATEGORY} or count_storey.sh {STOREY} to get count and IDs
+4. If no match → fallback to search-elements
 
-- **schema/categories.json** - Available IFC element types
-- **schema/storeys.json** - Building floors with names and slugs
-- **index/by_category/{TYPE}.jsonl** - Elements grouped by type
-- **index/by_storey/{storey_slug}.jsonl** - Elements grouped by floor
-- **raw/by_id/{element_id}.json** - Detailed properties for specific elements
+For specific names :
+- Skip list-available, go straight to search-elements
 
-## Query Patterns
+### Counting Example
 
-**Counting:**
-Q: "How many doors?"
-A: Use count-elements with index/by_category/IFCDOOR.jsonl
-   Respond: "There are 45 doors in the model."
+"how many doors?" 
+→ list-available 
+→ find IFCDOOR in categories 
+→ ./skills/bim-query/scripts/count_category.sh IFCDOOR
 
-Q: "Count doors and windows"
-A: Use count-elements with both IFCDOOR.jsonl and IFCWINDOW.jsonl
-   Respond: "There are 45 doors and 32 windows. Total: 77 elements."
+"how many Breuer chairs?"
+→ search-elements("breuer")
+→ return totalIds
 
-**Listing:**
-Q: "What's on level 1?"
-A: Read schema/storeys.json to find slug, read index/by_storey/nivel_1.jsonl,
-   categorize elements, respond "Level 1 contains: 45 walls, 12 doors, 8 windows, 3 slabs."
+## Property Queries Workflow
 
-Q: "List all window types"
-A: Read index/by_category/IFCWINDOW.jsonl, extract unique objectType values,
-   respond "Window types: Simple Window 100x100cm, Double Window 120x150cm."
+When user asks "what are the properties of X" or "properties of X":
 
-**Properties:**
-Q: "What are the properties of element 123?"
-A: Read raw/by_id/123.json, extract key properties,
-   respond "Element 123: Wall, Material: Concrete, Height: 3000mm, Width: 200mm."
+**Step 1:** search-elements(X)
+**Step 2:** Check if totalIds > 0
+  - If 0 → return "No elements found matching 'X'"
+**Step 3:** Extract from first match:
+  - objectType = matches[0].objectType
+  - category = matches[0].category  
+**Step 4:** Call get-properties(objectType, category)
+**Step 5:** Return the list of properties
 
-**Finding:**
-Q: "Show me doors with 'main' in the name"
-A: Read index/by_category/IFCDOOR.jsonl, filter by name containing "main",
-   respond with list of matching elements.
+Example session:
+User: "properties of FIX doors"
+→ search-elements("FIX") returns matches[0] = {objectType: "FIXアルミサッシ窓1:FIXアルミサッシ窓1", category: "IFCDOOR", count: 6}
+→ get-properties("FIXアルミサッシ窓1:FIXアルミサッシ窓1", "IFCDOOR")
+→ Returns: {properties: ["Name", "ObjectType", "OverallHeight", "OverallWidth", "ContainedInStructure", "category", "localId", "storeySlug"]}
+→ Reply: "Properties: Name, ObjectType, OverallHeight, OverallWidth, ContainedInStructure, category, localId, storeySlug"
 
-## Property Inference
 
-When a requested property is not directly available, infer it from other properties:
-
-**Area calculations:**
-- If area not available but width × height exist → Calculate: "Area: 2.4 m² (calculated from 1.2m × 2.0m)"
-- If area not available but length × width exist → Calculate for slabs/floors
-- If cannot calculate → State: "Area not available in properties"
-
-**Volume calculations:**
-- If volume not available but length × width × height exist → Calculate
-- If thickness exists → Use it in calculation
-- Example: "Volume: 0.48 m³ (calculated from 1.2m × 2.0m × 0.2m)"
-
-**Dimensions:**
-- If "Height" not found, look for "OverallHeight", "NominalHeight"
-- If "Width" not found, look for "OverallWidth", "NominalWidth"
-- If "Length" not found, look for "OverallLength", "NominalLength"
-
-**Material inference:**
-- Look in properties, psets, material layers
-- Check MaterialLayers, MaterialProfile, Material name
-- If found multiple layers → List all: "Materials: Concrete (200mm), Insulation (50mm)"
-
-**Always be transparent:**
-- If calculated → Say "(calculated from X × Y)"
-- If inferred from alternate property → Say "(from OverallHeight)"
-- If unavailable → Say "Property not available"
-- Never make up values
 
 ## Response Style
 
@@ -142,7 +276,9 @@ When a requested property is not directly available, infer it from other propert
 - Provide helpful context when relevant`,
     workspace,
     tools: {
-      "count-elements": createCountTool(workspace),
+      listAvailable: createListAvailableTool(workspace),
+      searchElements: createDelegateSearchTool(searchAgent),
+      getProperties: createGetPropertiesTool(workspace),
     },
   });
 }
