@@ -33,17 +33,17 @@ export function createBIMWorkflow(facilityId: string) {
     }),
     execute: async ({ inputData }) => {
       console.log("Routing intent for:", inputData.message);
-      
+
       // Router doesn't need memory - quick classification only
       const result = await routerAgent.generate(inputData.message);
-      
+
       const intent = result.text?.trim().toUpperCase() || "CHAT";
       console.log("Intent:", intent);
       if (result.usage) {
         console.log("Router tokens:", JSON.stringify(result.usage));
       }
-      return { 
-        intent, 
+      return {
+        intent,
         message: inputData.message,
         userId: inputData.userId,
         threadId: inputData.threadId,
@@ -66,14 +66,17 @@ export function createBIMWorkflow(facilityId: string) {
     }),
     execute: async ({ inputData }) => {
       console.log("Executing query agent");
-      
-      const memoryConfig = inputData.userId && inputData.threadId ? {
-        memory: {
-          resource: inputData.userId,
-          thread: inputData.threadId,
-        },
-      } : {};
-      
+
+      const memoryConfig =
+        inputData.userId && inputData.threadId
+          ? {
+              memory: {
+                resource: inputData.userId,
+                thread: inputData.threadId,
+              },
+            }
+          : {};
+
       const result = await queryAgent.generate(inputData.message, {
         ...memoryConfig,
         providerOptions: {
@@ -82,7 +85,7 @@ export function createBIMWorkflow(facilityId: string) {
           },
         },
       });
-      
+
       console.log("Query result:", result.text);
       console.log("Steps:", result.steps?.length || 0);
 
@@ -115,16 +118,22 @@ export function createBIMWorkflow(facilityId: string) {
     }),
     execute: async ({ inputData }) => {
       console.log("Executing action agent");
-      
-      const memoryConfig = inputData.userId && inputData.threadId ? {
-        memory: {
-          resource: inputData.userId,
-          thread: inputData.threadId,
-        },
-      } : {};
-      
-      const result = await actionAgent.generate(inputData.message, memoryConfig);
-      
+
+      const memoryConfig =
+        inputData.userId && inputData.threadId
+          ? {
+              memory: {
+                resource: inputData.userId,
+                thread: inputData.threadId,
+              },
+            }
+          : {};
+
+      const result = await actionAgent.generate(
+        inputData.message,
+        memoryConfig,
+      );
+
       console.log("Action result:", result.text);
       if (result.usage) {
         console.log("Action tokens:", JSON.stringify(result.usage));
@@ -150,16 +159,19 @@ export function createBIMWorkflow(facilityId: string) {
     }),
     execute: async ({ inputData }) => {
       console.log("General chat response for:", inputData.message);
-      
-      const memoryConfig = inputData.userId && inputData.threadId ? {
-        memory: {
-          resource: inputData.userId,
-          thread: inputData.threadId,
-        },
-      } : {};
-      
+
+      const memoryConfig =
+        inputData.userId && inputData.threadId
+          ? {
+              memory: {
+                resource: inputData.userId,
+                thread: inputData.threadId,
+              },
+            }
+          : {};
+
       const result = await chatAgent.generate(inputData.message, memoryConfig);
-      
+
       console.log("Chat result:", result.text);
       if (result.usage) {
         console.log("Chat tokens:", JSON.stringify(result.usage));

@@ -17,14 +17,13 @@ export async function POST(req: NextRequest) {
     }
 
     if (!userId) {
-      return NextResponse.json(
-        { error: "User ID required" },
-        { status: 400 },
-      );
+      return NextResponse.json({ error: "User ID required" }, { status: 400 });
     }
 
     // Generate threadId if not provided (first message in conversation)
-    const conversationThreadId = threadId || `thread_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+    const conversationThreadId =
+      threadId ||
+      `thread_${Date.now()}_${Math.random().toString(36).substring(7)}`;
 
     // console.log("🚀 Processing message:", message, "for facility:", facilityId);
 
@@ -36,8 +35,8 @@ export async function POST(req: NextRequest) {
 
     // Execute the workflow with memory context
     const workflowResult = await run.start({
-      inputData: { 
-        message, 
+      inputData: {
+        message,
         facilityId,
         userId,
         threadId: conversationThreadId,

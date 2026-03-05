@@ -385,7 +385,11 @@ export class BimChatbot {
     }
   }
 
-  async sendMessage(message: string, facilityId: string, userId: string): Promise<string> {
+  async sendMessage(
+    message: string,
+    facilityId: string,
+    userId: string,
+  ): Promise<string> {
     if (!this.isFilesystemReady) {
       return "Please wait for the model to finish loading...";
     }
@@ -401,15 +405,15 @@ export class BimChatbot {
         "thread:",
         this.threadId,
       );
-      
+
       const response = await fetch("/api/bim/chat", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ 
-          message, 
-          facilityId, 
+        body: JSON.stringify({
+          message,
+          facilityId,
           userId,
           threadId: this.threadId, // Send existing threadId or undefined for first message
         }),
@@ -498,7 +502,9 @@ export class BimChatbot {
   // Reset conversation to start a new thread
   resetConversation(): void {
     this.threadId = null;
-    console.log("BimChatbot: Conversation reset, new thread will be created on next message");
+    console.log(
+      "BimChatbot: Conversation reset, new thread will be created on next message",
+    );
   }
 
   // Get current thread ID

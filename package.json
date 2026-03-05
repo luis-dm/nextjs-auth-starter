@@ -12,7 +12,7 @@
   "dependencies": {
     "@ai-sdk/openai": "^3.0.25",
     "@mastra/core": "^1.1.0",
-    "@mastra/pg": "^0.17.10",
+    "@mastra/pg": "^1.7.1",
     "@prisma/adapter-pg": "^7.0.0",
     "@prisma/client": "7.0.0",
     "@thatopen/components": "^3.3.1",
