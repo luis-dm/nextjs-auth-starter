@@ -346,7 +346,7 @@ export class BimChatbot {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ structure, facilityId }),
+        body: JSON.stringify({ structure, facilityId, download: true }),
       });
 
       if (!response.ok) {
@@ -357,8 +357,25 @@ export class BimChatbot {
         return;
       }
 
-      const result = await response.json();
-      console.log("BIM filesystem built successfully:", result);
+      // Check if response is a file download (zip)
+      const contentType = response.headers.get("Content-Type");
+      if (contentType === "application/zip") {
+        console.log("Downloading BIM filesystem as zip...");
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `bim_fs_${facilityId}_${Date.now()}.zip`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+        console.log("BIM filesystem downloaded successfully");
+      } else {
+        const result = await response.json();
+        console.log("BIM filesystem built successfully:", result);
+      }
+      
       this.isFilesystemReady = true;
     } catch (error) {
       console.error("Error building BIM filesystem:", error);

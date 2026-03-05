@@ -10,7 +10,7 @@ export async function POST(req: NextRequest) {
     console.log("Received build-filesystem request");
 
     const body = await req.json();
-    const { structure, facilityId } = body;
+    const { structure, facilityId, download } = body;
 
     if (!structure) {
       console.error("No structure provided in request");
@@ -91,8 +91,10 @@ export async function POST(req: NextRequest) {
       console.warn("Skills folder not found at:", sourceSkillsPath);
     }
 
-    // Check if download is requested
-    const shouldDownload = req.nextUrl.searchParams.get("download") === "true";
+    // Check if download is requested (from body or query params)
+    const shouldDownload = download === true || req.nextUrl.searchParams.get("download") === "true";
+    
+    console.log("Download requested:", shouldDownload);
 
     if (shouldDownload) {
       console.log("Creating zip archive for download...");
@@ -120,6 +122,7 @@ export async function POST(req: NextRequest) {
       // Finalize the archive
       archive.finalize();
 
+      console.log("Zip archive created, sending response...");
       return new NextResponse(readable, { headers });
     }
 
