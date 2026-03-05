@@ -92,8 +92,9 @@ export async function POST(req: NextRequest) {
     }
 
     // Check if download is requested (from body or query params)
-    const shouldDownload = download === true || req.nextUrl.searchParams.get("download") === "true";
-    
+    const shouldDownload =
+      download === true || req.nextUrl.searchParams.get("download") === "true";
+
     console.log("Download requested:", shouldDownload);
 
     if (shouldDownload) {

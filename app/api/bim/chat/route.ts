@@ -3,7 +3,7 @@ import { createBIMWorkflow } from "@/utils/workflows/bim-workflow";
 
 export async function POST(req: NextRequest) {
   try {
-    const { message, facilityId } = await req.json();
+    const { message, facilityId, userId, threadId } = await req.json();
 
     if (!message) {
       return NextResponse.json({ error: "Message required" }, { status: 400 });
@@ -16,6 +16,16 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    if (!userId) {
+      return NextResponse.json(
+        { error: "User ID required" },
+        { status: 400 },
+      );
+    }
+
+    // Generate threadId if not provided (first message in conversation)
+    const conversationThreadId = threadId || `thread_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+
     // console.log("🚀 Processing message:", message, "for facility:", facilityId);
 
     // Create workflow
@@ -24,9 +34,14 @@ export async function POST(req: NextRequest) {
     // Create a run
     const run = await workflow.createRun();
 
-    // Execute the workflow
+    // Execute the workflow with memory context
     const workflowResult = await run.start({
-      inputData: { message, facilityId },
+      inputData: { 
+        message, 
+        facilityId,
+        userId,
+        threadId: conversationThreadId,
+      },
     });
 
     console.log("✅ Workflow completed:", workflowResult.status);
@@ -89,6 +104,7 @@ export async function POST(req: NextRequest) {
                 response: resultData.message,
                 action: resultData.action,
                 elementIds: resultData.elementIds,
+                threadId: conversationThreadId,
               });
             }
 
@@ -99,6 +115,7 @@ export async function POST(req: NextRequest) {
                 response: resultData.message,
                 action: resultData.action,
                 elementIds: resultData.elementIds,
+                threadId: conversationThreadId,
               });
             }
           }
@@ -109,6 +126,7 @@ export async function POST(req: NextRequest) {
     // Return text response from the last step
     return NextResponse.json({
       response: lastStepResult?.text || "No response generated",
+      threadId: conversationThreadId,
     });
   } catch (error) {
     console.error("❌ Workflow error:", error);

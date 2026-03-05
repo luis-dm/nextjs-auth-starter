@@ -1,11 +1,13 @@
 import { Agent } from "@mastra/core/agent";
 import { openai } from "@ai-sdk/openai";
+import { mastra } from "@/utils/mastra-instance";
 
 export function createChatAgent() {
   return new Agent({
     id: "chat",
     name: "General Chat Agent",
     model: openai("gpt-5-nano"),
+    mastra,
     instructions: `You are a helpful BIM (Building Information Modeling) assistant.
 
 Your role is to:

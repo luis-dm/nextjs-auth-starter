@@ -20,6 +20,21 @@ let messages: ChatMessage[] = [];
 let isLoading = false;
 let bimChatbotInstance: BimChatbot | null = null;
 let currentFacilityId: string | null = null;
+let currentUserId: string | null = null;
+
+// Fetch current user ID from session
+const fetchCurrentUserId = async (): Promise<string | null> => {
+  try {
+    const response = await fetch("/api/auth/session");
+    if (response.ok) {
+      const session = await response.json();
+      return session?.user?.id || null;
+    }
+  } catch (error) {
+    console.error("Failed to fetch user session:", error);
+  }
+  return null;
+};
 
 const initializeMessages = () => {
   if (messages.length === 0) {
@@ -191,11 +206,20 @@ export const chatbotPanelTemplate: BUI.StatefullComponent<ChatbotPanelState> = (
     updateChatHistory();
 
     try {
+      // Get current user ID if not already cached
+      if (!currentUserId) {
+        currentUserId = await fetchCurrentUserId();
+      }
+
+      // Use a fallback userId if session fetch fails (shouldn't happen in production)
+      const userId = currentUserId || "anonymous";
+
       // Use the BIM chatbot to send message to Mastra agent
       if (bimChatbotInstance && currentFacilityId) {
         const response = await bimChatbotInstance.sendMessage(
           userMessage,
           currentFacilityId,
+          userId,
         );
 
         // Remove loading message and add actual response

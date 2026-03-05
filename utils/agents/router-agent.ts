@@ -1,11 +1,13 @@
 import { Agent } from "@mastra/core/agent";
 import { openai } from "@ai-sdk/openai";
+import { mastra } from "@/utils/mastra-instance";
 
 export function createRouterAgent() {
   return new Agent({
     id: "router",
-    name: "Intent Classifier",
+    name: "Intent Router",
     model: openai("gpt-5-nano"),
+    mastra,
     instructions: `You are an intent classifier for a BIM (Building Information Modeling) assistant.
 
 Classify the user's message into ONE category and respond with ONLY that word:

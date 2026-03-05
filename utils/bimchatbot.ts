@@ -15,6 +15,7 @@ export class BimChatbot {
   private spatialStructure: IFCNode | null = null;
   private enhancedStructure: any = null;
   private isFilesystemReady: boolean = false;
+  private threadId: string | null = null;
 
   constructor(components: OBC.Components) {
     this.components = components;
@@ -375,7 +376,7 @@ export class BimChatbot {
         const result = await response.json();
         console.log("BIM filesystem built successfully:", result);
       }
-      
+
       this.isFilesystemReady = true;
     } catch (error) {
       console.error("Error building BIM filesystem:", error);
@@ -384,7 +385,7 @@ export class BimChatbot {
     }
   }
 
-  async sendMessage(message: string, facilityId: string): Promise<string> {
+  async sendMessage(message: string, facilityId: string, userId: string): Promise<string> {
     if (!this.isFilesystemReady) {
       return "Please wait for the model to finish loading...";
     }
@@ -395,13 +396,23 @@ export class BimChatbot {
         message,
         "for facility:",
         facilityId,
+        "user:",
+        userId,
+        "thread:",
+        this.threadId,
       );
+      
       const response = await fetch("/api/bim/chat", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ message, facilityId }),
+        body: JSON.stringify({ 
+          message, 
+          facilityId, 
+          userId,
+          threadId: this.threadId, // Send existing threadId or undefined for first message
+        }),
       });
 
       if (!response.ok) {
@@ -410,6 +421,12 @@ export class BimChatbot {
 
       const data = await response.json();
       console.log("BimChatbot: Received response:", data);
+
+      // Store threadId from response for subsequent messages
+      if (data.threadId) {
+        this.threadId = data.threadId;
+        console.log("BimChatbot: Thread ID updated:", this.threadId);
+      }
 
       // Check if the response contains an action to perform
       if (data.action) {
@@ -476,5 +493,16 @@ export class BimChatbot {
     }
 
     return summary;
+  }
+
+  // Reset conversation to start a new thread
+  resetConversation(): void {
+    this.threadId = null;
+    console.log("BimChatbot: Conversation reset, new thread will be created on next message");
+  }
+
+  // Get current thread ID
+  getThreadId(): string | null {
+    return this.threadId;
   }
 }

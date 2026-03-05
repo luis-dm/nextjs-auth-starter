@@ -2,6 +2,7 @@ import { Agent } from "@mastra/core/agent";
 import { Workspace, LocalFilesystem } from "@mastra/core/workspace";
 import { openai } from "@ai-sdk/openai";
 import { z } from "zod";
+import { mastra } from "@/utils/mastra-instance";
 
 const createDelegateSearchTool = (searchAgent: Agent) => ({
   id: "search-elements",
@@ -223,6 +224,7 @@ export function createQueryAgent(facilityId: string, searchAgent: Agent) {
     id: "query",
     name: "BIM Query Agent",
     model: openai("gpt-5-nano"),
+    mastra,
     instructions: `You are a BIM data query assistant. Answer questions about building model data clearly and concisely.
 
 ## Query Strategy

@@ -6,6 +6,7 @@ import {
 } from "@mastra/core/workspace";
 import { openai } from "@ai-sdk/openai";
 import { z } from "zod";
+import { mastra } from "@/utils/mastra-instance";
 
 const createDelegateSearchTool = (searchAgent: Agent) => ({
   id: "search-elements",
@@ -285,6 +286,7 @@ export function createActionAgent(facilityId: string, searchAgent: Agent) {
     id: "action",
     name: "Viewer Action Agent",
     model: openai("gpt-5-nano"),
+    mastra,
     instructions: `You control 3D viewer actions. Execute commands efficiently.
 
     ## Tool Priority
