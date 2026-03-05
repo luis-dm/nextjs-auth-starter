@@ -68,10 +68,10 @@ export async function POST(req: NextRequest) {
 
     if (fs.existsSync(sourceSkillsPath)) {
       console.log("Copying skills folder to filesystem...");
-      
+
       // Copy directory recursively
       fs.cpSync(sourceSkillsPath, destSkillsPath, { recursive: true });
-      
+
       // Make all script files executable (chmod +x)
       const scriptsDir = path.join(destSkillsPath, "bim-query", "scripts");
       if (fs.existsSync(scriptsDir)) {
@@ -84,7 +84,7 @@ export async function POST(req: NextRequest) {
           }
         }
       }
-      
+
       console.log("Skills folder copied and scripts made executable");
     } else {
       console.warn("Skills folder not found at:", sourceSkillsPath);
