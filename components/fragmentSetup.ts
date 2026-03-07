@@ -1,23 +1,28 @@
-import * as OBC from '@thatopen/components'
-import * as OBF from '@thatopen/components-front'
+import * as OBC from "@thatopen/components";
+import * as OBF from "@thatopen/components-front";
 
 export function fragmentSetup(
   components: OBC.Components,
   world: {
-    scene: OBC.SimpleScene
-    camera: OBC.OrthoPerspectiveCamera
-    renderer: OBF.PostproductionRenderer
-  }
+    scene: OBC.SimpleScene;
+    camera: OBC.OrthoPerspectiveCamera;
+    renderer: OBF.PostproductionRenderer;
+  },
 ) {
-  const fragments = components.get(OBC.FragmentsManager)
-  fragments.init('/workers/worker.mjs')
+  const fragments = components.get(OBC.FragmentsManager);
+  fragments.init("/workers/worker.mjs");
 
   fragments.core.models.materials.list.onItemSet.add(({ value: material }) => {
-    const isLod = 'isLodMaterial' in material && material.isLodMaterial
+    const isLod = "isLodMaterial" in material && material.isLodMaterial;
     if (isLod) {
-      world.renderer!.postproduction.basePass.isolatedMaterials.push(material)
+      world.renderer!.postproduction.basePass.isolatedMaterials.push(material);
     }
-  })
+    if (!("isLodMaterial" in material && material.isLodMaterial)) {
+      material.polygonOffset = true;
+      material.polygonOffsetUnits = 1;
+      material.polygonOffsetFactor = Math.random();
+    }
+  });
 
-  return { fragments }
+  return { fragments };
 }
