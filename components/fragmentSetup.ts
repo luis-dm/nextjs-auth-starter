@@ -17,11 +17,6 @@ export function fragmentSetup(
     if (isLod) {
       world.renderer!.postproduction.basePass.isolatedMaterials.push(material);
     }
-    if (!("isLodMaterial" in material && material.isLodMaterial)) {
-      material.polygonOffset = true;
-      material.polygonOffsetUnits = 1;
-      material.polygonOffsetFactor = Math.random();
-    }
   });
 
   return { fragments };
