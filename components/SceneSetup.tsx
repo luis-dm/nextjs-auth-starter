@@ -186,10 +186,10 @@ export async function createScene(container: HTMLDivElement) {
     await setCameraToBoundingSphereOffset(new THREE.Vector3(0, 0, -2));
   });
 
-  const worldGrid = components.get(OBC.Grids).create(world);
-  worldGrid.material.uniforms.uColor.value = new THREE.Color(0x494b50);
-  worldGrid.material.uniforms.uSize1.value = 2;
-  worldGrid.material.uniforms.uSize2.value = 8;
+  // const worldGrid = components.get(OBC.Grids).create(world);
+  // worldGrid.material.uniforms.uColor.value = new THREE.Color(0x494b50);
+  // worldGrid.material.uniforms.uSize1.value = 2;
+  // worldGrid.material.uniforms.uSize2.value = 8;
 
   const resizeWorld = () => {
     world.renderer?.resize();
