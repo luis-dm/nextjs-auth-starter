@@ -1,17 +1,17 @@
-import * as OBC from '@thatopen/components'
-import * as OBF from '@thatopen/components-front'
-import * as THREE from 'three'
+import * as OBC from "@thatopen/components";
+import * as OBF from "@thatopen/components-front";
+import * as THREE from "three";
 
 export function resizeHandler(world: {
-  scene: OBC.SimpleScene
-  camera: OBC.OrthoPerspectiveCamera
-  renderer: OBF.PostproductionRenderer
+  scene: OBC.SimpleScene;
+  camera: OBC.OrthoPerspectiveCamera;
+  renderer: OBF.PostproductionRenderer;
 }) {
-  const { postproduction } = world.renderer
-  postproduction.enabled = true
-  postproduction.style = OBF.PostproductionAspect.COLOR_SHADOWS
-  const { aoPass, edgesPass } = world.renderer.postproduction
-  edgesPass.color = new THREE.Color(0x494b50)
+  const { postproduction } = world.renderer;
+  postproduction.enabled = true;
+  postproduction.style = OBF.PostproductionAspect.COLOR;
+  const { aoPass, edgesPass } = world.renderer.postproduction;
+  edgesPass.color = new THREE.Color(0x494b50);
   const aoParameters = {
     radius: 0.25,
     distanceExponent: 1,
@@ -20,7 +20,7 @@ export function resizeHandler(world: {
     samples: 16,
     distanceFallOff: 1,
     screenSpaceRadius: true,
-  }
+  };
   const pdParameters = {
     lumaPhi: 10,
     depthPhi: 2,
@@ -29,7 +29,7 @@ export function resizeHandler(world: {
     radiusExponent: 1,
     rings: 2,
     samples: 16,
-  }
-  aoPass.updateGtaoMaterial(aoParameters)
-  aoPass.updatePdMaterial(pdParameters)
+  };
+  aoPass.updateGtaoMaterial(aoParameters);
+  aoPass.updatePdMaterial(pdParameters);
 }
