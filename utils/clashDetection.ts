@@ -91,7 +91,7 @@ export class ClashDetector {
 
         const geometry = tile.geometry;
         const posAttr = geometry.getAttribute("position");
-        
+
         if (!posAttr || !posAttr.array) {
           console.warn(`  Tile has no position attribute`);
           continue;
@@ -129,7 +129,9 @@ export class ClashDetector {
         continue;
       }
 
-      console.log(`  Total: ${positions.length / 3} vertices, ${indices.length / 3} triangles`);
+      console.log(
+        `  Total: ${positions.length / 3} vertices, ${indices.length / 3} triangles`,
+      );
 
       combinedGeometry.setAttribute(
         "position",
@@ -178,15 +180,21 @@ export class ClashDetector {
         );
 
         // Quick bounding box check first
-        const boxesIntersect = modelA.boundingBox.intersectsBox(modelB.boundingBox);
+        const boxesIntersect = modelA.boundingBox.intersectsBox(
+          modelB.boundingBox,
+        );
         console.log(`  Bounding boxes intersect: ${boxesIntersect}`);
         if (!boxesIntersect) {
           console.log("  No bounding box intersection, skipping");
           continue;
         }
 
-        console.log(`  Box A: min=${modelA.boundingBox.min.toArray()} max=${modelA.boundingBox.max.toArray()}`);
-        console.log(`  Box B: min=${modelB.boundingBox.min.toArray()} max=${modelB.boundingBox.max.toArray()}`);
+        console.log(
+          `  Box A: min=${modelA.boundingBox.min.toArray()} max=${modelA.boundingBox.max.toArray()}`,
+        );
+        console.log(
+          `  Box B: min=${modelB.boundingBox.min.toArray()} max=${modelB.boundingBox.max.toArray()}`,
+        );
 
         // Check for intersection using BVH
         const geometryA = modelA.mesh.geometry as any;
@@ -197,8 +205,12 @@ export class ClashDetector {
           continue;
         }
 
-        console.log(`  BVH A: nodes=${geometryA.boundsTree._roots?.length || 0}`);
-        console.log(`  BVH B: nodes=${geometryB.boundsTree._roots?.length || 0}`);
+        console.log(
+          `  BVH A: nodes=${geometryA.boundsTree._roots?.length || 0}`,
+        );
+        console.log(
+          `  BVH B: nodes=${geometryB.boundsTree._roots?.length || 0}`,
+        );
 
         // Use identity matrix since we already applied world transforms
         const identity = new THREE.Matrix4();
