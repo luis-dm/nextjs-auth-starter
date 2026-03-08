@@ -17,12 +17,14 @@ export interface ClashResult {
   elementA: {
     modelId: string;
     modelName: string;
+    itemId: number;
     guid?: string;
     category?: string;
   };
   elementB: {
     modelId: string;
     modelName: string;
+    itemId: number;
     guid?: string;
     category?: string;
   };
@@ -30,9 +32,12 @@ export interface ClashResult {
   position?: THREE.Vector3;
 }
 
-interface ModelMeshData {
+interface ElementMeshData {
   modelId: string;
   modelName: string;
+  itemId: number;
+  guid?: string;
+  category?: string;
   mesh: THREE.Mesh;
   boundingBox: THREE.Box3;
 }
@@ -69,8 +74,8 @@ export class ClashDetector {
       throw new Error("At least 2 models are required for clash detection");
     }
 
-    // Prepare mesh data for each model
-    const modelMeshes: ModelMeshData[] = [];
+    // Prepare mesh data for each element across all models
+    const elementMeshes: ElementMeshData[] = [];
 
     for (const model of models) {
       const modelName = model.modelId;
@@ -85,17 +90,36 @@ export class ClashDetector {
         continue;
       }
 
-      // Get the geometry data for all items
+      // Get additional metadata for items (GUIDs and categories)
+      const guids = await model.getGuidsByLocalIds(itemIds);
+      const categories = await model.getItemsWithGeometryCategories();
+      const categoryMap = new Map<number, string>();
+      
+      // Build category map (this is approximate, may need refinement)
+      itemIds.forEach((id, idx) => {
+        if (categories[idx]) {
+          categoryMap.set(id, categories[idx]);
+        }
+      });
+
+      // Get the geometry data for items
       const geometryData = await model.getItemsGeometry(itemIds);
-      console.log(`  Retrieved geometry data for ${geometryData.length} items`);
+      console.log(`  Processing ${geometryData.length} elements...`);
 
-      // Combine all geometry into a single mesh for clash detection
-      const combinedGeometry = new THREE.BufferGeometry();
-      const positions: number[] = [];
-      const indices: number[] = [];
-      let vertexOffset = 0;
+      // Process each element individually
+      for (let i = 0; i < geometryData.length; i++) {
+        const meshDataArray = geometryData[i];
+        const itemId = itemIds[i];
+        const guid = guids[i] || undefined;
+        const category = categoryMap.get(itemId) || undefined;
 
-      for (const meshDataArray of geometryData) {
+        if (!meshDataArray || meshDataArray.length === 0) continue;
+
+        const positions: number[] = [];
+        const indices: number[] = [];
+        let vertexOffset = 0;
+
+        // Combine all mesh data for this element
         for (const meshData of meshDataArray) {
           if (!meshData.positions || !meshData.transform) continue;
 
@@ -106,11 +130,11 @@ export class ClashDetector {
           const vertex = new THREE.Vector3();
           const vertexCount = posArray.length / 3;
 
-          for (let i = 0; i < vertexCount; i++) {
+          for (let j = 0; j < vertexCount; j++) {
             vertex.set(
-              posArray[i * 3],
-              posArray[i * 3 + 1],
-              posArray[i * 3 + 2],
+              posArray[j * 3],
+              posArray[j * 3 + 1],
+              posArray[j * 3 + 2],
             );
             vertex.applyMatrix4(transform);
             positions.push(vertex.x, vertex.y, vertex.z);
@@ -118,153 +142,151 @@ export class ClashDetector {
 
           // Get indices
           if (meshData.indices && meshData.indices.length > 0) {
-            for (let i = 0; i < meshData.indices.length; i++) {
-              indices.push(meshData.indices[i] + vertexOffset);
+            for (let j = 0; j < meshData.indices.length; j++) {
+              indices.push(meshData.indices[j] + vertexOffset);
             }
           } else {
             // No indices, create sequential ones
-            for (let i = 0; i < vertexCount; i++) {
-              indices.push(i + vertexOffset);
+            for (let j = 0; j < vertexCount; j++) {
+              indices.push(j + vertexOffset);
             }
           }
 
           vertexOffset += vertexCount;
         }
+
+        if (positions.length === 0) continue;
+
+        // Create geometry for this element
+        const elementGeometry = new THREE.BufferGeometry();
+        elementGeometry.setAttribute(
+          "position",
+          new THREE.Float32BufferAttribute(positions, 3),
+        );
+        elementGeometry.setIndex(indices);
+
+        // Compute BVH for this element
+        (elementGeometry as any).computeBoundsTree();
+
+        const mesh = new THREE.Mesh(
+          elementGeometry,
+          new THREE.MeshBasicMaterial(),
+        );
+
+        // Compute bounding box
+        elementGeometry.computeBoundingBox();
+        const boundingBox = elementGeometry.boundingBox!;
+
+        elementMeshes.push({
+          modelId: model.modelId,
+          modelName,
+          itemId,
+          guid,
+          category,
+          mesh,
+          boundingBox,
+        });
       }
-
-      if (positions.length === 0) {
-        console.warn(`Model ${modelName} has no geometry`);
-        continue;
-      }
-
-      console.log(
-        `  Total: ${positions.length / 3} vertices, ${indices.length / 3} triangles`,
-      );
-
-      combinedGeometry.setAttribute(
-        "position",
-        new THREE.Float32BufferAttribute(positions, 3),
-      );
-      combinedGeometry.setIndex(indices);
-
-      // Compute BVH for this model
-      console.log(`Computing BVH for ${modelName}...`);
-      (combinedGeometry as any).computeBoundsTree();
-
-      const mesh = new THREE.Mesh(
-        combinedGeometry,
-        new THREE.MeshBasicMaterial(),
-      );
-
-      // Compute bounding box for quick rejection
-      combinedGeometry.computeBoundingBox();
-      const boundingBox = combinedGeometry.boundingBox!.clone();
-
-      modelMeshes.push({
-        modelId: model.modelId,
-        modelName,
-        mesh,
-        boundingBox,
-      });
     }
 
-    console.log(`Prepared ${modelMeshes.length} models for clash detection`);
+    console.log(`Total elements prepared: ${elementMeshes.length}`);
 
-    // Compare each pair of models
-    const totalComparisons =
-      (modelMeshes.length * (modelMeshes.length - 1)) / 2;
+    // Compare elements from different models
+    const modelIds = [...new Set(elementMeshes.map((e) => e.modelId))];
+    let totalComparisons = 0;
+    
+    // Count total comparisons needed
+    for (let i = 0; i < modelIds.length; i++) {
+      for (let j = i + 1; j < modelIds.length; j++) {
+        const elementsA = elementMeshes.filter((e) => e.modelId === modelIds[i]);
+        const elementsB = elementMeshes.filter((e) => e.modelId === modelIds[j]);
+        totalComparisons += elementsA.length * elementsB.length;
+      }
+    }
+
+    console.log(`Running ${totalComparisons} element-to-element comparisons...`);
     let currentComparison = 0;
 
-    for (let i = 0; i < modelMeshes.length; i++) {
-      for (let j = i + 1; j < modelMeshes.length; j++) {
-        currentComparison++;
-        onProgress?.(currentComparison, totalComparisons);
-
-        const modelA = modelMeshes[i];
-        const modelB = modelMeshes[j];
+    for (let i = 0; i < modelIds.length; i++) {
+      for (let j = i + 1; j < modelIds.length; j++) {
+        const elementsA = elementMeshes.filter((e) => e.modelId === modelIds[i]);
+        const elementsB = elementMeshes.filter((e) => e.modelId === modelIds[j]);
 
         console.log(
-          `Checking clash between ${modelA.modelName} and ${modelB.modelName}`,
+          `Checking ${elementsA.length} x ${elementsB.length} element pairs between models`,
         );
 
-        // Quick bounding box check first
-        const boxesIntersect = modelA.boundingBox.intersectsBox(
-          modelB.boundingBox,
-        );
-        console.log(`  Bounding boxes intersect: ${boxesIntersect}`);
-        if (!boxesIntersect) {
-          console.log("  No bounding box intersection, skipping");
-          continue;
-        }
+        for (const elementA of elementsA) {
+          for (const elementB of elementsB) {
+            currentComparison++;
+            if (currentComparison % 100 === 0) {
+              onProgress?.(currentComparison, totalComparisons);
+            }
 
-        console.log(
-          `  Box A: min=${modelA.boundingBox.min.toArray()} max=${modelA.boundingBox.max.toArray()}`,
-        );
-        console.log(
-          `  Box B: min=${modelB.boundingBox.min.toArray()} max=${modelB.boundingBox.max.toArray()}`,
-        );
+            // Quick bounding box check first
+            if (!elementA.boundingBox.intersectsBox(elementB.boundingBox)) {
+              continue;
+            }
 
-        // Check for intersection using BVH
-        const geometryA = modelA.mesh.geometry as any;
-        const geometryB = modelB.mesh.geometry as any;
+            // Check for intersection using BVH
+            const geometryA = elementA.mesh.geometry as any;
+            const geometryB = elementB.mesh.geometry as any;
 
-        if (!geometryA.boundsTree || !geometryB.boundsTree) {
-          console.warn("  BVH not computed for one or both models");
-          continue;
-        }
+            if (!geometryA.boundsTree || !geometryB.boundsTree) {
+              continue;
+            }
 
-        console.log(
-          `  BVH A: nodes=${geometryA.boundsTree._roots?.length || 0}`,
-        );
-        console.log(
-          `  BVH B: nodes=${geometryB.boundsTree._roots?.length || 0}`,
-        );
+            // Use identity matrix since we already applied world transforms
+            const identity = new THREE.Matrix4();
+            const hasIntersection = geometryA.boundsTree.intersectsGeometry(
+              geometryB,
+              identity,
+            );
 
-        // Use identity matrix since we already applied world transforms
-        const identity = new THREE.Matrix4();
-        const hasIntersection = geometryA.boundsTree.intersectsGeometry(
-          geometryB,
-          identity,
-        );
+            if (hasIntersection) {
+              console.log(
+                `CLASH: ${elementA.category || "Element"} (${elementA.guid || elementA.itemId}) ↔ ${elementB.category || "Element"} (${elementB.guid || elementB.itemId})`,
+              );
 
-        console.log(`  BVH intersection result: ${hasIntersection}`);
+              // Calculate approximate penetration depth
+              const overlappingBox = elementA.boundingBox
+                .clone()
+                .intersect(elementB.boundingBox);
+              const size = new THREE.Vector3();
+              overlappingBox.getSize(size);
+              const distance = Math.min(size.x, size.y, size.z);
 
-        if (hasIntersection) {
-          console.log(
-            `CLASH DETECTED between ${modelA.modelName} and ${modelB.modelName}`,
-          );
+              const center = new THREE.Vector3();
+              overlappingBox.getCenter(center);
 
-          // Calculate approximate penetration depth
-          const overlappingBox = modelA.boundingBox
-            .clone()
-            .intersect(modelB.boundingBox);
-          const size = new THREE.Vector3();
-          overlappingBox.getSize(size);
-          const distance = Math.min(size.x, size.y, size.z);
-
-          const center = new THREE.Vector3();
-          overlappingBox.getCenter(center);
-
-          clashes.push({
-            id: `clash-${modelA.modelId}-${modelB.modelId}`,
-            elementA: {
-              modelId: modelA.modelId,
-              modelName: modelA.modelName,
-            },
-            elementB: {
-              modelId: modelB.modelId,
-              modelName: modelB.modelName,
-            },
-            distance,
-            position: center,
-          });
+              clashes.push({
+                id: `clash-${elementA.modelId}-${elementA.itemId}-${elementB.modelId}-${elementB.itemId}`,
+                elementA: {
+                  modelId: elementA.modelId,
+                  modelName: elementA.modelName,
+                  itemId: elementA.itemId,
+                  guid: elementA.guid,
+                  category: elementA.category,
+                },
+                elementB: {
+                  modelId: elementB.modelId,
+                  modelName: elementB.modelName,
+                  itemId: elementB.itemId,
+                  guid: elementB.guid,
+                  category: elementB.category,
+                },
+                distance,
+                position: center,
+              });
+            }
+          }
         }
       }
     }
 
     // Clean up geometries
-    modelMeshes.forEach((modelData) => {
-      modelData.mesh.geometry.dispose();
+    elementMeshes.forEach((elementData) => {
+      elementData.mesh.geometry.dispose();
     });
 
     console.log(`Clash detection complete: found ${clashes.length} clashes`);
@@ -283,37 +305,40 @@ export class ClashDetector {
     // Clear previous highlights
     this.highlighter.clear();
 
-    // Highlight each clashing model
-    const modelIds = new Set<string>();
+    // Collect all clashing item IDs per model
+    const clashingItems = new Map<string, Set<number>>();
+    
     clashes.forEach((clash) => {
-      modelIds.add(clash.elementA.modelId);
-      modelIds.add(clash.elementB.modelId);
-    });
-
-    console.log(`Highlighting ${modelIds.size} clashing models`);
-
-    // Set up material for clash highlighting
-    const clashMaterial = new THREE.MeshBasicMaterial({
-      color: new THREE.Color("#ef4444"), // Red color for clashes
-      transparent: true,
-      opacity: 0.8,
-      depthTest: true,
-    });
-
-    modelIds.forEach((modelId) => {
-      const model = this.fragments.list.get(modelId);
-      if (model?.object) {
-        model.object.traverse((child) => {
-          if (child instanceof THREE.Mesh) {
-            // Store original material if not already stored
-            if (!(child as any)._originalMaterial) {
-              (child as any)._originalMaterial = child.material;
-            }
-            child.material = clashMaterial;
-          }
-        });
+      if (!clashingItems.has(clash.elementA.modelId)) {
+        clashingItems.set(clash.elementA.modelId, new Set());
       }
+      if (!clashingItems.has(clash.elementB.modelId)) {
+        clashingItems.set(clash.elementB.modelId, new Set());
+      }
+      
+      clashingItems.get(clash.elementA.modelId)!.add(clash.elementA.itemId);
+      clashingItems.get(clash.elementB.modelId)!.add(clash.elementB.itemId);
     });
+
+    console.log(`Highlighting ${Array.from(clashingItems.values()).reduce((sum, set) => sum + set.size, 0)} clashing elements`);
+
+    // Build ModelIdMap for highlighting
+    const selectionMap: OBC.ModelIdMap = {};
+    clashingItems.forEach((itemIds, modelId) => {
+      selectionMap[modelId] = itemIds;
+    });
+
+    // Define custom red material style
+    const redStyle = "clash-highlight";
+    this.highlighter!.styles.set(redStyle, {
+      color: new THREE.Color("#ef4444"), // Red
+      renderedFaces: 1,
+      opacity: 0.8,
+      transparent: true,
+    });
+
+    // Highlight using the highlightByID method
+    this.highlighter!.highlightByID(redStyle, selectionMap);
   }
 
   /**
@@ -323,19 +348,7 @@ export class ClashDetector {
     if (!this.highlighter) {
       return;
     }
-
-    this.highlighter.clear();
-
-    // Restore original materials
-    this.fragments.list.forEach((model) => {
-      if (model.object) {
-        model.object.traverse((child) => {
-          if (child instanceof THREE.Mesh && (child as any)._originalMaterial) {
-            child.material = (child as any)._originalMaterial;
-            delete (child as any)._originalMaterial;
-          }
-        });
-      }
-    });
+    // Clear the custom clash highlight style
+    this.highlighter.clear("clash-highlight");
   }
 }

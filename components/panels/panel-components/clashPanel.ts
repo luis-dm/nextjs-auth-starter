@@ -38,11 +38,11 @@ const updateClashResults = () => {
           <div class="text-xs text-gray-600 space-y-1">
             <div class="flex items-start">
               <span class="font-medium mr-1">A:</span>
-              <span class="flex-1">${clash.elementA.modelName}</span>
+              <span class="flex-1">${clash.elementA.category || "Element"} ${clash.elementA.guid ? `(${clash.elementA.guid.substring(0, 8)}...)` : `#${clash.elementA.itemId}`}</span>
             </div>
             <div class="flex items-start">
               <span class="font-medium mr-1">B:</span>
-              <span class="flex-1">${clash.elementB.modelName}</span>
+              <span class="flex-1">${clash.elementB.category || "Element"} ${clash.elementB.guid ? `(${clash.elementB.guid.substring(0, 8)}...)` : `#${clash.elementB.itemId}`}</span>
             </div>
           </div>
         </div>
