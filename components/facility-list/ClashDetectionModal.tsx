@@ -118,7 +118,7 @@ export default function ClashDetectionModal({
                     flex items-center gap-3 p-4 rounded-lg border-2 cursor-pointer transition-all
                     ${
                       selectedFacilities.has(facility.id)
-                        ? "border-blue-500 bg-blue-50"
+                        ? "border-gray-700 bg-gray-100"
                         : "border-gray-200 bg-white hover:border-gray-300"
                     }
                   `}
@@ -129,7 +129,7 @@ export default function ClashDetectionModal({
                       w-5 h-5 rounded flex items-center justify-center shrink-0 transition-colors
                       ${
                         selectedFacilities.has(facility.id)
-                          ? "bg-blue-500"
+                          ? "bg-gray-700"
                           : "bg-white border-2 border-gray-300"
                       }
                     `}
@@ -181,7 +181,7 @@ export default function ClashDetectionModal({
                 px-4 py-2 rounded-md font-medium transition-colors
                 ${
                   canProceed
-                    ? "bg-blue-600 text-white hover:bg-blue-700"
+                    ? "bg-gray-700 text-white hover:bg-gray-800"
                     : "bg-gray-300 text-gray-500 cursor-not-allowed"
                 }
               `}
