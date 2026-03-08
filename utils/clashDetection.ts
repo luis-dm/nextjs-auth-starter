@@ -76,52 +76,60 @@ export class ClashDetector {
       const modelName = model.modelId;
       console.log(`Processing model: ${modelName}`);
 
-      // Combine all meshes in the model into a single mesh for clash detection
+      // Get all items with geometry from the model
+      const itemIds = await model.getItemsIdsWithGeometry();
+      console.log(`  Found ${itemIds.length} items with geometry`);
+
+      if (itemIds.length === 0) {
+        console.warn(`  Model ${modelName} has no items with geometry`);
+        continue;
+      }
+
+      // Get the geometry data for all items
+      const geometryData = await model.getItemsGeometry(itemIds);
+      console.log(`  Retrieved geometry data for ${geometryData.length} items`);
+
+      // Combine all geometry into a single mesh for clash detection
       const combinedGeometry = new THREE.BufferGeometry();
       const positions: number[] = [];
       const indices: number[] = [];
       let vertexOffset = 0;
 
-      // Use model.tiles which contains the actual rendered meshes
-      const tiles = Array.from(model.tiles.values());
-      console.log(`  Found ${tiles.length} tiles/meshes`);
+      for (const meshDataArray of geometryData) {
+        for (const meshData of meshDataArray) {
+          if (!meshData.positions || !meshData.transform) continue;
 
-      for (const tile of tiles) {
-        if (!(tile instanceof THREE.Mesh) || !tile.geometry) continue;
+          const posArray = meshData.positions;
+          const transform = meshData.transform;
 
-        const geometry = tile.geometry;
-        const posAttr = geometry.getAttribute("position");
+          // Transform each vertex by the mesh's transform matrix
+          const vertex = new THREE.Vector3();
+          const vertexCount = posArray.length / 3;
 
-        if (!posAttr || !posAttr.array) {
-          console.warn(`  Tile has no position attribute`);
-          continue;
-        }
-
-        console.log(`  Processing tile with ${posAttr.count} vertices`);
-
-        // Apply world matrix transformation to each vertex
-        const vertex = new THREE.Vector3();
-        for (let i = 0; i < posAttr.count; i++) {
-          vertex.set(posAttr.getX(i), posAttr.getY(i), posAttr.getZ(i));
-          vertex.applyMatrix4(tile.matrixWorld);
-          positions.push(vertex.x, vertex.y, vertex.z);
-        }
-
-        // Get index attribute
-        const indexAttr = geometry.index;
-        if (indexAttr && indexAttr.array && indexAttr.count > 0) {
-          const indexArray = indexAttr.array;
-          for (let i = 0; i < indexArray.length; i++) {
-            indices.push(indexArray[i] + vertexOffset);
+          for (let i = 0; i < vertexCount; i++) {
+            vertex.set(
+              posArray[i * 3],
+              posArray[i * 3 + 1],
+              posArray[i * 3 + 2],
+            );
+            vertex.applyMatrix4(transform);
+            positions.push(vertex.x, vertex.y, vertex.z);
           }
-        } else {
-          // No index, create one
-          for (let i = 0; i < posAttr.count; i++) {
-            indices.push(i + vertexOffset);
-          }
-        }
 
-        vertexOffset += posAttr.count;
+          // Get indices
+          if (meshData.indices && meshData.indices.length > 0) {
+            for (let i = 0; i < meshData.indices.length; i++) {
+              indices.push(meshData.indices[i] + vertexOffset);
+            }
+          } else {
+            // No indices, create sequential ones
+            for (let i = 0; i < vertexCount; i++) {
+              indices.push(i + vertexOffset);
+            }
+          }
+
+          vertexOffset += vertexCount;
+        }
       }
 
       if (positions.length === 0) {
