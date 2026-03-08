@@ -14,6 +14,13 @@ let clashDetector: ClashDetector | null = null;
 
 const updateClashResults = () => {
   const resultsContainer = document.querySelector(".clash-results-container");
+  const counterElement = document.querySelector(".clash-counter");
+  
+  // Update counter
+  if (counterElement) {
+    counterElement.textContent = `${clashResults.length} clashes`;
+  }
+  
   if (!resultsContainer) return;
 
   if (clashResults.length === 0) {
@@ -251,10 +258,10 @@ export const createClashPanel = (
           <div class="space-y-2">
             <div class="flex items-center justify-between">
               <span class="text-xs font-medium text-gray-700">Results</span>
-              <span class="text-xs text-gray-500">${clashResults.length} clashes</span>
+              <span class="clash-counter text-xs text-gray-500">0 clashes</span>
             </div>
             
-            <div class="clash-results-container overflow-y-auto max-h-[300px] border border-gray-200 rounded-lg bg-white">
+            <div class="clash-results-container overflow-y-auto max-h-[300px] border border-gray-200 rounded-lg bg-white p-2">
               <!-- Results will be populated dynamically -->
             </div>
           </div>

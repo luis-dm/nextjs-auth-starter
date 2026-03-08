@@ -94,7 +94,7 @@ export class ClashDetector {
       const guids = await model.getGuidsByLocalIds(itemIds);
       const categories = await model.getItemsWithGeometryCategories();
       const categoryMap = new Map<number, string>();
-      
+
       // Build category map (this is approximate, may need refinement)
       itemIds.forEach((id, idx) => {
         if (categories[idx]) {
@@ -194,23 +194,33 @@ export class ClashDetector {
     // Compare elements from different models
     const modelIds = [...new Set(elementMeshes.map((e) => e.modelId))];
     let totalComparisons = 0;
-    
+
     // Count total comparisons needed
     for (let i = 0; i < modelIds.length; i++) {
       for (let j = i + 1; j < modelIds.length; j++) {
-        const elementsA = elementMeshes.filter((e) => e.modelId === modelIds[i]);
-        const elementsB = elementMeshes.filter((e) => e.modelId === modelIds[j]);
+        const elementsA = elementMeshes.filter(
+          (e) => e.modelId === modelIds[i],
+        );
+        const elementsB = elementMeshes.filter(
+          (e) => e.modelId === modelIds[j],
+        );
         totalComparisons += elementsA.length * elementsB.length;
       }
     }
 
-    console.log(`Running ${totalComparisons} element-to-element comparisons...`);
+    console.log(
+      `Running ${totalComparisons} element-to-element comparisons...`,
+    );
     let currentComparison = 0;
 
     for (let i = 0; i < modelIds.length; i++) {
       for (let j = i + 1; j < modelIds.length; j++) {
-        const elementsA = elementMeshes.filter((e) => e.modelId === modelIds[i]);
-        const elementsB = elementMeshes.filter((e) => e.modelId === modelIds[j]);
+        const elementsA = elementMeshes.filter(
+          (e) => e.modelId === modelIds[i],
+        );
+        const elementsB = elementMeshes.filter(
+          (e) => e.modelId === modelIds[j],
+        );
 
         console.log(
           `Checking ${elementsA.length} x ${elementsB.length} element pairs between models`,
@@ -307,7 +317,7 @@ export class ClashDetector {
 
     // Collect all clashing item IDs per model
     const clashingItems = new Map<string, Set<number>>();
-    
+
     clashes.forEach((clash) => {
       if (!clashingItems.has(clash.elementA.modelId)) {
         clashingItems.set(clash.elementA.modelId, new Set());
@@ -315,12 +325,14 @@ export class ClashDetector {
       if (!clashingItems.has(clash.elementB.modelId)) {
         clashingItems.set(clash.elementB.modelId, new Set());
       }
-      
+
       clashingItems.get(clash.elementA.modelId)!.add(clash.elementA.itemId);
       clashingItems.get(clash.elementB.modelId)!.add(clash.elementB.itemId);
     });
 
-    console.log(`Highlighting ${Array.from(clashingItems.values()).reduce((sum, set) => sum + set.size, 0)} clashing elements`);
+    console.log(
+      `Highlighting ${Array.from(clashingItems.values()).reduce((sum, set) => sum + set.size, 0)} clashing elements`,
+    );
 
     // Build ModelIdMap for highlighting
     const selectionMap: OBC.ModelIdMap = {};
