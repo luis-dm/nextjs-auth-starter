@@ -76,59 +76,60 @@ export class ClashDetector {
       const modelName = model.modelId;
       console.log(`Processing model: ${modelName}`);
 
-      // Get the model's object (which contains the meshes)
-      const object = model.object;
-
-      if (!object) {
-        console.warn(`Model ${modelName} has no object`);
-        continue;
-      }
-
       // Combine all meshes in the model into a single mesh for clash detection
       const combinedGeometry = new THREE.BufferGeometry();
       const positions: number[] = [];
       const indices: number[] = [];
       let vertexOffset = 0;
 
-      object.traverse((child) => {
-        if (child instanceof THREE.Mesh && child.geometry) {
-          const geometry = child.geometry;
+      // Use model.tiles which contains the actual rendered meshes
+      const tiles = Array.from(model.tiles.values());
+      console.log(`  Found ${tiles.length} tiles/meshes`);
 
-          // Get position attribute
-          const posAttr = geometry.getAttribute("position");
-          if (!posAttr || !posAttr.array) return;
+      for (const tile of tiles) {
+        if (!(tile instanceof THREE.Mesh) || !tile.geometry) continue;
 
-          // Apply world matrix transformation to each vertex as we read it
-          const vertex = new THREE.Vector3();
-          for (let i = 0; i < posAttr.count; i++) {
-            vertex.set(posAttr.getX(i), posAttr.getY(i), posAttr.getZ(i));
-            vertex.applyMatrix4(child.matrixWorld);
-            positions.push(vertex.x, vertex.y, vertex.z);
-          }
-
-          // Get index attribute
-          const indexAttr = geometry.index;
-          if (indexAttr && indexAttr.array && indexAttr.count > 0) {
-            // Use the index array directly for better performance and reliability
-            const indexArray = indexAttr.array;
-            for (let i = 0; i < indexArray.length; i++) {
-              indices.push(indexArray[i] + vertexOffset);
-            }
-          } else {
-            // No index, create one
-            for (let i = 0; i < posAttr.count; i++) {
-              indices.push(i + vertexOffset);
-            }
-          }
-
-          vertexOffset += posAttr.count;
+        const geometry = tile.geometry;
+        const posAttr = geometry.getAttribute("position");
+        
+        if (!posAttr || !posAttr.array) {
+          console.warn(`  Tile has no position attribute`);
+          continue;
         }
-      });
+
+        console.log(`  Processing tile with ${posAttr.count} vertices`);
+
+        // Apply world matrix transformation to each vertex
+        const vertex = new THREE.Vector3();
+        for (let i = 0; i < posAttr.count; i++) {
+          vertex.set(posAttr.getX(i), posAttr.getY(i), posAttr.getZ(i));
+          vertex.applyMatrix4(tile.matrixWorld);
+          positions.push(vertex.x, vertex.y, vertex.z);
+        }
+
+        // Get index attribute
+        const indexAttr = geometry.index;
+        if (indexAttr && indexAttr.array && indexAttr.count > 0) {
+          const indexArray = indexAttr.array;
+          for (let i = 0; i < indexArray.length; i++) {
+            indices.push(indexArray[i] + vertexOffset);
+          }
+        } else {
+          // No index, create one
+          for (let i = 0; i < posAttr.count; i++) {
+            indices.push(i + vertexOffset);
+          }
+        }
+
+        vertexOffset += posAttr.count;
+      }
 
       if (positions.length === 0) {
         console.warn(`Model ${modelName} has no geometry`);
         continue;
       }
+
+      console.log(`  Total: ${positions.length / 3} vertices, ${indices.length / 3} triangles`);
 
       combinedGeometry.setAttribute(
         "position",
@@ -177,19 +178,27 @@ export class ClashDetector {
         );
 
         // Quick bounding box check first
-        if (!modelA.boundingBox.intersectsBox(modelB.boundingBox)) {
-          console.log("No bounding box intersection, skipping");
+        const boxesIntersect = modelA.boundingBox.intersectsBox(modelB.boundingBox);
+        console.log(`  Bounding boxes intersect: ${boxesIntersect}`);
+        if (!boxesIntersect) {
+          console.log("  No bounding box intersection, skipping");
           continue;
         }
+
+        console.log(`  Box A: min=${modelA.boundingBox.min.toArray()} max=${modelA.boundingBox.max.toArray()}`);
+        console.log(`  Box B: min=${modelB.boundingBox.min.toArray()} max=${modelB.boundingBox.max.toArray()}`);
 
         // Check for intersection using BVH
         const geometryA = modelA.mesh.geometry as any;
         const geometryB = modelB.mesh.geometry as any;
 
         if (!geometryA.boundsTree || !geometryB.boundsTree) {
-          console.warn("BVH not computed for one or both models");
+          console.warn("  BVH not computed for one or both models");
           continue;
         }
+
+        console.log(`  BVH A: nodes=${geometryA.boundsTree._roots?.length || 0}`);
+        console.log(`  BVH B: nodes=${geometryB.boundsTree._roots?.length || 0}`);
 
         // Use identity matrix since we already applied world transforms
         const identity = new THREE.Matrix4();
@@ -197,6 +206,8 @@ export class ClashDetector {
           geometryB,
           identity,
         );
+
+        console.log(`  BVH intersection result: ${hasIntersection}`);
 
         if (hasIntersection) {
           console.log(
