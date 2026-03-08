@@ -1,6 +1,6 @@
 // FROM https://github.com/rihokirss/thatopen-enhanced-camera-controls
-import * as OBC from '@thatopen/components';
-import * as THREE from 'three';
+import * as OBC from "@thatopen/components";
+import * as THREE from "three";
 
 const TRACKPAD_PINCH_STEP = 5.5;
 const MOUSE_WHEEL_STEP = 0.5;
@@ -37,7 +37,7 @@ export function createSmoothWheelControl(
   world: OBC.World,
   components: OBC.Components,
   container: HTMLDivElement | { current: HTMLDivElement | null },
-  config: SmoothWheelControlConfig = {}
+  config: SmoothWheelControlConfig = {},
 ) {
   const cfg = { ...defaultConfig, ...config };
 
@@ -68,7 +68,7 @@ export function createSmoothWheelControl(
       const result = await caster.castRay();
 
       // Set orbit point only before zooming starts, not during movement (prevents "bounce back" when passing through walls)
-      if (result && 'point' in result && result.point && !isMoving) {
+      if (result && "point" in result && result.point && !isMoving) {
         const point = result.point as THREE.Vector3;
         world.camera.controls?.setOrbitPoint(point.x, point.y, point.z);
       }
@@ -77,8 +77,8 @@ export function createSmoothWheelControl(
 
       if (
         result &&
-        'distance' in result &&
-        typeof result.distance === 'number'
+        "distance" in result &&
+        typeof result.distance === "number"
       ) {
         const distance = result.distance;
 
@@ -86,7 +86,7 @@ export function createSmoothWheelControl(
           cachedSpeedFactor = THREE.MathUtils.lerp(
             cfg.proximityMinSpeed,
             1.0,
-            distance / cfg.proximitySlowDistance
+            distance / cfg.proximitySlowDistance,
           );
         } else if (distance < cfg.proximityNormalDistance) {
           cachedSpeedFactor = 1.0;
@@ -95,7 +95,7 @@ export function createSmoothWheelControl(
             1.0,
             cfg.proximityMaxSpeed,
             (distance - cfg.proximityNormalDistance) /
-              (cfg.proximityFastDistance - cfg.proximityNormalDistance)
+              (cfg.proximityFastDistance - cfg.proximityNormalDistance),
           );
         } else {
           cachedSpeedFactor = cfg.proximityMaxSpeed;
@@ -112,10 +112,10 @@ export function createSmoothWheelControl(
   const wheelHandler = (e: WheelEvent) => {
     const target = e.target as HTMLElement;
     const isInsideScrollablePanel =
-      target.closest('.chatbot-panel') || 
-      target.closest('.spatial-tree-panel') ||
-      target.closest('.models-panel') ||
-      target.closest('.clash-panel');
+      target.closest(".chatbot-panel") ||
+      target.closest(".spatial-tree-panel") ||
+      target.closest(".models-panel") ||
+      target.closest(".clash-panel");
     if (isInsideScrollablePanel) {
       return;
     }
@@ -123,7 +123,7 @@ export function createSmoothWheelControl(
     e.stopPropagation();
     const cc = world.camera.controls;
 
-    const element = 'current' in container ? container.current : container;
+    const element = "current" in container ? container.current : container;
     if (!cc || !element) return;
 
     let dynamicStepValue: number;
@@ -154,7 +154,7 @@ export function createSmoothWheelControl(
 
     _mouse.set(
       ((e.clientX - cachedRect.left) / cachedRect.width) * 2 - 1,
-      -((e.clientY - cachedRect.top) / cachedRect.height) * 2 + 1
+      -((e.clientY - cachedRect.top) / cachedRect.height) * 2 + 1,
     );
 
     _raycaster.setFromCamera(_mouse, world.camera.three);
@@ -187,7 +187,7 @@ export function createSmoothWheelControl(
       _tgt.x,
       _tgt.y,
       _tgt.z,
-      cfg.enableSmoothing
+      cfg.enableSmoothing,
     );
 
     // Update fragments after delay
