@@ -128,13 +128,15 @@ export default function ClashPage() {
         createModelsPanel(components, (key: string) => key),
       );
 
-      const panelDiv = document.createElement("div");
-      panelDiv.style.position = "absolute";
-      panelDiv.style.top = "10px";
-      panelDiv.style.left = "10px";
-      panelDiv.style.zIndex = "100";
-      panelDiv.appendChild(modelsPanel);
-      container.appendChild(panelDiv);
+      const panelWrapper = document.createElement("div");
+      panelWrapper.style.position = "absolute";
+      panelWrapper.style.top = "20px";
+      panelWrapper.style.left = "20px";
+      panelWrapper.style.zIndex = "100";
+      panelWrapper.style.width = "350px";
+      panelWrapper.style.margin = "0";
+      panelWrapper.appendChild(modelsPanel);
+      container.appendChild(panelWrapper);
 
       // Load all facility fragments
       setLoadingStatus(`Loading ${facilityIds.length} facilities...`);
@@ -158,9 +160,7 @@ export default function ClashPage() {
 
             if (facility.fragmentPath) {
               // Fetch RENDERED fragment from volume API
-              console.log(
-                `Fetching rendered fragment for ${facility.name}...`,
-              );
+              console.log(`Fetching rendered fragment for ${facility.name}...`);
               const timestamp = Date.now();
               const fragmentResponse = await fetch(
                 `/api/fragments/${id}?type=rendered&t=${timestamp}`,

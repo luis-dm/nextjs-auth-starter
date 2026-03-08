@@ -65,12 +65,12 @@ export default function ClashDetectionModal({
   const handleViewModels = () => {
     const selectedIds = Array.from(selectedFacilities);
     console.log("Selected facilities:", selectedIds);
-    
+
     // Navigate to clash page with first facility ID and pass all IDs as query params
     const firstId = selectedIds[0];
     const facilitiesParam = selectedIds.join(",");
     window.location.href = `/org/facility/${firstId}/clash?facilities=${facilitiesParam}`;
-    
+
     onClose();
   };
 
