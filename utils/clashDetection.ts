@@ -96,7 +96,7 @@ export class ClashDetector {
 
           // Get position attribute
           const posAttr = geometry.getAttribute("position");
-          if (!posAttr) return;
+          if (!posAttr || !posAttr.array) return;
 
           // Apply world matrix transformation to each vertex as we read it
           const vertex = new THREE.Vector3();
@@ -108,9 +108,11 @@ export class ClashDetector {
 
           // Get index attribute
           const indexAttr = geometry.index;
-          if (indexAttr) {
-            for (let i = 0; i < indexAttr.count; i++) {
-              indices.push(indexAttr.getX(i) + vertexOffset);
+          if (indexAttr && indexAttr.array && indexAttr.count > 0) {
+            // Use the index array directly for better performance and reliability
+            const indexArray = indexAttr.array;
+            for (let i = 0; i < indexArray.length; i++) {
+              indices.push(indexArray[i] + vertexOffset);
             }
           } else {
             // No index, create one
