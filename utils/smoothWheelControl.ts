@@ -112,7 +112,10 @@ export function createSmoothWheelControl(
   const wheelHandler = (e: WheelEvent) => {
     const target = e.target as HTMLElement;
     const isInsideScrollablePanel =
-      target.closest('.chatbot-panel') || target.closest('.spatial-tree-panel');
+      target.closest('.chatbot-panel') || 
+      target.closest('.spatial-tree-panel') ||
+      target.closest('.models-panel') ||
+      target.closest('.clash-panel');
     if (isInsideScrollablePanel) {
       return;
     }
