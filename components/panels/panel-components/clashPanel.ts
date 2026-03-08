@@ -1,30 +1,16 @@
 import * as BUI from "@thatopen/ui";
 import * as OBC from "@thatopen/components";
+import { ClashDetector, ClashResult } from "@/utils/clashDetection";
 
 export interface ClashPanelState {
   components: OBC.Components;
-}
-
-export interface ClashResult {
-  id: string;
-  elementA: {
-    modelId: string;
-    id: string;
-    name?: string;
-  };
-  elementB: {
-    modelId: string;
-    id: string;
-    name?: string;
-  };
-  distance: number;
-  position: { x: number; y: number; z: number };
 }
 
 // Simple module-level state
 let isRunning = false;
 let clashResults: ClashResult[] = [];
 let tolerance = 0.01; // 1cm default
+let clashDetector: ClashDetector | null = null;
 
 const updateClashResults = () => {
   const resultsContainer = document.querySelector(".clash-results-container");
@@ -40,7 +26,7 @@ const updateClashResults = () => {
     resultsContainer.innerHTML = clashResults
       .map(
         (clash, index) => `
-        <div class="p-3 mb-2 bg-gray-50 rounded-lg border border-gray-200 hover:bg-gray-100 transition-colors">
+        <div class="p-3 mb-2 bg-gray-50 rounded-lg border border-gray-200 hover:bg-gray-100 transition-colors cursor-pointer">
           <div class="flex items-center justify-between mb-2">
             <span class="text-xs font-medium text-gray-500">Clash #${index + 1}</span>
             <span class="text-xs font-bold ${
@@ -52,11 +38,11 @@ const updateClashResults = () => {
           <div class="text-xs text-gray-600 space-y-1">
             <div class="flex items-start">
               <span class="font-medium mr-1">A:</span>
-              <span class="flex-1">${clash.elementA.name || clash.elementA.id}</span>
+              <span class="flex-1">${clash.elementA.modelName}</span>
             </div>
             <div class="flex items-start">
               <span class="font-medium mr-1">B:</span>
-              <span class="flex-1">${clash.elementB.name || clash.elementB.id}</span>
+              <span class="flex-1">${clash.elementB.modelName}</span>
             </div>
           </div>
         </div>
@@ -91,6 +77,11 @@ export const createClashPanel = (
 ) => {
   const fragments = components.get(OBC.FragmentsManager);
 
+  // Initialize clash detector
+  if (!clashDetector) {
+    clashDetector = new ClashDetector(components);
+  }
+
   // Track collapsible panel state
   let isClashExpanded = false;
 
@@ -113,14 +104,15 @@ export const createClashPanel = (
   };
 
   const handleRunDetection = async () => {
-    if (isRunning) return;
+    if (isRunning || !clashDetector) return;
 
     isRunning = true;
     updateRunButton();
     updateProgressBar();
 
-    // Clear previous results
+    // Clear previous results and highlights
     clashResults = [];
+    clashDetector.clearHighlights();
     updateClashResults();
 
     try {
@@ -135,49 +127,50 @@ export const createClashPanel = (
         return;
       }
 
-      // Simulate clash detection for now
-      // TODO: Implement actual BVH-based clash detection
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+      // Update progress text
+      const progressBar = document.querySelector(".clash-progress-bar");
+      if (progressBar) {
+        const progressText = document.querySelector(".clash-progress-text");
+        if (!progressText) {
+          const text = document.createElement("div");
+          text.className = "clash-progress-text text-xs text-gray-600 mt-1";
+          progressBar.parentElement?.appendChild(text);
+        }
+      }
 
-      // Mock results for demonstration
-      clashResults = [
-        {
-          id: "clash-1",
-          elementA: {
-            modelId: "model-1",
-            id: "element-123",
-            name: "Wall - 200mm Exterior",
-          },
-          elementB: {
-            modelId: "model-2",
-            id: "element-456",
-            name: "Beam - 300x600mm",
-          },
-          distance: 0.045,
-          position: { x: 10.5, y: 3.2, z: 0.0 },
+      // Run actual BVH-based clash detection
+      clashResults = await clashDetector.detectClashes(
+        tolerance,
+        (current, total) => {
+          const progressText = document.querySelector(".clash-progress-text");
+          if (progressText) {
+            progressText.textContent = `Comparing models: ${current}/${total}`;
+          }
         },
-        {
-          id: "clash-2",
-          elementA: {
-            modelId: "model-1",
-            id: "element-789",
-            name: "Column - 400x400mm",
-          },
-          elementB: {
-            modelId: "model-2",
-            id: "element-012",
-            name: "Duct - Ø300mm",
-          },
-          distance: 0.092,
-          position: { x: 5.2, y: 2.8, z: 3.5 },
-        },
-      ];
+      );
+
+      // Highlight clashes in red
+      if (clashResults.length > 0) {
+        clashDetector.highlightClashes(clashResults);
+      }
+
+      // Remove progress text
+      const progressText = document.querySelector(".clash-progress-text");
+      if (progressText) {
+        progressText.remove();
+      }
 
       updateClashResults();
       console.log(`Found ${clashResults.length} clashes`);
+
+      if (clashResults.length === 0) {
+        alert("No clashes detected! ✓");
+      }
     } catch (error) {
       console.error("Error running clash detection:", error);
-      alert("Failed to run clash detection");
+      alert(
+        `Failed to run clash detection: ${error instanceof Error ? error.message : String(error)}`,
+      );
     } finally {
       isRunning = false;
       updateRunButton();
@@ -189,6 +182,13 @@ export const createClashPanel = (
     const input = e.target as HTMLInputElement;
     tolerance = parseFloat(input.value) / 1000; // Convert mm to m
     console.log("Tolerance changed to:", tolerance, "m");
+  };
+
+  const handleClearHighlights = () => {
+    if (clashDetector) {
+      clashDetector.clearHighlights();
+      console.log("Cleared clash highlights");
+    }
   };
 
   // Initialize UI after render
@@ -226,13 +226,21 @@ export const createClashPanel = (
             </div>
           </div>
 
-          <!-- Run Button -->
-          <button 
-            @click=${handleRunDetection}
-            class="clash-run-button w-full px-4 py-2 bg-gray-800 text-white text-sm font-medium rounded-md hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            Run Detection
-          </button>
+          <!-- Buttons -->
+          <div class="flex gap-2">
+            <button 
+              @click=${handleRunDetection}
+              class="clash-run-button flex-1 px-4 py-2 bg-gray-800 text-white text-sm font-medium rounded-md hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Run Detection
+            </button>
+            <button 
+              @click=${handleClearHighlights}
+              class="px-4 py-2 bg-white border border-gray-300 text-gray-700 text-sm font-medium rounded-md hover:bg-gray-50 transition-colors"
+            >
+              Clear
+            </button>
+          </div>
 
           <!-- Progress Bar -->
           <div class="clash-progress-bar hidden w-full bg-gray-200 rounded-full h-1.5 overflow-hidden">
