@@ -98,7 +98,9 @@ export const createClashPanel = (
     isClashExpanded = !isClashExpanded;
     const panel = document.querySelector(".clash-panel");
     if (panel) {
-      const content = panel.querySelector(".clash-panel-content") as HTMLElement;
+      const content = panel.querySelector(
+        ".clash-panel-content",
+      ) as HTMLElement;
       const icon = panel.querySelector(".clash-toggle-icon") as HTMLElement;
 
       if (content && icon) {
@@ -196,9 +198,9 @@ export const createClashPanel = (
   }, 100);
 
   return BUI.html`
-    <div class="clash-panel overflow-hidden mb-0 border border-gray-200 rounded-lg">
+    <div class="clash-panel overflow-hidden mb-0 border border-gray-200 rounded-b-lg">
       <!-- Collapsible Header -->
-      <div @click=${toggleClashPanel} class="flex items-center p-3 bg-white border-b border-gray-200 cursor-pointer select-none transition-colors duration-200 ease-in-out hover:bg-gray-50 rounded-t-lg">
+      <div @click=${toggleClashPanel} class="flex items-center p-3 bg-white border-b border-gray-200 cursor-pointer select-none transition-colors duration-200 ease-in-out hover:bg-gray-50">
         <span class="material-icons mr-2 text-xl text-gray-800">shield</span>
         <span class="flex-1 text-sm font-medium text-gray-800">Clash Detection</span>
         <span class="material-icons clash-toggle-icon text-xl text-gray-800 transition-transform duration-200 ease-in-out">keyboard_arrow_down</span>
