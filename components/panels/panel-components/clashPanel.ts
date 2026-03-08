@@ -15,12 +15,12 @@ let clashDetector: ClashDetector | null = null;
 const updateClashResults = () => {
   const resultsContainer = document.querySelector(".clash-results-container");
   const counterElement = document.querySelector(".clash-counter");
-  
+
   // Update counter
   if (counterElement) {
     counterElement.textContent = `${clashResults.length} clashes`;
   }
-  
+
   if (!resultsContainer) return;
 
   if (clashResults.length === 0) {
