@@ -266,6 +266,11 @@ export class ClashDetector {
               overlappingBox.getSize(size);
               const distance = Math.min(size.x, size.y, size.z);
 
+              // Skip if penetration is below tolerance
+              if (distance < tolerance) {
+                continue;
+              }
+
               const center = new THREE.Vector3();
               overlappingBox.getCenter(center);
 
