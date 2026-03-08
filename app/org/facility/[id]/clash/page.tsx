@@ -36,6 +36,7 @@ export default function ClashPage() {
         { resizeHandler },
         { createScene },
         { createModelsPanel },
+        { createClashPanel },
         OBC,
         BUI,
         OBF,
@@ -44,6 +45,7 @@ export default function ClashPage() {
         import("@/components/resizeHandler"),
         import("@/components/SceneSetup"),
         import("@/components/panels/panel-components/modelsPanel"),
+        import("@/components/panels/panel-components/clashPanel"),
         import("@thatopen/components"),
         import("@thatopen/ui"),
         import("@thatopen/components-front"),
@@ -122,21 +124,41 @@ export default function ClashPage() {
         wasm: { absolute: true, path: "https://unpkg.com/web-ifc@0.0.69/" },
       });
 
-      // Set up models panel only
-      setLoadingStatus("Setting up models panel...");
+      // Set up panels - models and clash detection
+      setLoadingStatus("Setting up panels...");
       const modelsPanel = BUI.Component.create(() =>
         createModelsPanel(components, (key: string) => key),
       );
+      const clashPanel = BUI.Component.create(() =>
+        createClashPanel(components, (key: string) => key),
+      );
 
-      const panelWrapper = document.createElement("div");
-      panelWrapper.style.position = "absolute";
-      panelWrapper.style.top = "20px";
-      panelWrapper.style.left = "20px";
-      panelWrapper.style.zIndex = "100";
-      panelWrapper.style.width = "350px";
-      panelWrapper.style.margin = "0";
-      panelWrapper.appendChild(modelsPanel);
-      container.appendChild(panelWrapper);
+      // Left panel wrapper - for models and clash panels
+      const leftWrapper = document.createElement("div");
+      leftWrapper.style.position = "absolute";
+      leftWrapper.style.top = "20px";
+      leftWrapper.style.left = "20px";
+      leftWrapper.style.zIndex = "100";
+      leftWrapper.style.width = "350px";
+      leftWrapper.style.display = "flex";
+      leftWrapper.style.flexDirection = "column";
+      leftWrapper.style.gap = "0";
+
+      // Models panel wrapper
+      const modelsWrapper = document.createElement("div");
+      modelsWrapper.style.width = "350px";
+      modelsWrapper.style.margin = "0";
+      modelsWrapper.appendChild(modelsPanel);
+
+      // Clash panel wrapper
+      const clashWrapper = document.createElement("div");
+      clashWrapper.style.width = "350px";
+      clashWrapper.style.margin = "0";
+      clashWrapper.appendChild(clashPanel);
+
+      leftWrapper.appendChild(modelsWrapper);
+      leftWrapper.appendChild(clashWrapper);
+      container.appendChild(leftWrapper);
 
       // Load all facility fragments
       setLoadingStatus(`Loading ${facilityIds.length} facilities...`);
