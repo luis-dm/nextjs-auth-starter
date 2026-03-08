@@ -92,24 +92,21 @@ export class ClashDetector {
 
       object.traverse((child) => {
         if (child instanceof THREE.Mesh && child.geometry) {
-          const geometry = child.geometry.clone();
+          const geometry = child.geometry;
 
-          // Apply world matrix to get correct positions
-          if (child.matrixWorld) {
-            geometry.applyMatrix4(child.matrixWorld);
-          }
-
+          // Get position attribute
           const posAttr = geometry.getAttribute("position");
-          if (posAttr) {
-            for (let i = 0; i < posAttr.count; i++) {
-              positions.push(
-                posAttr.getX(i),
-                posAttr.getY(i),
-                posAttr.getZ(i),
-              );
-            }
+          if (!posAttr) return;
+
+          // Apply world matrix transformation to each vertex as we read it
+          const vertex = new THREE.Vector3();
+          for (let i = 0; i < posAttr.count; i++) {
+            vertex.set(posAttr.getX(i), posAttr.getY(i), posAttr.getZ(i));
+            vertex.applyMatrix4(child.matrixWorld);
+            positions.push(vertex.x, vertex.y, vertex.z);
           }
 
+          // Get index attribute
           const indexAttr = geometry.index;
           if (indexAttr) {
             for (let i = 0; i < indexAttr.count; i++) {
@@ -123,7 +120,6 @@ export class ClashDetector {
           }
 
           vertexOffset += posAttr.count;
-          geometry.dispose();
         }
       });
 
@@ -162,7 +158,8 @@ export class ClashDetector {
     console.log(`Prepared ${modelMeshes.length} models for clash detection`);
 
     // Compare each pair of models
-    const totalComparisons = (modelMeshes.length * (modelMeshes.length - 1)) / 2;
+    const totalComparisons =
+      (modelMeshes.length * (modelMeshes.length - 1)) / 2;
     let currentComparison = 0;
 
     for (let i = 0; i < modelMeshes.length; i++) {
@@ -200,7 +197,9 @@ export class ClashDetector {
         );
 
         if (hasIntersection) {
-          console.log(`CLASH DETECTED between ${modelA.modelName} and ${modelB.modelName}`);
+          console.log(
+            `CLASH DETECTED between ${modelA.modelName} and ${modelB.modelName}`,
+          );
 
           // Calculate approximate penetration depth
           const overlappingBox = modelA.boundingBox
