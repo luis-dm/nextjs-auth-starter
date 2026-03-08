@@ -6,13 +6,14 @@ import Link from "next/link";
 import FacilityCard from "@/components/facility-list/FacilityCard";
 import RegisterFacilityModal from "@/components/facility-list/RegisterFacilityModal";
 import FacilityDetailsModal from "@/components/facility-list/FacilityDetailsModal";
+import ClashDetectionModal from "@/components/facility-list/ClashDetectionModal";
 import OrganizationSelector from "@/components/organization/OrganizationSelector";
 import OrganizationDetailsModal from "@/components/organization/OrganizationDetailsModal";
 import FacilitySorter, {
   SortOption,
 } from "@/components/facility-list/FacilitySorter";
 import { EmailVerificationBanner } from "@/components/EmailVerificationBanner";
-import { Users, Plus, ChevronDown } from "lucide-react";
+import { Users, Plus, ChevronDown, Shield } from "lucide-react";
 import toast from "react-hot-toast";
 
 interface Facility {
@@ -45,6 +46,8 @@ function FacilityList() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [isOrgDetailsModalOpen, setIsOrgDetailsModalOpen] = useState(false);
+  const [isClashDetectionModalOpen, setIsClashDetectionModalOpen] =
+    useState(false);
   const [selectedFacility, setSelectedFacility] = useState<{
     id: string;
     name: string;
@@ -212,7 +215,7 @@ function FacilityList() {
     <>
       <EmailVerificationBanner />
       {isLoading ? (
-        <div className="flex items-center justify-center space-x-2 min-h-[200px]">
+        <div className="flex items-center justify-center space-x-2 min-h-50">
           <div className="w-6 h-6 border-4 border-gray-900 border-t-transparent rounded-full animate-spin"></div>
           <p className="text-gray-600">Loading...</p>
         </div>
@@ -236,6 +239,13 @@ function FacilityList() {
                 currentSort={sortOption}
                 onSortChange={setSortOption}
               />
+              <button
+                onClick={() => setIsClashDetectionModalOpen(true)}
+                className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 text-gray-700 text-sm font-medium rounded-md hover:bg-gray-50 transition-colors"
+              >
+                <Shield className="w-4 h-4 text-gray-600" />
+                Clash Detection
+              </button>
               <button
                 onClick={() => setIsModalOpen(true)}
                 className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 text-gray-700 text-sm font-medium rounded-md hover:bg-gray-50 transition-colors"
@@ -294,6 +304,13 @@ function FacilityList() {
           </div>
         </>
       )}
+
+      {/* Clash Detection Modal */}
+      <ClashDetectionModal
+        isOpen={isClashDetectionModalOpen}
+        onClose={() => setIsClashDetectionModalOpen(false)}
+        organizationId={organization?.id}
+      />
 
       {/* Upload Model Modal */}
       <RegisterFacilityModal
