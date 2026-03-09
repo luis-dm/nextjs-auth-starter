@@ -46,45 +46,74 @@ export function PropertiesPanel({
     const highlighter = components.get(OBF.Highlighter);
     const fragments = components.get(OBC.FragmentsManager);
 
-    const [table, updateTable] = CUI.tables.itemsData({
+    const [table] = CUI.tables.itemsData({
       components,
       modelIdMap: {},
     });
 
+    // Configure columns to match type properties format
+    table.columns = [
+      { name: "Name", width: "12rem" },
+      { name: "Value", width: "10rem" },
+    ];
+
+    table.dataTransform = {
+      ...table.dataTransform,
+      Value: (value: any) => value ?? "",
+    };
+
     table.preserveStructureOnFilter = true;
 
-    // Store current selection
+    // Store current selection outside the table
     let currentModelIdMap: ModelIdMap = {};
 
-    // Override loadFunction to append type properties to default data
-    const defaultLoadFunction = table.loadFunction;
+    // Completely override loadFunction
     table.loadFunction = async () => {
-      // Get default hierarchical data first
-      const defaultRows = defaultLoadFunction
-        ? await defaultLoadFunction()
-        : [];
+      const rows: any[] = [];
 
-      // Append type properties for each selected element
       for (const [modelId, localIds] of Object.entries(currentModelIdMap)) {
-        const typeIndex = getTypeIndex(modelId);
-        if (!typeIndex) continue;
+        const model = fragments.list.get(modelId);
+        if (!model) continue;
 
         for (const localId of localIds) {
-          const typeProps = getTypeProperties(typeIndex, localId);
+          const [itemData] = await model.getItemsData([localId], {
+            attributesDefault: true,
+            relationsDefault: { attributes: false, relations: false },
+            relations: {
+              IsDefinedBy: { attributes: true, relations: true },
+            },
+          });
 
-          // Add type properties as flat rows at the end
-          for (const prop of typeProps) {
-            defaultRows.push({
-              data: {
-                Name: prop.Name,
-                Value: prop.Value,
-              },
-            });
+          // Extract property sets from IsDefinedBy
+          if (itemData && Array.isArray((itemData as any).IsDefinedBy)) {
+            for (const pset of (itemData as any).IsDefinedBy) {
+              const psetName = pset.Name?.value ?? "";
+
+              if (Array.isArray(pset.HasProperties)) {
+                for (const prop of pset.HasProperties) {
+                  rows.push({
+                    data: {
+                      Name: `${psetName} / ${prop.Name?.value ?? ""}`,
+                      Value: prop.NominalValue?.value ?? "",
+                    },
+                  });
+                }
+              }
+            }
+          }
+
+          // Get type properties from cached index
+          const typeIndex = getTypeIndex(modelId);
+          if (typeIndex) {
+            const typeRows = getTypeProperties(typeIndex, localId);
+            for (const row of typeRows) {
+              rows.push({ data: row });
+            }
           }
         }
       }
 
-      return defaultRows;
+      return rows;
     };
 
     setPropsTable(table);
