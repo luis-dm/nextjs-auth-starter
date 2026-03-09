@@ -59,7 +59,7 @@ export function PropertiesPanel({
     // Override loadFunction to include type properties
     table.loadFunction = async () => {
       // Call original loadFunction to get base properties
-      const baseRows = await originalLoadFunction?.() || [];
+      const baseRows = (await originalLoadFunction?.()) || [];
 
       // Get current selection
       const selection = highlighter.selection.select;
@@ -76,7 +76,7 @@ export function PropertiesPanel({
         // For each selected element, get its type properties
         for (const localId of localIds) {
           const typeProps = getTypeProperties(typeIndex, localId);
-          
+
           // Add type properties to the rows
           for (const prop of typeProps) {
             baseRows.push({

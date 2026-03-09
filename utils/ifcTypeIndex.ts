@@ -16,7 +16,7 @@ export interface TypePropertyIndex {
  */
 const splitIfcArgs = (source: string): string[] => {
   const args: string[] = [];
-  let current = '';
+  let current = "";
   let depth = 0;
   let inString = false;
 
@@ -36,11 +36,11 @@ const splitIfcArgs = (source: string): string[] => {
     }
 
     if (!inString) {
-      if (ch === '(') depth += 1;
-      else if (ch === ')') depth -= 1;
-      else if (ch === ',' && depth === 0) {
+      if (ch === "(") depth += 1;
+      else if (ch === ")") depth -= 1;
+      else if (ch === "," && depth === 0) {
         args.push(current.trim());
-        current = '';
+        current = "";
         continue;
       }
     }
@@ -65,7 +65,7 @@ const decodeIfcString = (value: string): string =>
   value
     .replace(/''/g, "'")
     .replace(/\\X2\\([0-9A-Fa-f]+)\\X0\\/g, (_, hex: string) => {
-      let decoded = '';
+      let decoded = "";
       for (let i = 0; i < hex.length; i += 4) {
         const cp = Number.parseInt(hex.slice(i, i + 4), 16);
         if (!Number.isNaN(cp)) decoded += String.fromCharCode(cp);
@@ -79,7 +79,7 @@ const decodeIfcString = (value: string): string =>
  */
 export const buildTypePropertyIndex = (source: string): TypePropertyIndex => {
   const records = new Map<number, string>();
-  
+
   // Parse all IFC records into a map
   for (const rawLine of source.split(/\r?\n/)) {
     const line = rawLine.trim();
@@ -90,15 +90,18 @@ export const buildTypePropertyIndex = (source: string): TypePropertyIndex => {
   }
 
   const propertyValues = new Map<number, { name: string; value: string }>();
-  const propertySets = new Map<number, { name: string; propertyIds: number[] }>();
+  const propertySets = new Map<
+    number,
+    { name: string; propertyIds: number[] }
+  >();
   const typePropertySetIds = new Map<number, number[]>();
   const occurrenceTypeIds = new Map<number, number>();
 
   // Parse each record type
   for (const [id, body] of records) {
     // Parse IFCPROPERTYSINGLEVALUE
-    if (body.startsWith('IFCPROPERTYSINGLEVALUE(')) {
-      const inner = body.slice('IFCPROPERTYSINGLEVALUE('.length, -1);
+    if (body.startsWith("IFCPROPERTYSINGLEVALUE(")) {
+      const inner = body.slice("IFCPROPERTYSINGLEVALUE(".length, -1);
       const args = splitIfcArgs(inner);
       const nameMatch = args[0]?.match(/^'(.*)'$/);
       const valueMatch = args[2]?.match(/^[A-Z0-9_]+\('(.*)'\)$/);
@@ -112,8 +115,8 @@ export const buildTypePropertyIndex = (source: string): TypePropertyIndex => {
     }
 
     // Parse IFCPROPERTYSET
-    if (body.startsWith('IFCPROPERTYSET(')) {
-      const inner = body.slice('IFCPROPERTYSET('.length, -1);
+    if (body.startsWith("IFCPROPERTYSET(")) {
+      const inner = body.slice("IFCPROPERTYSET(".length, -1);
       const args = splitIfcArgs(inner);
       const nameMatch = args[2]?.match(/^'(.*)'$/);
       if (!nameMatch || !args[4]) continue;
@@ -126,8 +129,8 @@ export const buildTypePropertyIndex = (source: string): TypePropertyIndex => {
     }
 
     // Parse IFCRELDEFINESBYTYPE (links occurrences to types)
-    if (body.startsWith('IFCRELDEFINESBYTYPE(')) {
-      const inner = body.slice('IFCRELDEFINESBYTYPE('.length, -1);
+    if (body.startsWith("IFCRELDEFINESBYTYPE(")) {
+      const inner = body.slice("IFCRELDEFINESBYTYPE(".length, -1);
       const args = splitIfcArgs(inner);
       const relatedObjectsToken = args[4];
       const relatingTypeToken = args[5];
@@ -143,10 +146,10 @@ export const buildTypePropertyIndex = (source: string): TypePropertyIndex => {
 
     // Parse IFC*TYPE entities (walls, doors, etc.)
     if (/^IFC[A-Z0-9_]*TYPE\(/.test(body)) {
-      const inner = body.slice(body.indexOf('(') + 1, -1);
+      const inner = body.slice(body.indexOf("(") + 1, -1);
       const args = splitIfcArgs(inner);
       const propertySetsToken = args[5];
-      if (!propertySetsToken || propertySetsToken === '$') continue;
+      if (!propertySetsToken || propertySetsToken === "$") continue;
 
       typePropertySetIds.set(id, parseIfcList(propertySetsToken));
     }

@@ -10,14 +10,19 @@ const typeIndexCache = new Map<string, TypePropertyIndex>();
 /**
  * Store a type property index in memory for a model
  */
-export const setTypeIndex = (modelId: string, index: TypePropertyIndex): void => {
+export const setTypeIndex = (
+  modelId: string,
+  index: TypePropertyIndex,
+): void => {
   typeIndexCache.set(modelId, index);
 };
 
 /**
  * Retrieve a cached type property index for a model
  */
-export const getTypeIndex = (modelId: string): TypePropertyIndex | undefined => {
+export const getTypeIndex = (
+  modelId: string,
+): TypePropertyIndex | undefined => {
   return typeIndexCache.get(modelId);
 };
 

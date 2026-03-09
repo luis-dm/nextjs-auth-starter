@@ -5,7 +5,10 @@ import { X, Upload } from "lucide-react";
 import * as WEBIFC from "web-ifc";
 import * as FRAGS from "@thatopen/fragments";
 import toast from "react-hot-toast";
-import { buildTypePropertyIndex, TypePropertyIndex } from "@/utils/ifcTypeIndex";
+import {
+  buildTypePropertyIndex,
+  TypePropertyIndex,
+} from "@/utils/ifcTypeIndex";
 
 interface ConversionResult {
   fragmentBytes: ArrayBuffer;
@@ -196,7 +199,7 @@ export default function RegisterFacilityModal({
       // Convert IFC to fragments and build type index if file is selected
       if (selectedFile) {
         setIsConverting(true);
-        
+
         try {
           // Read IFC file as text for building the type index
           const ifcText = await selectedFile.text();
