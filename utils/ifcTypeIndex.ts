@@ -238,7 +238,10 @@ export const buildTypePropertyIndex = (source: string): TypePropertyIndex => {
   // Log sample materials if any were found
   if (materials.size > 0) {
     const sampleMaterials = Array.from(materials.entries()).slice(0, 5);
-    console.log("🎨 Sample Materials:", sampleMaterials.map(([id, name]) => ({ id, name })));
+    console.log(
+      "🎨 Sample Materials:",
+      sampleMaterials.map(([id, name]) => ({ id, name })),
+    );
   }
 
   // Convert Maps to plain objects for JSON serialization
@@ -298,7 +301,13 @@ export const getTypeProperties = (
     const materialId = index.occurrenceToMaterial[localId];
     if (materialId) {
       console.log(`🔍 Element ${localId} has material ID: ${materialId}`);
-      
+      console.log(`📦 Checking materials map:`, {
+        hasMaterialsMap: !!index.materials,
+        materialIdsInMap: Object.keys(index.materials).length,
+        hasThisMaterial: materialId in index.materials,
+        materialValue: index.materials[materialId],
+      });
+
       // Check if it's a direct material reference
       const material = index.materials[materialId];
       if (material) {
@@ -307,13 +316,24 @@ export const getTypeProperties = (
           Name: "Material",
           Value: material,
         });
+      } else {
+        console.log(`⚠️ Material ID ${materialId} not found in materials map`);
       }
 
       // Check if it's a material layer set
       if (index.materialLayerSets && index.materialLayers) {
         const layerIds = index.materialLayerSets[materialId];
+        console.log(`📦 Checking layer sets:`, {
+          hasLayerSetsMap: !!index.materialLayerSets,
+          layerSetIdsInMap: Object.keys(index.materialLayerSets).length,
+          hasThisLayerSet: materialId in index.materialLayerSets,
+          layerIds: layerIds,
+        });
+        
         if (layerIds && layerIds.length > 0) {
-          console.log(`📚 Found ${layerIds.length} material layers for ID ${materialId}`);
+          console.log(
+            `📚 Found ${layerIds.length} material layers for ID ${materialId}`,
+          );
           for (let i = 0; i < layerIds.length; i++) {
             const layerId = layerIds[i];
             const layer = index.materialLayers[layerId];
