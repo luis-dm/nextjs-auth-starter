@@ -105,7 +105,10 @@ export const buildTypePropertyIndex = (source: string): TypePropertyIndex => {
 
   // Material-related maps
   const materials = new Map<number, string>();
-  const materialLayers = new Map<number, { materialId: number; thickness?: number }>();
+  const materialLayers = new Map<
+    number,
+    { materialId: number; thickness?: number }
+  >();
   const materialLayerSets = new Map<number, number[]>();
   const materialLayerSetUsages = new Map<number, number>(); // Usage ID → LayerSet ID
   const occurrenceToMaterial = new Map<number, number>();
@@ -256,6 +259,15 @@ export const buildTypePropertyIndex = (source: string): TypePropertyIndex => {
     );
   }
 
+  // Log sample material layer set usages
+  if (materialLayerSetUsages.size > 0) {
+    const sampleUsages = Array.from(materialLayerSetUsages.entries()).slice(0, 5);
+    console.log(
+      "🔗 Sample Material Layer Set Usages (UsageID → LayerSetID):",
+      sampleUsages.map(([usageId, layerSetId]) => ({ usageId, layerSetId })),
+    );
+  }
+
   // Convert Maps to plain objects for JSON serialization
   const index: TypePropertyIndex = {
     occurrenceToType: Object.fromEntries(occurrenceTypeIds),
@@ -314,14 +326,28 @@ export const getTypeProperties = (
     let materialId = index.occurrenceToMaterial[localId];
     if (materialId) {
       console.log(`🔍 Element ${localId} has material ID: ${materialId}`);
-      
+      console.log(`🔍 Index has materialLayerSetUsages?`, {
+        hasMaterialLayerSetUsages: !!index.materialLayerSetUsages,
+        materialLayerSetUsagesCount: index.materialLayerSetUsages
+          ? Object.keys(index.materialLayerSetUsages).length
+          : 0,
+        isInUsages: index.materialLayerSetUsages
+          ? materialId in index.materialLayerSetUsages
+          : false,
+      });
+
       // Resolve intermediate objects (IFCMATERIALLAYERSETUSAGE → IFCMATERIALLAYERSET)
-      if (index.materialLayerSetUsages && materialId in index.materialLayerSetUsages) {
+      if (
+        index.materialLayerSetUsages &&
+        materialId in index.materialLayerSetUsages
+      ) {
         const resolvedId = index.materialLayerSetUsages[materialId];
-        console.log(`🔄 Resolved usage ID ${materialId} to layer set ID ${resolvedId}`);
+        console.log(
+          `🔄 Resolved usage ID ${materialId} to layer set ID ${resolvedId}`,
+        );
         materialId = resolvedId;
       }
-      
+
       console.log(`📦 Checking materials map:`, {
         hasMaterialsMap: !!index.materials,
         materialIdsInMap: Object.keys(index.materials).length,
