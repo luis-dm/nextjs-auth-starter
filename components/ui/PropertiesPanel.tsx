@@ -71,7 +71,7 @@ export function PropertiesPanel({
 
         for (const localId of localIds) {
           const typeProps = getTypeProperties(typeIndex, localId);
-          
+
           // Add type properties as flat rows at the end
           for (const prop of typeProps) {
             defaultRows.push({
