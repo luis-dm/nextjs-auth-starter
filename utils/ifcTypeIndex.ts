@@ -13,7 +13,8 @@ export interface TypePropertyIndex {
   materials?: Record<number, string>; // materialId → name
   materialLayers?: Record<number, { materialId: number; thickness?: number }>; // layerId → material + thickness
   materialLayerSets?: Record<number, number[]>; // layerSetId → layerIds[]
-  occurrenceToMaterial?: Record<number, number>; // elementId → materialId or layerSetId
+  materialLayerSetUsages?: Record<number, number>; // usageId → layerSetId (intermediate objects)
+  occurrenceToMaterial?: Record<number, number>; // elementId → materialId or layerSetId or usageId
 }
 
 /**
@@ -104,11 +105,9 @@ export const buildTypePropertyIndex = (source: string): TypePropertyIndex => {
 
   // Material-related maps
   const materials = new Map<number, string>();
-  const materialLayers = new Map<
-    number,
-    { materialId: number; thickness?: number }
-  >();
+  const materialLayers = new Map<number, { materialId: number; thickness?: number }>();
   const materialLayerSets = new Map<number, number[]>();
+  const materialLayerSetUsages = new Map<number, number>(); // Usage ID → LayerSet ID
   const occurrenceToMaterial = new Map<number, number>();
 
   // Parse each record type
@@ -205,6 +204,18 @@ export const buildTypePropertyIndex = (source: string): TypePropertyIndex => {
       continue;
     }
 
+    // Parse IFCMATERIALLAYERSETUSAGE (intermediate object pointing to layer set)
+    if (body.startsWith("IFCMATERIALLAYERSETUSAGE(")) {
+      const inner = body.slice("IFCMATERIALLAYERSETUSAGE(".length, -1);
+      const args = splitIfcArgs(inner);
+      const layerSetMatch = args[0]?.match(/^#(\d+)$/);
+      if (layerSetMatch) {
+        const layerSetId = Number(layerSetMatch[1]);
+        materialLayerSetUsages.set(id, layerSetId);
+      }
+      continue;
+    }
+
     // Parse IFCRELASSOCIATESMATERIAL (links elements to materials)
     if (body.startsWith("IFCRELASSOCIATESMATERIAL(")) {
       const inner = body.slice("IFCRELASSOCIATESMATERIAL(".length, -1);
@@ -232,6 +243,7 @@ export const buildTypePropertyIndex = (source: string): TypePropertyIndex => {
     materials: materials.size,
     materialLayers: materialLayers.size,
     materialLayerSets: materialLayerSets.size,
+    materialLayerSetUsages: materialLayerSetUsages.size,
     occurrenceToMaterial: occurrenceToMaterial.size,
   });
 
@@ -261,6 +273,7 @@ export const buildTypePropertyIndex = (source: string): TypePropertyIndex => {
     materials: Object.fromEntries(materials),
     materialLayers: Object.fromEntries(materialLayers),
     materialLayerSets: Object.fromEntries(materialLayerSets),
+    materialLayerSetUsages: Object.fromEntries(materialLayerSetUsages),
     occurrenceToMaterial: Object.fromEntries(occurrenceToMaterial),
   };
 
@@ -298,9 +311,17 @@ export const getTypeProperties = (
 
   // Add material properties (check if material fields exist for backward compatibility)
   if (index.occurrenceToMaterial && index.materials) {
-    const materialId = index.occurrenceToMaterial[localId];
+    let materialId = index.occurrenceToMaterial[localId];
     if (materialId) {
       console.log(`🔍 Element ${localId} has material ID: ${materialId}`);
+      
+      // Resolve intermediate objects (IFCMATERIALLAYERSETUSAGE → IFCMATERIALLAYERSET)
+      if (index.materialLayerSetUsages && materialId in index.materialLayerSetUsages) {
+        const resolvedId = index.materialLayerSetUsages[materialId];
+        console.log(`🔄 Resolved usage ID ${materialId} to layer set ID ${resolvedId}`);
+        materialId = resolvedId;
+      }
+      
       console.log(`📦 Checking materials map:`, {
         hasMaterialsMap: !!index.materials,
         materialIdsInMap: Object.keys(index.materials).length,
