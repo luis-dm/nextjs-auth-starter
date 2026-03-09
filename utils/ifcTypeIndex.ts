@@ -9,6 +9,11 @@ export interface TypePropertyIndex {
   psetToProperties: Record<number, number[]>;
   propertyValues: Record<number, { name: string; value: string }>;
   psetNames: Record<number, string>;
+  // Material-related indices
+  materials: Record<number, string>; // materialId → name
+  materialLayers: Record<number, { materialId: number; thickness?: number }>; // layerId → material + thickness
+  materialLayerSets: Record<number, number[]>; // layerSetId → layerIds[]
+  occurrenceToMaterial: Record<number, number>; // elementId → materialId or layerSetId
 }
 
 /**
@@ -96,6 +101,12 @@ export const buildTypePropertyIndex = (source: string): TypePropertyIndex => {
   >();
   const typePropertySetIds = new Map<number, number[]>();
   const occurrenceTypeIds = new Map<number, number>();
+  
+  // Material-related maps
+  const materials = new Map<number, string>();
+  const materialLayers = new Map<number, { materialId: number; thickness?: number }>();
+  const materialLayerSets = new Map<number, number[]>();
+  const occurrenceToMaterial = new Map<number, number>();
 
   // Parse each record type
   for (const [id, body] of records) {
@@ -152,6 +163,60 @@ export const buildTypePropertyIndex = (source: string): TypePropertyIndex => {
       if (!propertySetsToken || propertySetsToken === "$") continue;
 
       typePropertySetIds.set(id, parseIfcList(propertySetsToken));
+      continue;
+    }
+
+    // Parse IFCMATERIAL
+    if (body.startsWith("IFCMATERIAL(")) {
+      const inner = body.slice("IFCMATERIAL(".length, -1);
+      const args = splitIfcArgs(inner);
+      const nameMatch = args[0]?.match(/^'(.*)'$/);
+      if (nameMatch) {
+        materials.set(id, decodeIfcString(nameMatch[1]));
+      }
+      continue;
+    }
+
+    // Parse IFCMATERIALLAYER
+    if (body.startsWith("IFCMATERIALLAYER(")) {
+      const inner = body.slice("IFCMATERIALLAYER(".length, -1);
+      const args = splitIfcArgs(inner);
+      const materialMatch = args[0]?.match(/^#(\d+)$/);
+      const thicknessMatch = args[1]?.match(/^[\d.]+$/);
+      if (materialMatch) {
+        materialLayers.set(id, {
+          materialId: Number(materialMatch[1]),
+          thickness: thicknessMatch ? Number(args[1]) : undefined,
+        });
+      }
+      continue;
+    }
+
+    // Parse IFCMATERIALLAYERSET
+    if (body.startsWith("IFCMATERIALLAYERSET(")) {
+      const inner = body.slice("IFCMATERIALLAYERSET(".length, -1);
+      const args = splitIfcArgs(inner);
+      if (args[0] && args[0] !== "$") {
+        materialLayerSets.set(id, parseIfcList(args[0]));
+      }
+      continue;
+    }
+
+    // Parse IFCRELASSOCIATESMATERIAL (links elements to materials)
+    if (body.startsWith("IFCRELASSOCIATESMATERIAL(")) {
+      const inner = body.slice("IFCRELASSOCIATESMATERIAL(".length, -1);
+      const args = splitIfcArgs(inner);
+      const relatedObjectsToken = args[4];
+      const relatingMaterialToken = args[5];
+      const materialMatch = relatingMaterialToken?.match(/^#(\d+)$/);
+
+      if (relatedObjectsToken && materialMatch) {
+        const materialId = Number(materialMatch[1]);
+        for (const occurrenceId of parseIfcList(relatedObjectsToken)) {
+          occurrenceToMaterial.set(occurrenceId, materialId);
+        }
+      }
+      continue;
     }
   }
 
@@ -169,6 +234,10 @@ export const buildTypePropertyIndex = (source: string): TypePropertyIndex => {
     psetNames: Object.fromEntries(
       Array.from(propertySets.entries()).map(([id, { name }]) => [id, name]),
     ),
+    materials: Object.fromEntries(materials),
+    materialLayers: Object.fromEntries(materialLayers),
+    materialLayerSets: Object.fromEntries(materialLayerSets),
+    occurrenceToMaterial: Object.fromEntries(occurrenceToMaterial),
   };
 
   return index;
@@ -182,23 +251,56 @@ export const getTypeProperties = (
   index: TypePropertyIndex,
   localId: number,
 ): Array<{ Name: string; Value: string }> => {
-  const typeId = index.occurrenceToType[localId];
-  if (!typeId) return [];
-
   const rows: Array<{ Name: string; Value: string }> = [];
 
-  for (const psetId of index.typeToPsets[typeId] ?? []) {
-    const psetName = index.psetNames[psetId];
-    const propIds = index.psetToProperties[psetId] ?? [];
+  // Add type properties
+  const typeId = index.occurrenceToType[localId];
+  if (typeId) {
+    for (const psetId of index.typeToPsets[typeId] ?? []) {
+      const psetName = index.psetNames[psetId];
+      const propIds = index.psetToProperties[psetId] ?? [];
 
-    for (const propId of propIds) {
-      const prop = index.propertyValues[propId];
-      if (!prop) continue;
+      for (const propId of propIds) {
+        const prop = index.propertyValues[propId];
+        if (!prop) continue;
 
+        rows.push({
+          Name: `${psetName} / ${prop.name}`,
+          Value: prop.value,
+        });
+      }
+    }
+  }
+
+  // Add material properties
+  const materialId = index.occurrenceToMaterial[localId];
+  if (materialId) {
+    // Check if it's a direct material reference
+    const material = index.materials[materialId];
+    if (material) {
       rows.push({
-        Name: `${psetName} / ${prop.name}`,
-        Value: prop.value,
+        Name: "Material",
+        Value: material,
       });
+    }
+
+    // Check if it's a material layer set
+    const layerIds = index.materialLayerSets[materialId];
+    if (layerIds && layerIds.length > 0) {
+      for (let i = 0; i < layerIds.length; i++) {
+        const layerId = layerIds[i];
+        const layer = index.materialLayers[layerId];
+        if (layer) {
+          const materialName = index.materials[layer.materialId] || "Unknown";
+          const layerLabel = layerIds.length > 1 ? `Material Layer ${i + 1}` : "Material";
+          rows.push({
+            Name: layerLabel,
+            Value: layer.thickness
+              ? `${materialName} (${layer.thickness}mm)`
+              : materialName,
+          });
+        }
+      }
     }
   }
 
