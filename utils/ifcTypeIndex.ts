@@ -9,11 +9,11 @@ export interface TypePropertyIndex {
   psetToProperties: Record<number, number[]>;
   propertyValues: Record<number, { name: string; value: string }>;
   psetNames: Record<number, string>;
-  // Material-related indices
-  materials: Record<number, string>; // materialId → name
-  materialLayers: Record<number, { materialId: number; thickness?: number }>; // layerId → material + thickness
-  materialLayerSets: Record<number, number[]>; // layerSetId → layerIds[]
-  occurrenceToMaterial: Record<number, number>; // elementId → materialId or layerSetId
+  // Material-related indices (optional for backward compatibility with old caches)
+  materials?: Record<number, string>; // materialId → name
+  materialLayers?: Record<number, { materialId: number; thickness?: number }>; // layerId → material + thickness
+  materialLayerSets?: Record<number, number[]>; // layerSetId → layerIds[]
+  occurrenceToMaterial?: Record<number, number>; // elementId → materialId or layerSetId
 }
 
 /**
@@ -275,34 +275,38 @@ export const getTypeProperties = (
     }
   }
 
-  // Add material properties
-  const materialId = index.occurrenceToMaterial[localId];
-  if (materialId) {
-    // Check if it's a direct material reference
-    const material = index.materials[materialId];
-    if (material) {
-      rows.push({
-        Name: "Material",
-        Value: material,
-      });
-    }
+  // Add material properties (check if material fields exist for backward compatibility)
+  if (index.occurrenceToMaterial && index.materials) {
+    const materialId = index.occurrenceToMaterial[localId];
+    if (materialId) {
+      // Check if it's a direct material reference
+      const material = index.materials[materialId];
+      if (material) {
+        rows.push({
+          Name: "Material",
+          Value: material,
+        });
+      }
 
-    // Check if it's a material layer set
-    const layerIds = index.materialLayerSets[materialId];
-    if (layerIds && layerIds.length > 0) {
-      for (let i = 0; i < layerIds.length; i++) {
-        const layerId = layerIds[i];
-        const layer = index.materialLayers[layerId];
-        if (layer) {
-          const materialName = index.materials[layer.materialId] || "Unknown";
-          const layerLabel =
-            layerIds.length > 1 ? `Material Layer ${i + 1}` : "Material";
-          rows.push({
-            Name: layerLabel,
-            Value: layer.thickness
-              ? `${materialName} (${layer.thickness}mm)`
-              : materialName,
-          });
+      // Check if it's a material layer set
+      if (index.materialLayerSets && index.materialLayers) {
+        const layerIds = index.materialLayerSets[materialId];
+        if (layerIds && layerIds.length > 0) {
+          for (let i = 0; i < layerIds.length; i++) {
+            const layerId = layerIds[i];
+            const layer = index.materialLayers[layerId];
+            if (layer) {
+              const materialName = index.materials[layer.materialId] || "Unknown";
+              const layerLabel =
+                layerIds.length > 1 ? `Material Layer ${i + 1}` : "Material";
+              rows.push({
+                Name: layerLabel,
+                Value: layer.thickness
+                  ? `${materialName} (${layer.thickness}mm)`
+                  : materialName,
+              });
+            }
+          }
         }
       }
     }

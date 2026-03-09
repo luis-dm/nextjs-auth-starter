@@ -58,83 +58,94 @@ export function PropertiesPanel({
 
     // Override loadFunction to include type properties
     table.loadFunction = async () => {
-      console.log("🔄 PropertiesPanel loadFunction called");
-      console.log("📍 Current selection:", {
-        modelIds: Object.keys(currentModelIdMap),
-        selectionCount: Object.keys(currentModelIdMap).length,
-      });
+      try {
+        console.log("🔄 PropertiesPanel loadFunction called");
+        console.log("📍 Current selection:", {
+          modelIds: Object.keys(currentModelIdMap),
+          selectionCount: Object.keys(currentModelIdMap).length,
+        });
 
-      const rows: any[] = [];
+        const rows: any[] = [];
 
-      // Process each selected element
-      for (const [modelId, localIds] of Object.entries(currentModelIdMap)) {
-        console.log(
-          `🔍 Processing model: "${modelId}" with ${Array.from(localIds).length} elements`,
-        );
-        const model = fragments.list.get(modelId);
-        if (!model) {
-          console.warn("⚠️ Model not found for ID:", modelId);
-          continue;
-        }
-
-        for (const localId of localIds) {
-          // Get base properties from the model
-          const [itemData] = await model.getItemsData([localId], {
-            attributesDefault: true,
-            relationsDefault: { attributes: false, relations: false },
-            relations: {
-              IsDefinedBy: { attributes: true, relations: true },
-            },
-          });
-
-          // Add instance properties
-          if (itemData && Array.isArray((itemData as any).IsDefinedBy)) {
-            for (const pset of (itemData as any).IsDefinedBy) {
-              const psetName = pset.Name?.value ?? "";
-
-              if (Array.isArray(pset.HasProperties)) {
-                for (const prop of pset.HasProperties) {
-                  rows.push({
-                    data: {
-                      Name: `${psetName} / ${prop.Name?.value ?? ""}`,
-                      Value: prop.NominalValue?.value ?? "",
-                    },
-                  });
-                }
-              }
-            }
-          }
-
-          // Get cached type index for this model
-          const typeIndex = getTypeIndex(modelId);
-          if (!typeIndex) {
-            console.warn("⚠️ No type index found in cache for model:", modelId);
+        // Process each selected element
+        for (const [modelId, localIds] of Object.entries(currentModelIdMap)) {
+          console.log(
+            `🔍 Processing model: "${modelId}" with ${Array.from(localIds).length} elements`,
+          );
+          const model = fragments.list.get(modelId);
+          if (!model) {
+            console.warn("⚠️ Model not found for ID:", modelId);
             continue;
           }
-          console.log("✅ Type index retrieved from cache for model:", modelId);
 
-          // Get type properties
-          const typeProps = getTypeProperties(typeIndex, localId);
+          for (const localId of localIds) {
+            try {
+              // Get base properties from the model
+              const [itemData] = await model.getItemsData([localId], {
+                attributesDefault: true,
+                relationsDefault: { attributes: false, relations: false },
+                relations: {
+                  IsDefinedBy: { attributes: true, relations: true },
+                },
+              });
 
-          if (typeProps.length > 0) {
-            console.log(
-              `📋 Found ${typeProps.length} type properties for element ${localId}`,
-            );
-          }
+              // Add instance properties
+              if (itemData && Array.isArray((itemData as any).IsDefinedBy)) {
+                for (const pset of (itemData as any).IsDefinedBy) {
+                  const psetName = pset.Name?.value ?? "";
 
-          // Add type properties to the rows
-          for (const prop of typeProps) {
-            rows.push({
-              data: {
-                Name: prop.Name,
-                Value: prop.Value,
-              },
-            });
+                  if (Array.isArray(pset.HasProperties)) {
+                    for (const prop of pset.HasProperties) {
+                      rows.push({
+                        data: {
+                          Name: `${psetName} / ${prop.Name?.value ?? ""}`,
+                          Value: prop.NominalValue?.value ?? "",
+                        },
+                      });
+                    }
+                  }
+                }
+              }
+
+              // Get cached type index for this model
+              const typeIndex = getTypeIndex(modelId);
+              if (!typeIndex) {
+                console.warn("⚠️ No type index found in cache for model:", modelId);
+                continue;
+              }
+              console.log("✅ Type index retrieved from cache for model:", modelId);
+
+              // Get type properties
+              const typeProps = getTypeProperties(typeIndex, localId);
+
+              if (typeProps.length > 0) {
+                console.log(
+                  `📋 Found ${typeProps.length} type properties for element ${localId}`,
+                );
+              }
+
+              // Add type properties to the rows
+              for (const prop of typeProps) {
+                rows.push({
+                  data: {
+                    Name: prop.Name,
+                    Value: prop.Value,
+                  },
+                });
+              }
+            } catch (elementError) {
+              console.error(`❌ Error processing element ${localId}:`, elementError);
+              // Continue processing other elements
+            }
           }
         }
-      }
 
-      return rows;
+        console.log(`✅ Returning ${rows.length} total property rows`);
+        return rows;
+      } catch (error) {
+        console.error("❌ Error in loadFunction:", error);
+        throw error;
+      }
     };
 
     setPropsTable(table);
