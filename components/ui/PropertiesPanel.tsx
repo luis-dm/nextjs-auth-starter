@@ -110,10 +110,16 @@ export function PropertiesPanel({
               // Get cached type index for this model
               const typeIndex = getTypeIndex(modelId);
               if (!typeIndex) {
-                console.warn("⚠️ No type index found in cache for model:", modelId);
+                console.warn(
+                  "⚠️ No type index found in cache for model:",
+                  modelId,
+                );
                 continue;
               }
-              console.log("✅ Type index retrieved from cache for model:", modelId);
+              console.log(
+                "✅ Type index retrieved from cache for model:",
+                modelId,
+              );
 
               // Get type properties
               const typeProps = getTypeProperties(typeIndex, localId);
@@ -134,7 +140,10 @@ export function PropertiesPanel({
                 });
               }
             } catch (elementError) {
-              console.error(`❌ Error processing element ${localId}:`, elementError);
+              console.error(
+                `❌ Error processing element ${localId}:`,
+                elementError,
+              );
               // Continue processing other elements
             }
           }

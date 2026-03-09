@@ -223,6 +223,24 @@ export const buildTypePropertyIndex = (source: string): TypePropertyIndex => {
     }
   }
 
+  // Log extraction statistics
+  console.log("📊 IFC Type Index Build Complete:", {
+    propertyValues: propertyValues.size,
+    propertySets: propertySets.size,
+    typePropertySetIds: typePropertySetIds.size,
+    occurrenceTypeIds: occurrenceTypeIds.size,
+    materials: materials.size,
+    materialLayers: materialLayers.size,
+    materialLayerSets: materialLayerSets.size,
+    occurrenceToMaterial: occurrenceToMaterial.size,
+  });
+
+  // Log sample materials if any were found
+  if (materials.size > 0) {
+    const sampleMaterials = Array.from(materials.entries()).slice(0, 5);
+    console.log("🎨 Sample Materials:", sampleMaterials.map(([id, name]) => ({ id, name })));
+  }
+
   // Convert Maps to plain objects for JSON serialization
   const index: TypePropertyIndex = {
     occurrenceToType: Object.fromEntries(occurrenceTypeIds),
@@ -279,9 +297,12 @@ export const getTypeProperties = (
   if (index.occurrenceToMaterial && index.materials) {
     const materialId = index.occurrenceToMaterial[localId];
     if (materialId) {
+      console.log(`🔍 Element ${localId} has material ID: ${materialId}`);
+      
       // Check if it's a direct material reference
       const material = index.materials[materialId];
       if (material) {
+        console.log(`🎨 Found direct material: "${material}"`);
         rows.push({
           Name: "Material",
           Value: material,
@@ -292,11 +313,13 @@ export const getTypeProperties = (
       if (index.materialLayerSets && index.materialLayers) {
         const layerIds = index.materialLayerSets[materialId];
         if (layerIds && layerIds.length > 0) {
+          console.log(`📚 Found ${layerIds.length} material layers for ID ${materialId}`);
           for (let i = 0; i < layerIds.length; i++) {
             const layerId = layerIds[i];
             const layer = index.materialLayers[layerId];
             if (layer) {
-              const materialName = index.materials[layer.materialId] || "Unknown";
+              const materialName =
+                index.materials[layer.materialId] || "Unknown";
               const layerLabel =
                 layerIds.length > 1 ? `Material Layer ${i + 1}` : "Material";
               rows.push({
@@ -309,7 +332,11 @@ export const getTypeProperties = (
           }
         }
       }
+    } else {
+      console.log(`ℹ️ Element ${localId} has no material association in index`);
     }
+  } else {
+    console.log(`⚠️ Index does not contain material data (old cache format)`);
   }
 
   return rows;
