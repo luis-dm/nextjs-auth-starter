@@ -142,11 +142,11 @@ export async function POST(req: NextRequest) {
     console.log(`[Facility POST] Auth check: ${Date.now() - startTime}ms`);
 
     const body = await req.json();
-    const { name, fragmentData, ifcFileName, ifcFileSize, organizationId } =
+    const { name, fragmentData, ifcFileName, ifcFileSize, organizationId, typePropertyIndex } =
       body;
 
     console.log(
-      `[Facility POST] Body parsed: ${Date.now() - startTime}ms, fragmentData size: ${fragmentData ? fragmentData.length : 0} bytes (base64)`,
+      `[Facility POST] Body parsed: ${Date.now() - startTime}ms, fragmentData size: ${fragmentData ? fragmentData.length : 0} bytes (base64), typePropertyIndex: ${typePropertyIndex ? 'present' : 'absent'}`,
     );
 
     if (!name) {
@@ -261,6 +261,7 @@ export async function POST(req: NextRequest) {
         fragmentPath,
         ifcFileName,
         ifcFileSize,
+        typePropertyIndex: typePropertyIndex || undefined,
         organizationId: orgId,
         members: {
           create: facilityMembers,

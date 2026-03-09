@@ -51,6 +51,7 @@ export async function GET(
       editHistory: facility.editHistory
         ? Array.from(facility.editHistory)
         : null,
+      typePropertyIndex: facility.typePropertyIndex,
     };
 
     return NextResponse.json(facilityWithFragments);

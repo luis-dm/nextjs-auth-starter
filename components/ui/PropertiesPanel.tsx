@@ -10,6 +10,8 @@ import {
   listenToIsolationChanges,
   type IsolationChangedDetail,
 } from "@/utils/visibility-events";
+import { getTypeIndex } from "@/utils/ifcTypeIndexCache";
+import { getTypeProperties } from "@/utils/ifcTypeIndex";
 
 interface PropertiesPanelProps {
   isOpen: boolean;
@@ -42,6 +44,7 @@ export function PropertiesPanel({
     if (!components) return;
 
     const highlighter = components.get(OBF.Highlighter);
+    const fragments = components.get(OBC.FragmentsManager);
 
     const [table, updateTable] = CUI.tables.itemsData({
       components,
@@ -49,6 +52,46 @@ export function PropertiesPanel({
     });
 
     table.preserveStructureOnFilter = true;
+
+    // Store the original loadFunction
+    const originalLoadFunction = table.loadFunction;
+
+    // Override loadFunction to include type properties
+    table.loadFunction = async () => {
+      // Call original loadFunction to get base properties
+      const baseRows = await originalLoadFunction?.() || [];
+
+      // Get current selection
+      const selection = highlighter.selection.select;
+
+      // Add type properties for each selected element
+      for (const [modelId, localIds] of Object.entries(selection)) {
+        const model = fragments.list.get(modelId);
+        if (!model) continue;
+
+        // Get cached type index for this model
+        const typeIndex = getTypeIndex(modelId);
+        if (!typeIndex) continue;
+
+        // For each selected element, get its type properties
+        for (const localId of localIds) {
+          const typeProps = getTypeProperties(typeIndex, localId);
+          
+          // Add type properties to the rows
+          for (const prop of typeProps) {
+            baseRows.push({
+              data: {
+                Name: prop.Name,
+                Value: prop.Value,
+              },
+            });
+          }
+        }
+      }
+
+      return baseRows;
+    };
+
     setPropsTable(table);
 
     // Set up highlighter events

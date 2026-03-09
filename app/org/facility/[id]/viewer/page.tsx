@@ -5,6 +5,7 @@ import { PropertiesButton } from "@/components/ui/PropertiesButton";
 import { BCFTopicsButton } from "@/components/ui/BCFTopicsButton";
 import { World, FragmentsManager } from "@/utils/raycastUtils";
 import styles from "./viewer.module.scss";
+import { setTypeIndex } from "@/utils/ifcTypeIndexCache";
 
 // Dynamically import PropertiesPanel to avoid SSR issues with @thatopen/ui-obc
 const PropertiesPanel = dynamic(
@@ -198,6 +199,14 @@ export default function ViewerPage() {
           }
 
           if (facility.fragmentPath) {
+            // Cache the type property index if available
+            if (facility.typePropertyIndex) {
+              const modelName =
+                facility.ifcFileName?.replace(".ifc", "") || facility.name;
+              setTypeIndex(modelName, facility.typePropertyIndex);
+              console.log("Type property index cached for model:", modelName);
+            }
+
             // Fetch RENDERED fragment from volume API (viewer shows baked edits)
             console.log("Fetching rendered fragment from volume...");
             const timestamp = Date.now();

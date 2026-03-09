@@ -5,6 +5,7 @@ import { X, Upload } from "lucide-react";
 import * as WEBIFC from "web-ifc";
 import * as FRAGS from "@thatopen/fragments";
 import toast from "react-hot-toast";
+import { buildTypePropertyIndex, TypePropertyIndex } from "@/utils/ifcTypeIndex";
 
 interface ConversionResult {
   fragmentBytes: ArrayBuffer;
@@ -164,6 +165,7 @@ interface RegisterFacilityModalProps {
     fragmentData: ArrayBuffer | null,
     ifcFileName: string | null,
     ifcFileSize: number | null,
+    typePropertyIndex: TypePropertyIndex | null,
   ) => Promise<void>;
   isUploading?: boolean;
 }
@@ -189,11 +191,20 @@ export default function RegisterFacilityModal({
       let fragmentData: ArrayBuffer | null = null;
       let ifcFileName: string | null = null;
       let ifcFileSize: number | null = null;
+      let typePropertyIndex: TypePropertyIndex | null = null;
 
-      // Convert IFC to fragments if file is selected
+      // Convert IFC to fragments and build type index if file is selected
       if (selectedFile) {
         setIsConverting(true);
+        
         try {
+          // Read IFC file as text for building the type index
+          const ifcText = await selectedFile.text();
+          console.log("Building type property index...");
+          typePropertyIndex = buildTypePropertyIndex(ifcText);
+          console.log("Type property index built successfully");
+
+          // Convert IFC to fragments
           const result = await convertIFC(selectedFile, {
             onProgress: (progress) => {
               setConversionProgress(progress);
@@ -235,6 +246,7 @@ export default function RegisterFacilityModal({
         fragmentData,
         ifcFileName,
         ifcFileSize,
+        typePropertyIndex,
       );
 
       // Reset form after successful upload

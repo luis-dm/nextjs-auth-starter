@@ -1,9 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -11,6 +5,190 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+}
+
+model User {
+  id                  String               @id @default(cuid())
+  name                String?
+  email               String               @unique
+  password            String
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @default(now()) @updatedAt
+  emailVerified       DateTime?
+  facilityMembers     FacilityMember[]
+  organizationMembers OrganizationMember[]
+  verificationTokens  VerificationToken[]
+}
+
+model Organization {
+  id         String               @id @default(cuid())
+  name       String
+  createdAt  DateTime             @default(now())
+  updatedAt  DateTime             @updatedAt
+  facilities Facility[]
+  invites    OrganizationInvite[]
+  members    OrganizationMember[]
+}
+
+model OrganizationInvite {
+  id             String           @id @default(cuid())
+  email          String
+  organizationId String
+  token          String           @unique
+  role           OrganizationRole @default(MEMBER)
+  expiresAt      DateTime
+  createdAt      DateTime         @default(now())
+  organization   Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([token])
+  @@index([organizationId])
+}
+
+model OrganizationMember {
+  id             String           @id @default(cuid())
+  userId         String
+  organizationId String
+  role           OrganizationRole @default(MEMBER)
+  createdAt      DateTime         @default(now())
+  organization   Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user           User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, organizationId])
+  @@index([userId])
+  @@index([organizationId])
+}
+
+model Facility {
+  id                   String           @id @default(cuid())
+  name                 String
+  organizationId       String
+  ifcFileName          String?
+  ifcFileSize          Int?
+  createdAt            DateTime         @default(now())
+  updatedAt            DateTime         @updatedAt
+  editHistory          Bytes?
+  fragmentPath         String?
+  renderedFragmentPath String?
+  bcfPath              String?
+  typePropertyIndex    Json?
+  organization         Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  members              FacilityMember[]
+
+  @@index([organizationId, createdAt(sort: Desc)])
+}
+
+model FacilityMember {
+  id         String       @id @default(cuid())
+  userId     String
+  facilityId String
+  role       FacilityRole @default(MEMBER)
+  createdAt  DateTime     @default(now())
+  facility   Facility     @relation(fields: [facilityId], references: [id], onDelete: Cascade)
+  user       User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, facilityId])
+  @@index([userId])
+  @@index([facilityId])
+}
+
+model VerificationToken {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  type      String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([token])
+  @@index([userId])
+}
+
+// Essential Mastra tables for BIM workflow
+model mastra_messages {
+  id         String    @id
+  thread_id  String
+  content    String
+  role       String
+  type       String
+  createdAt  DateTime  @db.Timestamp(6)
+  resourceId String?
+  createdAtZ DateTime? @default(now()) @db.Timestamptz(6)
+
+  @@index([thread_id, createdAt(sort: Desc)], map: "mastra_messages_thread_id_createdat_idx")
+}
+
+model mastra_threads {
+  id         String    @id
+  resourceId String
+  title      String
+  metadata   Json?
+  createdAt  DateTime  @db.Timestamp(6)
+  updatedAt  DateTime  @db.Timestamp(6)
+  createdAtZ DateTime? @default(now()) @db.Timestamptz(6)
+  updatedAtZ DateTime? @default(now()) @db.Timestamptz(6)
+
+  @@index([resourceId, createdAt(sort: Desc)], map: "mastra_threads_resourceid_createdat_idx")
+}
+
+model mastra_resources {
+  id            String    @id
+  workingMemory String?
+  metadata      Json?
+  createdAt     DateTime  @db.Timestamp(6)
+  updatedAt     DateTime  @db.Timestamp(6)
+  createdAtZ    DateTime? @default(now()) @db.Timestamptz(6)
+  updatedAtZ    DateTime? @default(now()) @db.Timestamptz(6)
+}
+
+// Optional: For observability and debugging
+model mastra_ai_spans {
+  traceId        String
+  spanId         String
+  name           String
+  spanType       String
+  isEvent        Boolean
+  startedAt      DateTime  @db.Timestamp(6)
+  parentSpanId   String?
+  entityType     String?
+  entityId       String?
+  entityName     String?
+  userId         String?
+  organizationId String?
+  resourceId     String?
+  runId          String?
+  sessionId      String?
+  threadId       String?
+  requestId      String?
+  environment    String?
+  source         String?
+  serviceName    String?
+  scope          Json?
+  metadata       Json?
+  tags           Json?
+  attributes     Json?
+  links          Json?
+  input          Json?
+  output         Json?
+  error          Json?
+  endedAt        DateTime? @db.Timestamp(6)
+  createdAt      DateTime  @db.Timestamp(6)
+  updatedAt      DateTime? @db.Timestamp(6)
+  startedAtZ     DateTime? @default(now()) @db.Timestamptz(6)
+  endedAtZ       DateTime? @default(now()) @db.Timestamptz(6)
+  createdAtZ     DateTime? @default(now()) @db.Timestamptz(6)
+  updatedAtZ     DateTime? @default(now()) @db.Timestamptz(6)
+
+  @@id([traceId, spanId], map: "public_mastra_ai_spans_traceid_spanid_pk")
+  @@index([entityType, entityId], map: "mastra_ai_spans_entitytype_entityid_idx")
+  @@index([entityType, entityName], map: "mastra_ai_spans_entitytype_entityname_idx")
+  @@index([metadata], map: "mastra_ai_spans_metadata_gin_idx", type: Gin)
+  @@index([name])
+  @@index([organizationId, userId], map: "mastra_ai_spans_orgid_userid_idx")
+  @@index([parentSpanId, startedAt(sort: Desc)], map: "mastra_ai_spans_parentspanid_startedat_idx")
+  @@index([spanType, startedAt(sort: Desc)], map: "mastra_ai_spans_spantype_startedat_idx")
+  @@index([tags], map: "mastra_ai_spans_tags_gin_idx", type: Gin)
+  @@index([traceId, startedAt(sort: Desc)], map: "mastra_ai_spans_traceid_startedat_idx")
 }
 
 enum OrganizationRole {
@@ -21,100 +199,4 @@ enum OrganizationRole {
 enum FacilityRole {
   MANAGER
   MEMBER
-}
-
-model User {
-  id                    String                 @id @default(cuid())
-  name                  String?
-  email                 String                 @unique
-  password              String
-  emailVerified         DateTime?
-  organizationMembers   OrganizationMember[]
-  facilityMembers       FacilityMember[]
-  verificationTokens    VerificationToken[]
-  createdAt             DateTime               @default(now())
-  updatedAt             DateTime               @default(now()) @updatedAt
-}
-
-model Organization {
-  id          String                @id @default(cuid())
-  name        String
-  members     OrganizationMember[]
-  facilities  Facility[]
-  invites     OrganizationInvite[]
-  createdAt   DateTime              @default(now())
-  updatedAt   DateTime              @updatedAt
-}
-
-model OrganizationInvite {
-  id              String        @id @default(cuid())
-  email           String
-  organizationId  String
-  token           String        @unique
-  role            OrganizationRole @default(MEMBER)
-  organization    Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  expiresAt       DateTime
-  createdAt       DateTime      @default(now())
-  
-  @@index([token])
-  @@index([organizationId])
-}
-
-model OrganizationMember {
-  id              String            @id @default(cuid())
-  userId          String
-  organizationId  String
-  role            OrganizationRole  @default(MEMBER)
-  user            User              @relation(fields: [userId], references: [id], onDelete: Cascade)
-  organization    Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  createdAt       DateTime          @default(now())
-  
-  @@unique([userId, organizationId])
-  @@index([userId])
-  @@index([organizationId])
-}
-
-model Facility {
-  id                      String            @id @default(cuid())
-  name                    String
-  organizationId          String
-  fragmentPath            String?           // Original fragment file (for editor to apply history)
-  renderedFragmentPath    String?           // Rendered fragment with baked edits (for viewer display)
-  ifcFileName             String?           // Original IFC filename
-  ifcFileSize             Int?              // Size in bytes
-  bcfPath                 String?           // Path to BCF file
-  editHistory             Bytes?            // Edit history data from fragments editor (as JSON)
-  organization            Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  members                 FacilityMember[]
-  createdAt               DateTime          @default(now())
-  updatedAt               DateTime          @updatedAt
-  
-  @@index([organizationId, createdAt(sort: Desc)])
-}
-
-model FacilityMember {
-  id          String        @id @default(cuid())
-  userId      String
-  facilityId  String
-  role        FacilityRole  @default(MEMBER)
-  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  facility    Facility      @relation(fields: [facilityId], references: [id], onDelete: Cascade)
-  createdAt   DateTime      @default(now())
-  
-  @@unique([userId, facilityId])
-  @@index([userId])
-  @@index([facilityId])
-}
-
-model VerificationToken {
-  id          String    @id @default(cuid())
-  userId      String
-  token       String    @unique
-  type        String    // "EMAIL_VERIFICATION" or "PASSWORD_RESET"
-  expiresAt   DateTime
-  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  createdAt   DateTime  @default(now())
-  
-  @@index([token])
-  @@index([userId])
 }

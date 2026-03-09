@@ -8,6 +8,7 @@ import RegisterFacilityModal from "@/components/facility-list/RegisterFacilityMo
 import FacilityDetailsModal from "@/components/facility-list/FacilityDetailsModal";
 import ClashDetectionModal from "@/components/facility-list/ClashDetectionModal";
 import OrganizationSelector from "@/components/organization/OrganizationSelector";
+import { TypePropertyIndex } from "@/utils/ifcTypeIndex";
 import OrganizationDetailsModal from "@/components/organization/OrganizationDetailsModal";
 import FacilitySorter, {
   SortOption,
@@ -121,6 +122,7 @@ function FacilityList() {
     fragmentData: ArrayBuffer | null,
     ifcFileName: string | null,
     ifcFileSize: number | null,
+    typePropertyIndex: TypePropertyIndex | null,
   ): Promise<void> => {
     try {
       // Convert ArrayBuffer to base64 string (much smaller than array of numbers)
@@ -145,6 +147,7 @@ function FacilityList() {
           fragmentData: fragmentBase64,
           ifcFileName,
           ifcFileSize,
+          typePropertyIndex,
           organizationId: organization?.id,
         }),
       });
