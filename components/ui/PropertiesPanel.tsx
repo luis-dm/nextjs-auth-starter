@@ -53,42 +53,67 @@ export function PropertiesPanel({
 
     table.preserveStructureOnFilter = true;
 
-    // Store the original loadFunction
-    const originalLoadFunction = table.loadFunction;
+    // Store current selection (like in reference implementation)
+    let currentModelIdMap: ModelIdMap = {};
 
     // Override loadFunction to include type properties
     table.loadFunction = async () => {
       console.log("🔄 PropertiesPanel loadFunction called");
-
-      // Call original loadFunction to get base properties
-      const baseRows = (await originalLoadFunction?.()) || [];
-
-      // Get current selection
-      const selection = highlighter.selection.select;
       console.log("📍 Current selection:", {
-        modelIds: Object.keys(selection),
-        selectionCount: Object.keys(selection).length,
+        modelIds: Object.keys(currentModelIdMap),
+        selectionCount: Object.keys(currentModelIdMap).length,
       });
 
-      // Add type properties for each selected element
-      for (const [modelId, localIds] of Object.entries(selection)) {
-        console.log(`🔍 Processing model: "${modelId}" with ${Array.from(localIds).length} elements`);
+      const rows: any[] = [];
+
+      // Process each selected element
+      for (const [modelId, localIds] of Object.entries(currentModelIdMap)) {
+        console.log(
+          `🔍 Processing model: "${modelId}" with ${Array.from(localIds).length} elements`,
+        );
         const model = fragments.list.get(modelId);
         if (!model) {
           console.warn("⚠️ Model not found for ID:", modelId);
           continue;
         }
 
-        // Get cached type index for this model
-        const typeIndex = getTypeIndex(modelId);
-        if (!typeIndex) {
-          console.warn("⚠️ No type index found in cache for model:", modelId);
-          continue;
-        }
-        console.log("✅ Type index retrieved from cache for model:", modelId);
-
-        // For each selected element, get its type properties
         for (const localId of localIds) {
+          // Get base properties from the model
+          const [itemData] = await model.getItemsData([localId], {
+            attributesDefault: true,
+            relationsDefault: { attributes: false, relations: false },
+            relations: {
+              IsDefinedBy: { attributes: true, relations: true },
+            },
+          });
+
+          // Add instance properties
+          if (itemData && Array.isArray((itemData as any).IsDefinedBy)) {
+            for (const pset of (itemData as any).IsDefinedBy) {
+              const psetName = pset.Name?.value ?? "";
+
+              if (Array.isArray(pset.HasProperties)) {
+                for (const prop of pset.HasProperties) {
+                  rows.push({
+                    data: {
+                      Name: `${psetName} / ${prop.Name?.value ?? ""}`,
+                      Value: prop.NominalValue?.value ?? "",
+                    },
+                  });
+                }
+              }
+            }
+          }
+
+          // Get cached type index for this model
+          const typeIndex = getTypeIndex(modelId);
+          if (!typeIndex) {
+            console.warn("⚠️ No type index found in cache for model:", modelId);
+            continue;
+          }
+          console.log("✅ Type index retrieved from cache for model:", modelId);
+
+          // Get type properties
           const typeProps = getTypeProperties(typeIndex, localId);
 
           if (typeProps.length > 0) {
@@ -99,7 +124,7 @@ export function PropertiesPanel({
 
           // Add type properties to the rows
           for (const prop of typeProps) {
-            baseRows.push({
+            rows.push({
               data: {
                 Name: prop.Name,
                 Value: prop.Value,
@@ -109,12 +134,12 @@ export function PropertiesPanel({
         }
       }
 
-      return baseRows;
+      return rows;
     };
 
     setPropsTable(table);
 
-    // Set up highlighter events
+    // Set up highlighter events (like in reference implementation)
     const onHighlight = (modelIdMap: ModelIdMap) => {
       console.log("🎯 Highlighter onHighlight event:", {
         modelIds: Object.keys(modelIdMap),
@@ -123,12 +148,14 @@ export function PropertiesPanel({
           count: set.size,
         })),
       });
-      updateTable({ modelIdMap });
+      currentModelIdMap = modelIdMap;
+      void table.loadData(true); // Use loadData() method like in reference
     };
 
     const onClear = () => {
       console.log("🧹 Highlighter onClear event");
-      updateTable({ modelIdMap: {} });
+      currentModelIdMap = {};
+      void table.loadData(true); // Use loadData() method like in reference
     };
 
     highlighter.events.select.onHighlight.add(onHighlight);
