@@ -101,10 +101,13 @@ export const buildTypePropertyIndex = (source: string): TypePropertyIndex => {
   >();
   const typePropertySetIds = new Map<number, number[]>();
   const occurrenceTypeIds = new Map<number, number>();
-  
+
   // Material-related maps
   const materials = new Map<number, string>();
-  const materialLayers = new Map<number, { materialId: number; thickness?: number }>();
+  const materialLayers = new Map<
+    number,
+    { materialId: number; thickness?: number }
+  >();
   const materialLayerSets = new Map<number, number[]>();
   const occurrenceToMaterial = new Map<number, number>();
 
@@ -292,7 +295,8 @@ export const getTypeProperties = (
         const layer = index.materialLayers[layerId];
         if (layer) {
           const materialName = index.materials[layer.materialId] || "Unknown";
-          const layerLabel = layerIds.length > 1 ? `Material Layer ${i + 1}` : "Material";
+          const layerLabel =
+            layerIds.length > 1 ? `Material Layer ${i + 1}` : "Material";
           rows.push({
             Name: layerLabel,
             Value: layer.thickness
