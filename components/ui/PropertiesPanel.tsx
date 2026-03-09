@@ -46,74 +46,52 @@ export function PropertiesPanel({
     const highlighter = components.get(OBF.Highlighter);
     const fragments = components.get(OBC.FragmentsManager);
 
-    const [table] = CUI.tables.itemsData({
+    const [table, updateTable] = CUI.tables.itemsData({
       components,
       modelIdMap: {},
     });
 
-    // Configure columns to match type properties format
-    table.columns = [
-      { name: "Name", width: "12rem" },
-      { name: "Value", width: "10rem" },
-    ];
-
-    table.dataTransform = {
-      ...table.dataTransform,
-      Value: (value: any) => value ?? "",
-    };
-
     table.preserveStructureOnFilter = true;
 
-    // Store current selection outside the table
+    // Store current selection
     let currentModelIdMap: ModelIdMap = {};
 
-    // Completely override loadFunction
-    table.loadFunction = async () => {
-      const rows: any[] = [];
+    // Save the original loadFunction
+    const originalLoadFunction = table.loadFunction;
 
+    // Extend loadFunction to append type properties
+    table.loadFunction = async function (this: any) {
+      // Get the default hierarchical data
+      const defaultData = originalLoadFunction
+        ? await originalLoadFunction.call(this)
+        : [];
+
+      // Append type properties for each selected element
       for (const [modelId, localIds] of Object.entries(currentModelIdMap)) {
-        const model = fragments.list.get(modelId);
-        if (!model) continue;
+        const typeIndex = getTypeIndex(modelId);
+        if (!typeIndex) continue;
 
         for (const localId of localIds) {
-          const [itemData] = await model.getItemsData([localId], {
-            attributesDefault: true,
-            relationsDefault: { attributes: false, relations: false },
-            relations: {
-              IsDefinedBy: { attributes: true, relations: true },
-            },
-          });
+          const typeProps = getTypeProperties(typeIndex, localId);
 
-          // Extract property sets from IsDefinedBy
-          if (itemData && Array.isArray((itemData as any).IsDefinedBy)) {
-            for (const pset of (itemData as any).IsDefinedBy) {
-              const psetName = pset.Name?.value ?? "";
-
-              if (Array.isArray(pset.HasProperties)) {
-                for (const prop of pset.HasProperties) {
-                  rows.push({
-                    data: {
-                      Name: `${psetName} / ${prop.Name?.value ?? ""}`,
-                      Value: prop.NominalValue?.value ?? "",
-                    },
-                  });
-                }
-              }
-            }
-          }
-
-          // Get type properties from cached index
-          const typeIndex = getTypeIndex(modelId);
-          if (typeIndex) {
-            const typeRows = getTypeProperties(typeIndex, localId);
-            for (const row of typeRows) {
-              rows.push({ data: row });
-            }
+          // Add type properties as attributes (so they appear in the tree)
+          for (const prop of typeProps) {
+            defaultData.push({
+              data: {
+                modelId,
+                localId,
+                type: "attribute" as const,
+                dataType: "TypeProperty",
+                Name: prop.Name,
+                Value: prop.Value,
+                Actions: "",
+              },
+            });
           }
         }
       }
 
-      return rows;
+      return defaultData;
     };
 
     setPropsTable(table);
@@ -121,12 +99,12 @@ export function PropertiesPanel({
     // Set up highlighter events
     const onHighlight = (modelIdMap: ModelIdMap) => {
       currentModelIdMap = modelIdMap;
-      void table.loadData(true);
+      updateTable({ modelIdMap });
     };
 
     const onClear = () => {
       currentModelIdMap = {};
-      void table.loadData(true);
+      updateTable({ modelIdMap: {} });
     };
 
     highlighter.events.select.onHighlight.add(onHighlight);
