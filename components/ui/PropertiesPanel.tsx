@@ -51,6 +51,18 @@ export function PropertiesPanel({
       modelIdMap: {},
     });
 
+    // Configure columns to match type properties format
+    table.columns = [
+      { name: "Name", width: "12rem" },
+      { name: "Value", width: "10rem" },
+    ];
+
+    // Configure data transform to handle empty values
+    table.dataTransform = {
+      ...table.dataTransform,
+      Value: (value: any) => value ?? "",
+    };
+
     table.preserveStructureOnFilter = true;
 
     // Store current selection (like in reference implementation)
