@@ -15,6 +15,11 @@ export const setTypeIndex = (
   index: TypePropertyIndex,
 ): void => {
   typeIndexCache.set(modelId, index);
+  console.log("💾 Type index stored in cache:", {
+    modelId,
+    cacheSize: typeIndexCache.size,
+    indexKeys: Object.keys(index),
+  });
 };
 
 /**
@@ -23,7 +28,13 @@ export const setTypeIndex = (
 export const getTypeIndex = (
   modelId: string,
 ): TypePropertyIndex | undefined => {
-  return typeIndexCache.get(modelId);
+  const index = typeIndexCache.get(modelId);
+  console.log("🔍 Cache lookup for model:", {
+    modelId,
+    found: !!index,
+    availableModels: Array.from(typeIndexCache.keys()),
+  });
+  return index;
 };
 
 /**

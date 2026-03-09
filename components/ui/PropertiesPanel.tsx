@@ -67,15 +67,26 @@ export function PropertiesPanel({
       // Add type properties for each selected element
       for (const [modelId, localIds] of Object.entries(selection)) {
         const model = fragments.list.get(modelId);
-        if (!model) continue;
+        if (!model) {
+          console.warn("⚠️ Model not found for ID:", modelId);
+          continue;
+        }
 
         // Get cached type index for this model
         const typeIndex = getTypeIndex(modelId);
-        if (!typeIndex) continue;
+        if (!typeIndex) {
+          console.warn("⚠️ No type index found in cache for model:", modelId);
+          continue;
+        }
+        console.log("✅ Type index retrieved from cache for model:", modelId);
 
         // For each selected element, get its type properties
         for (const localId of localIds) {
           const typeProps = getTypeProperties(typeIndex, localId);
+          
+          if (typeProps.length > 0) {
+            console.log(`📋 Found ${typeProps.length} type properties for element ${localId}`);
+          }
 
           // Add type properties to the rows
           for (const prop of typeProps) {

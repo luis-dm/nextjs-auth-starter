@@ -295,10 +295,19 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(facility);
   } catch (error) {
     console.error("Error creating facility:", error);
-    console.error("Error details:", error instanceof Error ? error.message : String(error));
-    console.error("Error stack:", error instanceof Error ? error.stack : "No stack trace");
+    console.error(
+      "Error details:",
+      error instanceof Error ? error.message : String(error),
+    );
+    console.error(
+      "Error stack:",
+      error instanceof Error ? error.stack : "No stack trace",
+    );
     return NextResponse.json(
-      { error: "Failed to create facility", details: error instanceof Error ? error.message : String(error) },
+      {
+        error: "Failed to create facility",
+        details: error instanceof Error ? error.message : String(error),
+      },
       { status: 500 },
     );
   }

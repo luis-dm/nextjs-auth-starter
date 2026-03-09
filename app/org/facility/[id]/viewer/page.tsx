@@ -204,7 +204,16 @@ export default function ViewerPage() {
               const modelName =
                 facility.ifcFileName?.replace(".ifc", "") || facility.name;
               setTypeIndex(modelName, facility.typePropertyIndex);
-              console.log("Type property index cached for model:", modelName);
+              console.log("✅ Type property index cached for model:", modelName);
+              console.log("📊 Index structure:", {
+                hasOccurrenceToType: !!facility.typePropertyIndex.occurrenceToType,
+                hasTypeToPsets: !!facility.typePropertyIndex.typeToPsets,
+                hasPsetToProperties: !!facility.typePropertyIndex.psetToProperties,
+                hasPropertyValues: !!facility.typePropertyIndex.propertyValues,
+                hasPsetNames: !!facility.typePropertyIndex.psetNames,
+              });
+            } else {
+              console.warn("⚠️ No type property index found in facility data");
             }
 
             // Fetch RENDERED fragment from volume API (viewer shows baked edits)
