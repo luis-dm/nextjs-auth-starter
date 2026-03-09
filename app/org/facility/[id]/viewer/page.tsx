@@ -204,11 +204,16 @@ export default function ViewerPage() {
               const modelName =
                 facility.ifcFileName?.replace(".ifc", "") || facility.name;
               setTypeIndex(modelName, facility.typePropertyIndex);
-              console.log("✅ Type property index cached for model:", modelName);
+              console.log(
+                "✅ Type property index cached for model:",
+                modelName,
+              );
               console.log("📊 Index structure:", {
-                hasOccurrenceToType: !!facility.typePropertyIndex.occurrenceToType,
+                hasOccurrenceToType:
+                  !!facility.typePropertyIndex.occurrenceToType,
                 hasTypeToPsets: !!facility.typePropertyIndex.typeToPsets,
-                hasPsetToProperties: !!facility.typePropertyIndex.psetToProperties,
+                hasPsetToProperties:
+                  !!facility.typePropertyIndex.psetToProperties,
                 hasPropertyValues: !!facility.typePropertyIndex.propertyValues,
                 hasPsetNames: !!facility.typePropertyIndex.psetNames,
               });

@@ -58,14 +58,21 @@ export function PropertiesPanel({
 
     // Override loadFunction to include type properties
     table.loadFunction = async () => {
+      console.log("🔄 PropertiesPanel loadFunction called");
+
       // Call original loadFunction to get base properties
       const baseRows = (await originalLoadFunction?.()) || [];
 
       // Get current selection
       const selection = highlighter.selection.select;
+      console.log("📍 Current selection:", {
+        modelIds: Object.keys(selection),
+        selectionCount: Object.keys(selection).length,
+      });
 
       // Add type properties for each selected element
       for (const [modelId, localIds] of Object.entries(selection)) {
+        console.log(`🔍 Processing model: "${modelId}" with ${Array.from(localIds).length} elements`);
         const model = fragments.list.get(modelId);
         if (!model) {
           console.warn("⚠️ Model not found for ID:", modelId);
@@ -83,9 +90,11 @@ export function PropertiesPanel({
         // For each selected element, get its type properties
         for (const localId of localIds) {
           const typeProps = getTypeProperties(typeIndex, localId);
-          
+
           if (typeProps.length > 0) {
-            console.log(`📋 Found ${typeProps.length} type properties for element ${localId}`);
+            console.log(
+              `📋 Found ${typeProps.length} type properties for element ${localId}`,
+            );
           }
 
           // Add type properties to the rows
@@ -107,10 +116,18 @@ export function PropertiesPanel({
 
     // Set up highlighter events
     const onHighlight = (modelIdMap: ModelIdMap) => {
+      console.log("🎯 Highlighter onHighlight event:", {
+        modelIds: Object.keys(modelIdMap),
+        elementCounts: Object.entries(modelIdMap).map(([id, set]) => ({
+          modelId: id,
+          count: set.size,
+        })),
+      });
       updateTable({ modelIdMap });
     };
 
     const onClear = () => {
+      console.log("🧹 Highlighter onClear event");
       updateTable({ modelIdMap: {} });
     };
 
