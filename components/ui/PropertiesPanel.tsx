@@ -66,13 +66,30 @@ export function PropertiesPanel({
         ? await originalLoadFunction.call(this)
         : [];
 
+      console.log("🔄 Custom loadFunction called");
+      console.log("📊 Default data rows:", defaultData.length);
+      console.log(
+        "📍 Current selection:",
+        Object.keys(currentModelIdMap),
+        currentModelIdMap
+      );
+
       // Append type properties for each selected element
       for (const [modelId, localIds] of Object.entries(currentModelIdMap)) {
+        console.log(`🔍 Processing model ${modelId} with localIds:`, localIds);
         const typeIndex = getTypeIndex(modelId);
-        if (!typeIndex) continue;
+        if (!typeIndex) {
+          console.warn("⚠️ No type index found for model:", modelId);
+          continue;
+        }
+        console.log("✅ Type index found for model:", modelId);
 
         for (const localId of localIds) {
           const typeProps = getTypeProperties(typeIndex, localId);
+          console.log(
+            `📋 Got ${typeProps.length} type properties for element ${localId}:`,
+            typeProps
+          );
 
           // Add type properties as attributes (so they appear in the tree)
           for (const prop of typeProps) {
@@ -91,6 +108,7 @@ export function PropertiesPanel({
         }
       }
 
+      console.log("✅ Final data rows:", defaultData.length);
       return defaultData;
     };
 
