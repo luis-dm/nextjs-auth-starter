@@ -329,7 +329,7 @@ export const getTypeProperties = (
           hasThisLayerSet: materialId in index.materialLayerSets,
           layerIds: layerIds,
         });
-        
+
         if (layerIds && layerIds.length > 0) {
           console.log(
             `📚 Found ${layerIds.length} material layers for ID ${materialId}`,
