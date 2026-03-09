@@ -51,165 +51,53 @@ export function PropertiesPanel({
       modelIdMap: {},
     });
 
-    // Configure columns to match type properties format
-    table.columns = [
-      { name: "Name", width: "12rem" },
-      { name: "Value", width: "10rem" },
-    ];
-
-    // Configure data transform to handle empty values
-    table.dataTransform = {
-      ...table.dataTransform,
-      Value: (value: any) => value ?? "",
-    };
-
     table.preserveStructureOnFilter = true;
 
-    // Store current selection (like in reference implementation)
+    // Store current selection
     let currentModelIdMap: ModelIdMap = {};
 
-    // Override loadFunction to include type properties
+    // Override loadFunction to append type properties to default data
+    const defaultLoadFunction = table.loadFunction;
     table.loadFunction = async () => {
-      try {
-        console.log("🔄 PropertiesPanel loadFunction called");
-        console.log("📍 Current selection:", {
-          modelIds: Object.keys(currentModelIdMap),
-          selectionCount: Object.keys(currentModelIdMap).length,
-        });
+      // Get default hierarchical data first
+      const defaultRows = defaultLoadFunction
+        ? await defaultLoadFunction()
+        : [];
 
-        const rows: any[] = [];
+      // Append type properties for each selected element
+      for (const [modelId, localIds] of Object.entries(currentModelIdMap)) {
+        const typeIndex = getTypeIndex(modelId);
+        if (!typeIndex) continue;
 
-        // Process each selected element
-        for (const [modelId, localIds] of Object.entries(currentModelIdMap)) {
-          console.log(
-            `🔍 Processing model: "${modelId}" with ${Array.from(localIds).length} elements`,
-          );
-          const model = fragments.list.get(modelId);
-          if (!model) {
-            console.warn("⚠️ Model not found for ID:", modelId);
-            continue;
-          }
-
-          for (const localId of localIds) {
-            try {
-              // Get base properties from the model
-              const [itemData] = await model.getItemsData([localId], {
-                attributesDefault: true,
-                relationsDefault: { attributes: false, relations: false },
-                relations: {
-                  IsDefinedBy: { attributes: true, relations: true },
-                },
-              });
-
-              // Add base attributes (GlobalId, Name, ObjectType, etc.)
-              if (itemData) {
-                const baseAttrs = [
-                  "GlobalId",
-                  "Name",
-                  "ObjectType",
-                  "Tag",
-                  "Description",
-                ];
-                for (const attr of baseAttrs) {
-                  const value = (itemData as any)[attr]?.value;
-                  if (value !== undefined && value !== null && value !== "") {
-                    rows.push({
-                      data: {
-                        Name: attr,
-                        Value: String(value),
-                      },
-                    });
-                  }
-                }
-              }
-
-              // Add instance properties from property sets
-              if (itemData && Array.isArray((itemData as any).IsDefinedBy)) {
-                for (const pset of (itemData as any).IsDefinedBy) {
-                  const psetName = pset.Name?.value ?? "";
-
-                  if (Array.isArray(pset.HasProperties)) {
-                    for (const prop of pset.HasProperties) {
-                      rows.push({
-                        data: {
-                          Name: `${psetName} / ${prop.Name?.value ?? ""}`,
-                          Value: prop.NominalValue?.value ?? "",
-                        },
-                      });
-                    }
-                  }
-                }
-              }
-
-              // Get cached type index for this model
-              const typeIndex = getTypeIndex(modelId);
-              if (!typeIndex) {
-                console.warn(
-                  "⚠️ No type index found in cache for model:",
-                  modelId,
-                );
-                continue;
-              }
-              console.log(
-                "✅ Type index retrieved from cache for model:",
-                modelId,
-              );
-
-              // Get type properties
-              const typeProps = getTypeProperties(typeIndex, localId);
-
-              if (typeProps.length > 0) {
-                console.log(
-                  `📋 Found ${typeProps.length} type properties for element ${localId}`,
-                );
-              }
-
-              // Add type properties to the rows
-              for (const prop of typeProps) {
-                rows.push({
-                  data: {
-                    Name: prop.Name,
-                    Value: prop.Value,
-                  },
-                });
-              }
-            } catch (elementError) {
-              console.error(
-                `❌ Error processing element ${localId}:`,
-                elementError,
-              );
-              // Continue processing other elements
-            }
+        for (const localId of localIds) {
+          const typeProps = getTypeProperties(typeIndex, localId);
+          
+          // Add type properties as flat rows at the end
+          for (const prop of typeProps) {
+            defaultRows.push({
+              data: {
+                Name: prop.Name,
+                Value: prop.Value,
+              },
+            });
           }
         }
-
-        console.log(`✅ Returning ${rows.length} total property rows`);
-        return rows;
-      } catch (error) {
-        console.error("❌ Error in loadFunction:", error);
-        throw error;
       }
+
+      return defaultRows;
     };
 
     setPropsTable(table);
 
-    // Set up highlighter events (like in reference implementation)
+    // Set up highlighter events
     const onHighlight = (modelIdMap: ModelIdMap) => {
-      console.log("🎯 Highlighter onHighlight event:", {
-        modelIds: Object.keys(modelIdMap),
-        elementCounts: Object.entries(modelIdMap).map(([id, set]) => ({
-          modelId: id,
-          count: set.size,
-        })),
-      });
       currentModelIdMap = modelIdMap;
-      void table.loadData(true); // Use loadData() method like in reference
+      void table.loadData(true);
     };
 
     const onClear = () => {
-      console.log("🧹 Highlighter onClear event");
       currentModelIdMap = {};
-      void table.loadData(true); // Use loadData() method like in reference
+      void table.loadData(true);
     };
 
     highlighter.events.select.onHighlight.add(onHighlight);
