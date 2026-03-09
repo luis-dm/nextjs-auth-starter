@@ -101,7 +101,29 @@ export function PropertiesPanel({
                 },
               });
 
-              // Add instance properties
+              // Add base attributes (GlobalId, Name, ObjectType, etc.)
+              if (itemData) {
+                const baseAttrs = [
+                  "GlobalId",
+                  "Name",
+                  "ObjectType",
+                  "Tag",
+                  "Description",
+                ];
+                for (const attr of baseAttrs) {
+                  const value = (itemData as any)[attr]?.value;
+                  if (value !== undefined && value !== null && value !== "") {
+                    rows.push({
+                      data: {
+                        Name: attr,
+                        Value: String(value),
+                      },
+                    });
+                  }
+                }
+              }
+
+              // Add instance properties from property sets
               if (itemData && Array.isArray((itemData as any).IsDefinedBy)) {
                 for (const pset of (itemData as any).IsDefinedBy) {
                   const psetName = pset.Name?.value ?? "";
