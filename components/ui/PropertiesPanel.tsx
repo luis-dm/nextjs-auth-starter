@@ -10,8 +10,6 @@ import {
   listenToIsolationChanges,
   type IsolationChangedDetail,
 } from "@/utils/visibility-events";
-import { getTypeIndex } from "@/utils/ifcTypeIndexCache";
-import { getTypeProperties } from "@/utils/ifcTypeIndex";
 
 interface PropertiesPanelProps {
   isOpen: boolean;
@@ -44,7 +42,6 @@ export function PropertiesPanel({
     if (!components) return;
 
     const highlighter = components.get(OBF.Highlighter);
-    const fragments = components.get(OBC.FragmentsManager);
 
     const [table, updateTable] = CUI.tables.itemsData({
       components,
@@ -52,76 +49,14 @@ export function PropertiesPanel({
     });
 
     table.preserveStructureOnFilter = true;
-
-    // Store current selection
-    let currentModelIdMap: ModelIdMap = {};
-
-    // Save the original loadFunction
-    const originalLoadFunction = table.loadFunction;
-
-    // Extend loadFunction to append type properties
-    table.loadFunction = async function (this: any) {
-      // Get the default hierarchical data
-      const defaultData = originalLoadFunction
-        ? await originalLoadFunction.call(this)
-        : [];
-
-      console.log("🔄 Custom loadFunction called");
-      console.log("📊 Default data rows:", defaultData.length);
-      console.log(
-        "📍 Current selection:",
-        Object.keys(currentModelIdMap),
-        currentModelIdMap
-      );
-
-      // Append type properties for each selected element
-      for (const [modelId, localIds] of Object.entries(currentModelIdMap)) {
-        console.log(`🔍 Processing model ${modelId} with localIds:`, localIds);
-        const typeIndex = getTypeIndex(modelId);
-        if (!typeIndex) {
-          console.warn("⚠️ No type index found for model:", modelId);
-          continue;
-        }
-        console.log("✅ Type index found for model:", modelId);
-
-        for (const localId of localIds) {
-          const typeProps = getTypeProperties(typeIndex, localId);
-          console.log(
-            `📋 Got ${typeProps.length} type properties for element ${localId}:`,
-            typeProps
-          );
-
-          // Add type properties as attributes (so they appear in the tree)
-          for (const prop of typeProps) {
-            defaultData.push({
-              data: {
-                modelId,
-                localId,
-                type: "attribute" as const,
-                dataType: "TypeProperty",
-                Name: prop.Name,
-                Value: prop.Value,
-                Actions: "",
-              },
-            });
-          }
-        }
-      }
-
-      console.log("✅ Final data rows:", defaultData.length);
-      return defaultData;
-    };
-
     setPropsTable(table);
 
     // Set up highlighter events
     const onHighlight = (modelIdMap: ModelIdMap) => {
-      currentModelIdMap = modelIdMap;
       updateTable({ modelIdMap });
     };
 
     const onClear = () => {
-      currentModelIdMap = {};
       updateTable({ modelIdMap: {} });
     };
 
