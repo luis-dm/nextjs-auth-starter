@@ -4,12 +4,6 @@ import React, { useState, useEffect, useRef } from "react";
 import * as CUI from "@thatopen/ui-obc";
 import * as OBC from "@thatopen/components";
 import * as OBF from "@thatopen/components-front";
-import {
-  listenToVisibilityChanges,
-  type VisibilityChangedDetail,
-  listenToIsolationChanges,
-  type IsolationChangedDetail,
-} from "@/utils/visibility-events";
 
 interface PropertiesPanelProps {
   isOpen: boolean;

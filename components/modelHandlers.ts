@@ -53,155 +53,7 @@ export function uiHandlers(
   areaMeasurer.world = world;
   areaMeasurer.color = new THREE.Color("#6b7280");
 
-  const isTouchDevice =
-    "ontouchstart" in window || navigator.maxTouchPoints > 0;
-
-  // Function to manage touch-action CSS property
-  const updateTouchAction = () => {
-    const isMeasuring =
-      lengthMeasurer.enabled || areaMeasurer.enabled || clipper.enabled;
-    if (isTouchDevice && isMeasuring) {
-      viewport.style.touchAction = "none";
-      document.body.style.overflow = "hidden";
-    } else {
-      viewport.style.touchAction = "auto";
-      document.body.style.overflow = "auto";
-    }
-  };
-
-  // Set up initial touch action
-  updateTouchAction();
-
-  // Monitor measurement tool state changes
-  let lastMeasurementState = false;
-  const checkMeasurementState = () => {
-    const currentState =
-      lengthMeasurer.enabled || areaMeasurer.enabled || clipper.enabled;
-    if (currentState !== lastMeasurementState) {
-      lastMeasurementState = currentState;
-      updateTouchAction();
-    }
-  };
-
-  // Check measurement state periodically
-  const measurementStateInterval = setInterval(checkMeasurementState, 100);
-
-  let lastTapTime = 0;
-  let tapTimeout: NodeJS.Timeout | null = null;
-  let isLongPress = false;
-  let longPressTimeout: NodeJS.Timeout | null = null;
-
-  const handleTouchStart = (event: TouchEvent) => {
-    if (event.touches.length !== 1) return;
-
-    // Prevent page scrolling when measuring
-    if (lengthMeasurer.enabled || areaMeasurer.enabled || clipper.enabled) {
-      event.preventDefault();
-    }
-
-    const currentTime = Date.now();
-    const timeSinceLastTap = currentTime - lastTapTime;
-
-    if (tapTimeout) {
-      clearTimeout(tapTimeout);
-      tapTimeout = null;
-    }
-
-    if (longPressTimeout) {
-      clearTimeout(longPressTimeout);
-      longPressTimeout = null;
-    }
-
-    isLongPress = false;
-
-    longPressTimeout = setTimeout(() => {
-      isLongPress = true;
-      handleLongPress(event);
-      if (tapTimeout) {
-        clearTimeout(tapTimeout);
-        tapTimeout = null;
-      }
-    }, 800);
-
-    if (timeSinceLastTap < 300 && timeSinceLastTap > 0) {
-      if (longPressTimeout) {
-        clearTimeout(longPressTimeout);
-        longPressTimeout = null;
-      }
-      handleDoubleTap(event);
-      lastTapTime = 0;
-      return;
-    }
-
-    lastTapTime = currentTime;
-    tapTimeout = setTimeout(() => {
-      if (!isLongPress) {
-        handleSingleTap(event);
-      }
-      tapTimeout = null;
-    }, 300);
-  };
-
-  const handleTouchEnd = (event: TouchEvent) => {
-    // Prevent page scrolling when measuring
-    if (lengthMeasurer.enabled || areaMeasurer.enabled || clipper.enabled) {
-      event.preventDefault();
-    }
-
-    if (longPressTimeout) {
-      clearTimeout(longPressTimeout);
-      longPressTimeout = null;
-    }
-  };
-
-  const handleTouchMove = (event: TouchEvent) => {
-    // Prevent page scrolling when measuring
-    if (lengthMeasurer.enabled || areaMeasurer.enabled || clipper.enabled) {
-      event.preventDefault();
-    }
-
-    if (longPressTimeout) {
-      clearTimeout(longPressTimeout);
-      longPressTimeout = null;
-      isLongPress = false;
-    }
-  };
-
-  const handleSingleTap = (event: TouchEvent) => {
-    if (lengthMeasurer.enabled) {
-      lengthMeasurer.create();
-    } else if (areaMeasurer.enabled) {
-      areaMeasurer.create();
-    }
-  };
-
-  const handleDoubleTap = (event: TouchEvent) => {
-    event.preventDefault();
-
-    if (lengthMeasurer.enabled) {
-      lengthMeasurer.endCreation();
-    } else if (areaMeasurer.enabled) {
-      areaMeasurer.endCreation();
-    } else if (clipper.enabled) {
-      clipper.create(world);
-    }
-  };
-
-  const handleLongPress = (event: TouchEvent) => {
-    event.preventDefault();
-
-    if (clipper.enabled) {
-      clipper.deleteAll();
-    }
-    if (lengthMeasurer.enabled) {
-      lengthMeasurer.list.clear();
-    }
-    if (areaMeasurer.enabled) {
-      areaMeasurer.list.clear();
-    }
-  };
-
-  const handleDoubleClick = () => {
+  const handleClick = () => {
     if (lengthMeasurer.enabled) {
       lengthMeasurer.create();
     } else if (areaMeasurer.enabled) {
@@ -230,30 +82,11 @@ export function uiHandlers(
     }
   };
 
-  if (!isTouchDevice) {
-    viewport.addEventListener("dblclick", handleDoubleClick);
-  }
-
-  viewport.addEventListener("touchstart", handleTouchStart, { passive: false });
-  viewport.addEventListener("touchend", handleTouchEnd, { passive: false });
-  viewport.addEventListener("touchmove", handleTouchMove, { passive: false });
+  viewport.addEventListener("click", handleClick);
   window.addEventListener("keydown", handleKeyDown);
 
   return () => {
-    if (tapTimeout) clearTimeout(tapTimeout);
-    if (longPressTimeout) clearTimeout(longPressTimeout);
-    clearInterval(measurementStateInterval);
-
-    // Restore CSS properties
-    viewport.style.touchAction = "auto";
-    document.body.style.overflow = "auto";
-
-    if (!isTouchDevice) {
-      viewport.removeEventListener("dblclick", handleDoubleClick);
-    }
-    viewport.removeEventListener("touchstart", handleTouchStart);
-    viewport.removeEventListener("touchend", handleTouchEnd);
-    viewport.removeEventListener("touchmove", handleTouchMove);
+    viewport.removeEventListener("click", handleClick);
     window.removeEventListener("keydown", handleKeyDown);
   };
 }
