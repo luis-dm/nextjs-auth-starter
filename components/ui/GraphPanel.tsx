@@ -114,11 +114,22 @@ export function GraphPanel({ isOpen, onClose, components }: GraphPanelProps) {
 
         // Build model ID map and update both charts
         const modelIdMap = await buildModelIdMap(components);
+        console.log("GraphPanel: Model ID map built", modelIdMap);
         updateCatPie({ modelIdMap });
         updateCatBar({ modelIdMap });
       };
 
       fragments.list.onItemSet.add(onFragmentLoaded);
+
+      // Check if fragments are already loaded and populate charts
+      if (fragments.list.size > 0) {
+        console.log("GraphPanel: Fragments already loaded, populating charts");
+        buildModelIdMap(components).then((modelIdMap) => {
+          console.log("GraphPanel: Initial model ID map", modelIdMap);
+          updateCatPie({ modelIdMap });
+          updateCatBar({ modelIdMap });
+        });
+      }
 
       // Cleanup
       return () => {
