@@ -13,12 +13,14 @@ interface GraphPanelProps {
 
 export function GraphPanel({ isOpen, onClose, components }: GraphPanelProps) {
   const pieChartRef = useRef<HTMLDivElement>(null);
-  const barChartRef = useRef<HTMLDivElement>(null);
+  const attributesChartRef = useRef<HTMLDivElement>(null);
   const [pieChart, setPieChart] = useState<BUI.Chart | null>(null);
-  const [barChart, setBarChart] = useState<BUI.Chart | null>(null);
+  const [attributesChart, setAttributesChart] = useState<BUI.Chart | null>(
+    null,
+  );
   const [labels, setLabels] = useState<BUI.ChartLegend | null>(null);
   const updatePieRef = useRef<any>(null);
-  const updateBarRef = useRef<any>(null);
+  const updateAttributesRef = useRef<any>(null);
 
   // Helper function to build model ID map from fragments
   const buildModelIdMap = async (components: OBC.Components) => {
@@ -85,6 +87,10 @@ export function GraphPanel({ isOpen, onClose, components }: GraphPanelProps) {
     if (!components) return;
 
     try {
+      // Get fragments manager once
+      const fragments = components.get(OBC.FragmentsManager);
+      const firstModelId = Array.from(fragments.list.keys())[0] || "";
+
       // Create categories pie chart
       const [catPieChart, updateCatPie] = CUI.charts.categoriesChart({
         type: "pie",
@@ -96,6 +102,20 @@ export function GraphPanel({ isOpen, onClose, components }: GraphPanelProps) {
       catPieChart.label = "Categories Distribution";
       setPieChart(catPieChart);
       updatePieRef.current = updateCatPie;
+
+      // Create attributes pie chart
+      const [attrPieChart, updateAttrPie] = CUI.charts.attributesChart({
+        type: "pie",
+        addLabels: true,
+        attribute: /./, // Match all attributes
+        category: /./, // Match all categories
+        modelId: firstModelId,
+        components,
+      });
+
+      attrPieChart.label = "Attributes Distribution";
+      setAttributesChart(attrPieChart);
+      updateAttributesRef.current = updateAttrPie;
 
       // Create interactive labels
       const legendElement = BUI.Component.create(() => {
@@ -126,8 +146,11 @@ export function GraphPanel({ isOpen, onClose, components }: GraphPanelProps) {
         legendElement.charts = [...legendElement.charts, catPieChart];
       });
 
+      attrPieChart.addEventListener("data-loaded", () => {
+        legendElement.charts = [...legendElement.charts, attrPieChart];
+      });
+
       // Listen for fragment loading to populate charts
-      const fragments = components.get(OBC.FragmentsManager);
       const onFragmentLoaded = async ({ value: model }: any) => {
         console.log(
           "GraphPanel: Fragment loaded, updating charts",
@@ -139,8 +162,14 @@ export function GraphPanel({ isOpen, onClose, components }: GraphPanelProps) {
           const modelIdMap = await buildModelIdMap(components);
           console.log("GraphPanel: Model ID map built", modelIdMap);
 
-          console.log("GraphPanel: Updating pie chart...");
+          console.log("GraphPanel: Updating categories chart...");
           updateCatPie({ modelIdMap });
+
+          // Update attributes chart with the loaded model ID
+          if (model.modelId) {
+            console.log("GraphPanel: Updating attributes chart...");
+            updateAttrPie({ modelId: model.modelId });
+          }
         } catch (error) {
           console.error("GraphPanel: Error updating charts:", error);
         }
@@ -155,8 +184,15 @@ export function GraphPanel({ isOpen, onClose, components }: GraphPanelProps) {
           .then((modelIdMap) => {
             console.log("GraphPanel: Initial model ID map", modelIdMap);
 
-            console.log("GraphPanel: Updating pie chart...");
+            console.log("GraphPanel: Updating categories chart...");
             updateCatPie({ modelIdMap });
+
+            // Update attributes chart with first available model
+            const firstModelId = Object.keys(modelIdMap)[0];
+            if (firstModelId) {
+              console.log("GraphPanel: Updating attributes chart...");
+              updateAttrPie({ modelId: firstModelId });
+            }
           })
           .catch((error) => {
             console.error(
@@ -183,13 +219,13 @@ export function GraphPanel({ isOpen, onClose, components }: GraphPanelProps) {
     }
   }, [pieChart]);
 
-  // Append the bar chart to its container when ready
+  // Append the attributes chart to its container when ready
   useEffect(() => {
-    if (barChart && barChartRef.current) {
-      barChartRef.current.innerHTML = "";
-      barChartRef.current.appendChild(barChart);
+    if (attributesChart && attributesChartRef.current) {
+      attributesChartRef.current.innerHTML = "";
+      attributesChartRef.current.appendChild(attributesChart);
     }
-  }, [barChart]);
+  }, [attributesChart]);
 
   // Append labels to their container
   useEffect(() => {
@@ -258,6 +294,13 @@ export function GraphPanel({ isOpen, onClose, components }: GraphPanelProps) {
                 Categories Pie Chart
               </h3>
               <div ref={pieChartRef} className="mb-6" />
+            </div>
+
+            <div className="mb-4">
+              <h3 className="text-sm font-medium text-gray-700 mb-2">
+                Attributes Pie Chart
+              </h3>
+              <div ref={attributesChartRef} className="mb-6" />
             </div>
           </div>
         </div>
