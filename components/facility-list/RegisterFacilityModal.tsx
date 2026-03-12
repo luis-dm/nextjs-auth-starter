@@ -91,7 +91,7 @@ const convertIFC = async (
   try {
     const ifcBuffer = await file.arrayBuffer();
     const fileSizeInMB = Math.round((file.size / (1024 * 1024)) * 100) / 100;
-    console.log(`📁 File: ${file.name} (${fileSizeInMB} MB)`);
+    console.log(`File: ${file.name} (${fileSizeInMB} MB)`);
 
     console.log("Processing IFC file...");
     const ifcBytes = new Uint8Array(ifcBuffer);
@@ -127,7 +127,7 @@ const convertIFC = async (
 
     console.log(`Conversion complete in ${conversionTimeMs / 1000} seconds`);
     console.log(
-      `📊 Conversion rate: ${
+      `Conversion rate: ${
         Math.round((fileSizeInMB / (conversionTimeMs / 1000)) * 100) / 100
       } MB/s`,
     );

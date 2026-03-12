@@ -3,6 +3,7 @@
 import dynamic from "next/dynamic";
 import { PropertiesButton } from "@/components/ui/PropertiesButton";
 import { BCFTopicsButton } from "@/components/ui/BCFTopicsButton";
+import { GraphButton } from "@/components/ui/GraphButton";
 import { World, FragmentsManager } from "@/utils/raycastUtils";
 import styles from "./viewer.module.scss";
 import { setTypeIndex } from "@/utils/ifcTypeIndexCache";
@@ -298,6 +299,7 @@ export default function ViewerPage() {
         <div ref={containerRef} className={styles.viewerContainer} />
         <PropertiesButton onClick={handleProperties} />
         <BCFTopicsButton onClick={handleBCFTopics} />
+        <GraphButton onClick={() => {}} />
         <PropertiesPanel
           isOpen={isPropertiesOpen}
           onClose={handlePropertiesClose}
