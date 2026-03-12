@@ -15,7 +15,8 @@ export function GraphPanel({ isOpen, onClose, components }: GraphPanelProps) {
   const pieChartRef = useRef<HTMLDivElement>(null);
   const attributesPieChartRef = useRef<HTMLDivElement>(null);
   const [pieChart, setPieChart] = useState<BUI.Chart | null>(null);
-  const [attributesPieChart, setAttributesPieChart] = useState<BUI.Chart | null>(null);
+  const [attributesPieChart, setAttributesPieChart] =
+    useState<BUI.Chart | null>(null);
   const [labels, setLabels] = useState<BUI.ChartLegend | null>(null);
   const updatePieRef = useRef<any>(null);
   const updateAttributesPieRef = useRef<any>(null);
