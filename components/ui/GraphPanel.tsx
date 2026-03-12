@@ -13,70 +13,157 @@ interface GraphPanelProps {
 
 export function GraphPanel({ isOpen, onClose, components }: GraphPanelProps) {
   const pieChartRef = useRef<HTMLDivElement>(null);
+  const barChartRef = useRef<HTMLDivElement>(null);
   const [pieChart, setPieChart] = useState<BUI.Chart | null>(null);
+  const [barChart, setBarChart] = useState<BUI.Chart | null>(null);
+  const [labels, setLabels] = useState<BUI.ChartLegend | null>(null);
   const updatePieRef = useRef<any>(null);
+  const updateBarRef = useRef<any>(null);
+
+  // Helper function to build model ID map from fragments
+  const buildModelIdMap = async (components: OBC.Components) => {
+    try {
+      const fragments = components.get(OBC.FragmentsManager);
+      const modelIdMap: { [modelId: string]: Set<number> } = {};
+
+      console.log(
+        "GraphPanel: Available models:",
+        Array.from(fragments.list.keys()),
+      );
+
+      // Wait a bit for the worker to finish indexing
+      await new Promise((resolve) => setTimeout(resolve, 500));
+
+      for (const [modelId, model] of fragments.list) {
+        try {
+          // Get all item IDs that have geometry
+          const itemIds = await model.getItemsIdsWithGeometry();
+          console.log(
+            `GraphPanel: Found ${itemIds.length} items in model "${modelId}"`,
+          );
+
+          if (itemIds.length > 0) {
+            modelIdMap[modelId] = new Set(itemIds);
+          }
+        } catch (error) {
+          console.error(
+            `GraphPanel: Error processing model "${modelId}":`,
+            error,
+          );
+          // Wait and retry once
+          await new Promise((resolve) => setTimeout(resolve, 500));
+          try {
+            const itemIds = await model.getItemsIdsWithGeometry();
+            console.log(
+              `GraphPanel: Retry successful - Found ${itemIds.length} items in model "${modelId}"`,
+            );
+            if (itemIds.length > 0) {
+              modelIdMap[modelId] = new Set(itemIds);
+            }
+          } catch (retryError) {
+            console.error(
+              `GraphPanel: Retry failed for model "${modelId}":`,
+              retryError,
+            );
+          }
+        }
+      }
+
+      console.log(
+        "GraphPanel: Final modelIdMap keys:",
+        Object.keys(modelIdMap),
+      );
+      return modelIdMap;
+    } catch (error) {
+      console.error("GraphPanel: Error in buildModelIdMap:", error);
+      return {};
+    }
+  };
 
   // Initialize the charts
   useEffect(() => {
     if (!components) return;
 
     try {
-      // Create attributes pie chart
-      const [attrPieChart, updateAttrPie] = CUI.charts.attributesChart({
+      // Create categories pie chart
+      const [catPieChart, updateCatPie] = CUI.charts.categoriesChart({
         type: "pie",
-        addLabels: false,
-        attribute: /empty/,
-        category: /empty/,
-        modelId: "",
+        addLabels: true,
+        modelIdMap: {},
         components,
       });
 
-      attrPieChart.label = "Element Attributes Distribution";
-      setPieChart(attrPieChart);
-      updatePieRef.current = updateAttrPie;
+      catPieChart.label = "Categories Distribution";
+      setPieChart(catPieChart);
+      updatePieRef.current = updateCatPie;
 
-      // Listen for fragment loading to populate chart
+      // Create interactive labels
+      const legendElement = BUI.Component.create(() => {
+        return BUI.html`
+          <bim-chart-legend>
+            <bim-label slot="no-chart" icon="ph:warning-fill" style="--bim-icon--c: gold;">No charts attached</bim-label>
+            <bim-label slot="missing-data" icon="ph:warning-fill" style="--bim-icon--c: gold;">No data to display</bim-label>
+          </bim-chart-legend>`;
+      }) as BUI.ChartLegend;
+
+      setLabels(legendElement);
+
+      // Set up hider integration for label clicks
+      const hider = components.get(OBC.Hider);
+      (legendElement as any).addEventListener(
+        "label-click",
+        async (event: CustomEvent) => {
+          const { data, visibility } = event.detail;
+          for (const info of data) {
+            const { modelIdMap } = info;
+            await hider.set(visibility, modelIdMap);
+          }
+        },
+      );
+
+      // Connect charts to labels when data loads
+      catPieChart.addEventListener("data-loaded", () => {
+        legendElement.charts = [...legendElement.charts, catPieChart];
+      });
+
+      // Listen for fragment loading to populate charts
       const fragments = components.get(OBC.FragmentsManager);
       const onFragmentLoaded = async ({ value: model }: any) => {
         console.log(
-          "GraphPanel: Fragment loaded, updating chart",
+          "GraphPanel: Fragment loaded, updating charts",
           model.modelId,
         );
 
         try {
-          // Wait for model to be fully indexed
-          await new Promise((resolve) => setTimeout(resolve, 500));
+          // Build model ID map and update both charts
+          const modelIdMap = await buildModelIdMap(components);
+          console.log("GraphPanel: Model ID map built", modelIdMap);
 
-          console.log("GraphPanel: Updating pie chart with Name/COLUMN...");
-          updateAttrPie({
-            attribute: /^Name$/,
-            category: /COLUMN/,
-            modelId: model.modelId,
-          });
+          console.log("GraphPanel: Updating pie chart...");
+          updateCatPie({ modelIdMap });
         } catch (error) {
-          console.error("GraphPanel: Error updating chart:", error);
+          console.error("GraphPanel: Error updating charts:", error);
         }
       };
 
       fragments.list.onItemSet.add(onFragmentLoaded);
 
-      // Check if fragments are already loaded and populate chart
+      // Check if fragments are already loaded and populate charts
       if (fragments.list.size > 0) {
-        console.log("GraphPanel: Fragments already loaded, populating chart");
-        setTimeout(() => {
-          const firstModel = Array.from(fragments.list.values())[0];
-          if (firstModel) {
-            console.log(
-              "GraphPanel: Updating chart for model",
-              firstModel.modelId,
+        console.log("GraphPanel: Fragments already loaded, populating charts");
+        buildModelIdMap(components)
+          .then((modelIdMap) => {
+            console.log("GraphPanel: Initial model ID map", modelIdMap);
+
+            console.log("GraphPanel: Updating pie chart...");
+            updateCatPie({ modelIdMap });
+          })
+          .catch((error) => {
+            console.error(
+              "GraphPanel: Error populating initial charts:",
+              error,
             );
-            updateAttrPie({
-              attribute: /^Name$/,
-              category: /COLUMN/,
-              modelId: firstModel.modelId,
-            });
-          }
-        }, 500);
+          });
       }
 
       // Cleanup
@@ -95,6 +182,23 @@ export function GraphPanel({ isOpen, onClose, components }: GraphPanelProps) {
       pieChartRef.current.appendChild(pieChart);
     }
   }, [pieChart]);
+
+  // Append the bar chart to its container when ready
+  useEffect(() => {
+    if (barChart && barChartRef.current) {
+      barChartRef.current.innerHTML = "";
+      barChartRef.current.appendChild(barChart);
+    }
+  }, [barChart]);
+
+  // Append labels to their container
+  useEffect(() => {
+    const labelsContainer = document.getElementById("graph-labels-container");
+    if (labels && labelsContainer) {
+      labelsContainer.innerHTML = "";
+      labelsContainer.appendChild(labels);
+    }
+  }, [labels]);
 
   const handleHighlight = () => {
     if (!pieChart) return;
@@ -146,38 +250,24 @@ export function GraphPanel({ isOpen, onClose, components }: GraphPanelProps) {
           </button>
         </div>
 
-        {/* Actions */}
-        <div className="p-2.5 border-b border-gray-200 bg-[#f7f8fa] shrink-0">
-          <div className="flex gap-2 items-center">
-            <button
-              className="flex-1 flex items-center justify-center h-9 border border-gray-200 bg-white rounded-lg cursor-pointer text-gray-700 text-sm transition-all duration-200 ease-in-out hover:bg-gray-100 hover:border-gray-300"
-              onClick={handleHighlight}
-            >
-              Highlight
-            </button>
-            <button
-              className="flex-1 flex items-center justify-center h-9 border border-gray-200 bg-white rounded-lg cursor-pointer text-gray-700 text-sm transition-all duration-200 ease-in-out hover:bg-gray-100 hover:border-gray-300"
-              onClick={handleFilter}
-            >
-              Filter
-            </button>
-            <button
-              className="flex-1 flex items-center justify-center h-9 border border-gray-200 bg-white rounded-lg cursor-pointer text-gray-700 text-sm transition-all duration-200 ease-in-out hover:bg-gray-100 hover:border-gray-300"
-              onClick={handleReset}
-            >
-              Reset
-            </button>
-          </div>
-        </div>
-
         {/* Chart Content */}
         <div className="flex-1 overflow-hidden flex flex-col">
           <div className="flex-1 overflow-y-auto p-4">
             <div className="mb-4">
               <h3 className="text-sm font-medium text-gray-700 mb-2">
-                Element Attributes (Name - COLUMN)
+                Categories Pie Chart
               </h3>
               <div ref={pieChartRef} className="mb-6" />
+            </div>
+            <div className="mb-4">
+              <h3 className="text-sm font-medium text-gray-700 mb-2">
+                Categories Bar Chart
+              </h3>
+              <div ref={barChartRef} className="mb-6" />
+            </div>
+            <div className="mb-4">
+              <h3 className="text-sm font-medium text-gray-700 mb-2">Labels</h3>
+              <div id="graph-labels-container" />
             </div>
           </div>
         </div>
