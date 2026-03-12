@@ -26,17 +26,15 @@ export function GraphPanel({ isOpen, onClose, components }: GraphPanelProps) {
     const modelIdMap: { [modelId: string]: Set<number> } = {};
 
     for (const [modelId, model] of fragments.list) {
-      const localIds: number[] = [];
-      const geometryItems = await model.getItemsWithGeometry();
+      // Get all item IDs that have geometry
+      const itemIds = await model.getItemsIdsWithGeometry();
+      console.log(
+        `GraphPanel: Found ${itemIds.length} items in model ${modelId}`,
+      );
 
-      for (const item of geometryItems) {
-        if (!item) continue;
-        const localId = await item.getLocalId();
-        if (!localId) continue;
-        localIds.push(localId);
+      if (itemIds.length > 0) {
+        modelIdMap[modelId] = new Set(itemIds);
       }
-
-      modelIdMap[modelId] = new Set(localIds);
     }
 
     return modelIdMap;
