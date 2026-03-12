@@ -31,6 +31,9 @@ export function GraphPanel({ isOpen, onClose, components }: GraphPanelProps) {
         Array.from(fragments.list.keys()),
       );
 
+      // Wait a bit for the worker to finish indexing
+      await new Promise((resolve) => setTimeout(resolve, 500));
+
       for (const [modelId, model] of fragments.list) {
         try {
           // Get all item IDs that have geometry
@@ -43,7 +46,26 @@ export function GraphPanel({ isOpen, onClose, components }: GraphPanelProps) {
             modelIdMap[modelId] = new Set(itemIds);
           }
         } catch (error) {
-          console.error(`GraphPanel: Error processing model "${modelId}":`, error);
+          console.error(
+            `GraphPanel: Error processing model "${modelId}":`,
+            error,
+          );
+          // Wait and retry once
+          await new Promise((resolve) => setTimeout(resolve, 500));
+          try {
+            const itemIds = await model.getItemsIdsWithGeometry();
+            console.log(
+              `GraphPanel: Retry successful - Found ${itemIds.length} items in model "${modelId}"`,
+            );
+            if (itemIds.length > 0) {
+              modelIdMap[modelId] = new Set(itemIds);
+            }
+          } catch (retryError) {
+            console.error(
+              `GraphPanel: Retry failed for model "${modelId}":`,
+              retryError,
+            );
+          }
         }
       }
 
@@ -132,10 +154,10 @@ export function GraphPanel({ isOpen, onClose, components }: GraphPanelProps) {
           // Build model ID map and update both charts
           const modelIdMap = await buildModelIdMap(components);
           console.log("GraphPanel: Model ID map built", modelIdMap);
-          
+
           console.log("GraphPanel: Updating pie chart...");
           updateCatPie({ modelIdMap });
-          
+
           console.log("GraphPanel: Updating bar chart...");
           updateCatBar({ modelIdMap });
         } catch (error) {
@@ -151,15 +173,18 @@ export function GraphPanel({ isOpen, onClose, components }: GraphPanelProps) {
         buildModelIdMap(components)
           .then((modelIdMap) => {
             console.log("GraphPanel: Initial model ID map", modelIdMap);
-            
+
             console.log("GraphPanel: Updating pie chart...");
             updateCatPie({ modelIdMap });
-            
+
             console.log("GraphPanel: Updating bar chart...");
             updateCatBar({ modelIdMap });
           })
           .catch((error) => {
-            console.error("GraphPanel: Error populating initial charts:", error);
+            console.error(
+              "GraphPanel: Error populating initial charts:",
+              error,
+            );
           });
       }
 
