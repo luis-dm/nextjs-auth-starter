@@ -22,22 +22,40 @@ export function GraphPanel({ isOpen, onClose, components }: GraphPanelProps) {
 
   // Helper function to build model ID map from fragments
   const buildModelIdMap = async (components: OBC.Components) => {
-    const fragments = components.get(OBC.FragmentsManager);
-    const modelIdMap: { [modelId: string]: Set<number> } = {};
+    try {
+      const fragments = components.get(OBC.FragmentsManager);
+      const modelIdMap: { [modelId: string]: Set<number> } = {};
 
-    for (const [modelId, model] of fragments.list) {
-      // Get all item IDs that have geometry
-      const itemIds = await model.getItemsIdsWithGeometry();
       console.log(
-        `GraphPanel: Found ${itemIds.length} items in model ${modelId}`,
+        "GraphPanel: Available models:",
+        Array.from(fragments.list.keys()),
       );
 
-      if (itemIds.length > 0) {
-        modelIdMap[modelId] = new Set(itemIds);
-      }
-    }
+      for (const [modelId, model] of fragments.list) {
+        try {
+          // Get all item IDs that have geometry
+          const itemIds = await model.getItemsIdsWithGeometry();
+          console.log(
+            `GraphPanel: Found ${itemIds.length} items in model "${modelId}"`,
+          );
 
-    return modelIdMap;
+          if (itemIds.length > 0) {
+            modelIdMap[modelId] = new Set(itemIds);
+          }
+        } catch (error) {
+          console.error(`GraphPanel: Error processing model "${modelId}":`, error);
+        }
+      }
+
+      console.log(
+        "GraphPanel: Final modelIdMap keys:",
+        Object.keys(modelIdMap),
+      );
+      return modelIdMap;
+    } catch (error) {
+      console.error("GraphPanel: Error in buildModelIdMap:", error);
+      return {};
+    }
   };
 
   // Initialize the charts
@@ -110,11 +128,19 @@ export function GraphPanel({ isOpen, onClose, components }: GraphPanelProps) {
           model.modelId,
         );
 
-        // Build model ID map and update both charts
-        const modelIdMap = await buildModelIdMap(components);
-        console.log("GraphPanel: Model ID map built", modelIdMap);
-        updateCatPie({ modelIdMap });
-        updateCatBar({ modelIdMap });
+        try {
+          // Build model ID map and update both charts
+          const modelIdMap = await buildModelIdMap(components);
+          console.log("GraphPanel: Model ID map built", modelIdMap);
+          
+          console.log("GraphPanel: Updating pie chart...");
+          updateCatPie({ modelIdMap });
+          
+          console.log("GraphPanel: Updating bar chart...");
+          updateCatBar({ modelIdMap });
+        } catch (error) {
+          console.error("GraphPanel: Error updating charts:", error);
+        }
       };
 
       fragments.list.onItemSet.add(onFragmentLoaded);
@@ -122,11 +148,19 @@ export function GraphPanel({ isOpen, onClose, components }: GraphPanelProps) {
       // Check if fragments are already loaded and populate charts
       if (fragments.list.size > 0) {
         console.log("GraphPanel: Fragments already loaded, populating charts");
-        buildModelIdMap(components).then((modelIdMap) => {
-          console.log("GraphPanel: Initial model ID map", modelIdMap);
-          updateCatPie({ modelIdMap });
-          updateCatBar({ modelIdMap });
-        });
+        buildModelIdMap(components)
+          .then((modelIdMap) => {
+            console.log("GraphPanel: Initial model ID map", modelIdMap);
+            
+            console.log("GraphPanel: Updating pie chart...");
+            updateCatPie({ modelIdMap });
+            
+            console.log("GraphPanel: Updating bar chart...");
+            updateCatBar({ modelIdMap });
+          })
+          .catch((error) => {
+            console.error("GraphPanel: Error populating initial charts:", error);
+          });
       }
 
       // Cleanup
