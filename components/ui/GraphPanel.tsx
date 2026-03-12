@@ -259,16 +259,6 @@ export function GraphPanel({ isOpen, onClose, components }: GraphPanelProps) {
               </h3>
               <div ref={pieChartRef} className="mb-6" />
             </div>
-            <div className="mb-4">
-              <h3 className="text-sm font-medium text-gray-700 mb-2">
-                Categories Bar Chart
-              </h3>
-              <div ref={barChartRef} className="mb-6" />
-            </div>
-            <div className="mb-4">
-              <h3 className="text-sm font-medium text-gray-700 mb-2">Labels</h3>
-              <div id="graph-labels-container" />
-            </div>
           </div>
         </div>
       </div>
