@@ -13,12 +13,9 @@ interface GraphPanelProps {
 
 export function GraphPanel({ isOpen, onClose, components }: GraphPanelProps) {
   const pieChartRef = useRef<HTMLDivElement>(null);
-  const barChartRef = useRef<HTMLDivElement>(null);
   const [pieChart, setPieChart] = useState<BUI.Chart | null>(null);
-  const [barChart, setBarChart] = useState<BUI.Chart | null>(null);
   const [labels, setLabels] = useState<BUI.ChartLegend | null>(null);
   const updatePieRef = useRef<any>(null);
-  const updateBarRef = useRef<any>(null);
 
   // Helper function to build model ID map from fragments
   const buildModelIdMap = async (components: OBC.Components) => {
@@ -183,14 +180,6 @@ export function GraphPanel({ isOpen, onClose, components }: GraphPanelProps) {
     }
   }, [pieChart]);
 
-  // Append the bar chart to its container when ready
-  useEffect(() => {
-    if (barChart && barChartRef.current) {
-      barChartRef.current.innerHTML = "";
-      barChartRef.current.appendChild(barChart);
-    }
-  }, [barChart]);
-
   // Append labels to their container
   useEffect(() => {
     const labelsContainer = document.getElementById("graph-labels-container");
@@ -199,27 +188,6 @@ export function GraphPanel({ isOpen, onClose, components }: GraphPanelProps) {
       labelsContainer.appendChild(labels);
     }
   }, [labels]);
-
-  const handleHighlight = () => {
-    if (!pieChart) return;
-    (pieChart as any).highlight((entry: any) => {
-      if (!("value" in entry)) return false;
-      return entry.value > 100;
-    });
-  };
-
-  const handleFilter = () => {
-    if (!pieChart) return;
-    (pieChart as any).filterByValue((entry: any) => {
-      if (!("value" in entry)) return false;
-      return entry.value > 100;
-    });
-  };
-
-  const handleReset = () => {
-    if (!pieChart) return;
-    (pieChart as any).reset();
-  };
 
   return (
     <>
@@ -258,12 +226,6 @@ export function GraphPanel({ isOpen, onClose, components }: GraphPanelProps) {
                 Categories Pie Chart
               </h3>
               <div ref={pieChartRef} className="mb-6" />
-            </div>
-            <div className="mb-4">
-              <h3 className="text-sm font-medium text-gray-700 mb-2">
-                Categories Bar Chart
-              </h3>
-              <div ref={barChartRef} className="mb-6" />
             </div>
             <div className="mb-4">
               <h3 className="text-sm font-medium text-gray-700 mb-2">Labels</h3>
