@@ -25,6 +25,15 @@ const BCFPanel = dynamic(
     })),
   { ssr: false },
 );
+
+// Dynamically import GraphPanel to avoid SSR issues with @thatopen/ui-obc
+const GraphPanel = dynamic(
+  () =>
+    import("@/components/ui/GraphPanel").then((mod) => ({
+      default: mod.GraphPanel,
+    })),
+  { ssr: false },
+);
 import { useEffect, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import { useSession } from "next-auth/react";
@@ -54,6 +63,7 @@ export default function ViewerPage() {
   // State for properties panel
   const [isPropertiesOpen, setIsPropertiesOpen] = useState(false);
   const [isBCFTopicsOpen, setIsBCFTopicsOpen] = useState(false);
+  const [isGraphOpen, setIsGraphOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [facilityUsers, setFacilityUsers] = useState<FacilityUser[]>([]);
 
@@ -285,6 +295,16 @@ export default function ViewerPage() {
     setIsBCFTopicsOpen(false);
   };
 
+  // Handle graph button click
+  const handleGraph = () => {
+    setIsGraphOpen(true);
+  };
+
+  // Handle graph panel close
+  const handleGraphClose = () => {
+    setIsGraphOpen(false);
+  };
+
   return (
     <div className={styles.pageContainer}>
       {isLoading && (
@@ -299,7 +319,7 @@ export default function ViewerPage() {
         <div ref={containerRef} className={styles.viewerContainer} />
         <PropertiesButton onClick={handleProperties} />
         <BCFTopicsButton onClick={handleBCFTopics} />
-        <GraphButton onClick={() => {}} />
+        <GraphButton onClick={handleGraph} />
         <PropertiesPanel
           isOpen={isPropertiesOpen}
           onClose={handlePropertiesClose}
@@ -313,6 +333,11 @@ export default function ViewerPage() {
           userEmail={session?.user?.email || undefined}
           facilityUsers={facilityUsers}
           facilityId={facilityId}
+        />
+        <GraphPanel
+          isOpen={isGraphOpen}
+          onClose={handleGraphClose}
+          components={componentsRef.current || undefined}
         />
       </div>
     </div>
