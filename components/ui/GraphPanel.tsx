@@ -13,13 +13,12 @@ interface GraphPanelProps {
 
 export function GraphPanel({ isOpen, onClose, components }: GraphPanelProps) {
   const pieChartRef = useRef<HTMLDivElement>(null);
-  const attributesPieChartRef = useRef<HTMLDivElement>(null);
+  const barChartRef = useRef<HTMLDivElement>(null);
   const [pieChart, setPieChart] = useState<BUI.Chart | null>(null);
-  const [attributesPieChart, setAttributesPieChart] =
-    useState<BUI.Chart | null>(null);
+  const [barChart, setBarChart] = useState<BUI.Chart | null>(null);
   const [labels, setLabels] = useState<BUI.ChartLegend | null>(null);
   const updatePieRef = useRef<any>(null);
-  const updateAttributesPieRef = useRef<any>(null);
+  const updateBarRef = useRef<any>(null);
 
   // Helper function to build model ID map from fragments
   const buildModelIdMap = async (components: OBC.Components) => {
@@ -98,20 +97,6 @@ export function GraphPanel({ isOpen, onClose, components }: GraphPanelProps) {
       setPieChart(catPieChart);
       updatePieRef.current = updateCatPie;
 
-      // Create attributes pie chart
-      const [attrPieChart, updateAttrPie] = CUI.charts.attributesChart({
-        type: "pie",
-        addLabels: false,
-        attribute: /empty/,
-        category: /empty/,
-        modelId: "",
-        components,
-      });
-
-      attrPieChart.label = "Attributes Distribution";
-      setAttributesPieChart(attrPieChart);
-      updateAttributesPieRef.current = updateAttrPie;
-
       // Create interactive labels
       const legendElement = BUI.Component.create(() => {
         return BUI.html`
@@ -141,10 +126,6 @@ export function GraphPanel({ isOpen, onClose, components }: GraphPanelProps) {
         legendElement.charts = [...legendElement.charts, catPieChart];
       });
 
-      attrPieChart.addEventListener("data-loaded", () => {
-        legendElement.charts = [...legendElement.charts, attrPieChart];
-      });
-
       // Listen for fragment loading to populate charts
       const fragments = components.get(OBC.FragmentsManager);
       const onFragmentLoaded = async ({ value: model }: any) => {
@@ -154,19 +135,12 @@ export function GraphPanel({ isOpen, onClose, components }: GraphPanelProps) {
         );
 
         try {
-          // Build model ID map and update all charts
+          // Build model ID map and update both charts
           const modelIdMap = await buildModelIdMap(components);
           console.log("GraphPanel: Model ID map built", modelIdMap);
 
-          console.log("GraphPanel: Updating categories chart...");
+          console.log("GraphPanel: Updating pie chart...");
           updateCatPie({ modelIdMap });
-
-          console.log("GraphPanel: Updating attributes chart...");
-          updateAttrPie({
-            attribute: /^Name$/,
-            category: /IFCCOLUMN/,
-            modelId: model.modelId,
-          });
         } catch (error) {
           console.error("GraphPanel: Error updating charts:", error);
         }
@@ -181,19 +155,8 @@ export function GraphPanel({ isOpen, onClose, components }: GraphPanelProps) {
           .then((modelIdMap) => {
             console.log("GraphPanel: Initial model ID map", modelIdMap);
 
-            console.log("GraphPanel: Updating categories chart...");
+            console.log("GraphPanel: Updating pie chart...");
             updateCatPie({ modelIdMap });
-
-            // Get the first model ID from fragments
-            const firstModelId = Array.from(fragments.list.keys())[0];
-            if (firstModelId) {
-              console.log("GraphPanel: Updating attributes chart...");
-              updateAttrPie({
-                attribute: /^Name$/,
-                category: /IFCCOLUMN/,
-                modelId: firstModelId,
-              });
-            }
           })
           .catch((error) => {
             console.error(
@@ -212,7 +175,7 @@ export function GraphPanel({ isOpen, onClose, components }: GraphPanelProps) {
     }
   }, [components]);
 
-  // Append the pie charts to their containers when ready
+  // Append the pie chart to its container when ready
   useEffect(() => {
     if (pieChart && pieChartRef.current) {
       pieChartRef.current.innerHTML = "";
@@ -220,12 +183,13 @@ export function GraphPanel({ isOpen, onClose, components }: GraphPanelProps) {
     }
   }, [pieChart]);
 
+  // Append the bar chart to its container when ready
   useEffect(() => {
-    if (attributesPieChart && attributesPieChartRef.current) {
-      attributesPieChartRef.current.innerHTML = "";
-      attributesPieChartRef.current.appendChild(attributesPieChart);
+    if (barChart && barChartRef.current) {
+      barChartRef.current.innerHTML = "";
+      barChartRef.current.appendChild(barChart);
     }
-  }, [attributesPieChart]);
+  }, [barChart]);
 
   // Append labels to their container
   useEffect(() => {
@@ -235,6 +199,27 @@ export function GraphPanel({ isOpen, onClose, components }: GraphPanelProps) {
       labelsContainer.appendChild(labels);
     }
   }, [labels]);
+
+  const handleHighlight = () => {
+    if (!pieChart) return;
+    (pieChart as any).highlight((entry: any) => {
+      if (!("value" in entry)) return false;
+      return entry.value > 100;
+    });
+  };
+
+  const handleFilter = () => {
+    if (!pieChart) return;
+    (pieChart as any).filterByValue((entry: any) => {
+      if (!("value" in entry)) return false;
+      return entry.value > 100;
+    });
+  };
+
+  const handleReset = () => {
+    if (!pieChart) return;
+    (pieChart as any).reset();
+  };
 
   return (
     <>
@@ -276,9 +261,9 @@ export function GraphPanel({ isOpen, onClose, components }: GraphPanelProps) {
             </div>
             <div className="mb-4">
               <h3 className="text-sm font-medium text-gray-700 mb-2">
-                Attributes Pie Chart
+                Categories Bar Chart
               </h3>
-              <div ref={attributesPieChartRef} className="mb-6" />
+              <div ref={barChartRef} className="mb-6" />
             </div>
             <div className="mb-4">
               <h3 className="text-sm font-medium text-gray-700 mb-2">Labels</h3>
