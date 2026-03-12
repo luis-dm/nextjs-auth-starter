@@ -24,21 +24,21 @@ export function GraphPanel({ isOpen, onClose, components }: GraphPanelProps) {
   const buildModelIdMap = async (components: OBC.Components) => {
     const fragments = components.get(OBC.FragmentsManager);
     const modelIdMap: { [modelId: string]: Set<number> } = {};
-    
+
     for (const [modelId, model] of fragments.list) {
       const localIds: number[] = [];
       const geometryItems = await model.getItemsWithGeometry();
-      
+
       for (const item of geometryItems) {
         if (!item) continue;
         const localId = await item.getLocalId();
         if (!localId) continue;
         localIds.push(localId);
       }
-      
+
       modelIdMap[modelId] = new Set(localIds);
     }
-    
+
     return modelIdMap;
   };
 
@@ -107,8 +107,11 @@ export function GraphPanel({ isOpen, onClose, components }: GraphPanelProps) {
       // Listen for fragment loading to populate charts
       const fragments = components.get(OBC.FragmentsManager);
       const onFragmentLoaded = async ({ value: model }: any) => {
-        console.log("GraphPanel: Fragment loaded, updating charts", model.modelId);
-        
+        console.log(
+          "GraphPanel: Fragment loaded, updating charts",
+          model.modelId,
+        );
+
         // Build model ID map and update both charts
         const modelIdMap = await buildModelIdMap(components);
         updateCatPie({ modelIdMap });
@@ -229,11 +232,15 @@ export function GraphPanel({ isOpen, onClose, components }: GraphPanelProps) {
         <div className="flex-1 overflow-hidden flex flex-col">
           <div className="flex-1 overflow-y-auto p-4">
             <div className="mb-4">
-              <h3 className="text-sm font-medium text-gray-700 mb-2">Categories Pie Chart</h3>
+              <h3 className="text-sm font-medium text-gray-700 mb-2">
+                Categories Pie Chart
+              </h3>
               <div ref={pieChartRef} className="mb-6" />
             </div>
             <div className="mb-4">
-              <h3 className="text-sm font-medium text-gray-700 mb-2">Categories Bar Chart</h3>
+              <h3 className="text-sm font-medium text-gray-700 mb-2">
+                Categories Bar Chart
+              </h3>
               <div ref={barChartRef} className="mb-6" />
             </div>
             <div className="mb-4">
