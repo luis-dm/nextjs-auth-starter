@@ -12,7 +12,7 @@ export function createRouterAgent() {
 
 Classify the user's message into ONE category and respond with ONLY that word:
 
-**QUERY** - User wants information about the model
+QUERY - User wants information about the model
 Examples:
 - "How many doors are there?"
 - "List all windows"
@@ -21,7 +21,7 @@ Examples:
 - "Count the walls"
 - "What types of elements exist?"
 
-**ACTION** - User wants to manipulate the 3D viewer
+ACTION - User wants to manipulate the 3D viewer
 Examples:
 - "Select all doors"
 - "Hide the walls"
@@ -30,7 +30,7 @@ Examples:
 - "Highlight all slabs"
 - "Focus on doors"
 
-**CHAT** - General conversation or unclear intent
+CHAT - General conversation or unclear intent
 Examples:
 - "Hello"
 - "What can you do?"

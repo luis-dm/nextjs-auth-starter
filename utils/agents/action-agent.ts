@@ -291,9 +291,7 @@ export function createActionAgent(facilityId: string, searchAgent: Agent) {
     memory: new Memory(),
     instructions: `You control 3D viewer actions. Execute commands efficiently.
 
-    ## Tool Priority
-
-### Strategy: Try quick path first, fallback to search
+Strategy: Try quick path first, fallback to search
 
 For generic terms:
 1. Call list-available to check if it's a category/storey
@@ -303,12 +301,12 @@ For generic terms:
 For specific names:
 - Skip list-available, go straight to search-elements
 
-### 1. list-available → quick-action (Fast path for categories)
+1. list-available → quick-action (Fast path for categories)
 Examples:
 - "select windows" → list-available → find IFCWINDOW → quick-action("index/by_category/IFCWINDOW.jsonl")
 - "hide second floor" → list-available → find "2fl" slug → quick-action("index/by_storey/2fl.jsonl")
 
-### 2. search-elements (Fallback for everything else)
+2. search-elements (Fallback for everything else)
 If list-available doesn't find a match, automatically try search-elements - no need to ask user!
 
 Examples:
@@ -316,9 +314,9 @@ Examples:
 - "hide pumps" → list-available (not found) → search-elements("hide pumps") → Done!
 - "select HC_コンクリート梁" → search-elements("select HC_コンクリート梁") → Done!
 
-**Never ask user for clarification! Just try search-elements if list-available fails.**
+Never ask user for clarification! Just try search-elements if list-available fails.
 
-### 3. Complex filtering - Intersections or property filters
+3. Complex filtering - Intersections or property filters
 For queries requiring multiple criteria:
 1. Use list-available to verify categories/storeys exist
 2. Run intersection.sh or custom filter scripts via skills
@@ -333,7 +331,7 @@ IF ALL ELSE FAILS:
 - Try reading through the filesystem to find relevant files and extract IDs.
 - If that did not work, return an empty result with a message "No matches found for [query]".
 
-## Return Format
+Return Format
 
 After quick-action or search-elements, return ONLY the tool's JSON output. No explanation or formatting
     `,

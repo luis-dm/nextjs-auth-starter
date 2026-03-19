@@ -108,8 +108,26 @@ export default function ToolbarPanel({ components, world }: ToolbarPanelProps) {
   const [areaEnabled, setAreaEnabled] = useState(false);
   const [sectionEnabled, setSectionEnabled] = useState(false);
 
+  const [showLengthMenu, setShowLengthMenu] = useState(false);
+  const [lengthMode, setLengthMode] = useState<"free" | "edge">("free");
+  const [showAreaMenu, setShowAreaMenu] = useState(false);
+  const [areaMode, setAreaMode] = useState<string>("free");
+  const [availableAreaModes, setAvailableAreaModes] = useState<string[]>([]);
+
   const isTouchDevice =
     "ontouchstart" in window || navigator.maxTouchPoints > 0;
+
+  // Load available area measurement modes
+  useEffect(() => {
+    if (!components) return;
+    const areaMeasurer = components.get(OBF.AreaMeasurement);
+    if ((areaMeasurer as any).modes) {
+      setAvailableAreaModes((areaMeasurer as any).modes);
+      if ((areaMeasurer as any).mode) {
+        setAreaMode((areaMeasurer as any).mode);
+      }
+    }
+  }, [components]);
 
   useEffect(() => {
     if (!world || !isTouchDevice) return;
@@ -272,73 +290,70 @@ export default function ToolbarPanel({ components, world }: ToolbarPanelProps) {
   );
 
   // Event handlers
-  const onLength = useCallback(
-    (event: React.MouseEvent) => {
+  const activateLength = useCallback(
+    (mode: "free" | "edge") => {
       if (!components) return;
-
-      const highlighter = components.get(OBF.Highlighter);
       const lengthMeasurer = components.get(OBF.LengthMeasurement);
-      const button = event.currentTarget as HTMLElement;
-
-      document.querySelectorAll(".toolbar-button").forEach((btn) => {
-        const htmlBtn = btn as HTMLElement;
-        const btnIcon = htmlBtn.querySelector(".material-icons") as HTMLElement;
-        if (
-          btnIcon &&
-          (btnIcon.textContent === "straighten" ||
-            btnIcon.textContent === "crop_free" ||
-            btnIcon.textContent === "content_cut")
-        ) {
-          htmlBtn.classList.remove("active");
-        }
-      });
-
-      const wasEnabled = lengthMeasurer.enabled;
-      disableAll(["length"]);
-      lengthMeasurer.enabled = !wasEnabled;
-      setLengthEnabled(!wasEnabled);
-      highlighter.enabled = !lengthMeasurer.enabled;
-
-      if (!wasEnabled) {
-        button.classList.add("active");
-      }
-    },
-    [components, disableAll],
-  );
-
-  const onArea = useCallback(
-    (event: React.MouseEvent) => {
-      if (!components) return;
-
       const highlighter = components.get(OBF.Highlighter);
-      const areaMeasurer = components.get(OBF.AreaMeasurement);
-      const button = event.currentTarget as HTMLElement;
 
-      document.querySelectorAll(".toolbar-button").forEach((btn) => {
-        const htmlBtn = btn as HTMLElement;
-        const btnIcon = htmlBtn.querySelector(".material-icons") as HTMLElement;
-        if (
-          btnIcon &&
-          (btnIcon.textContent === "straighten" ||
-            btnIcon.textContent === "crop_free" ||
-            btnIcon.textContent === "content_cut")
-        ) {
-          htmlBtn.classList.remove("active");
-        }
-      });
+      (lengthMeasurer as any).mode = mode;
+      (lengthMeasurer as any).snappings =
+        mode === "edge"
+          ? [FRAGS.SnappingClass.LINE]
+          : [FRAGS.SnappingClass.POINT];
 
-      const wasEnabled = areaMeasurer.enabled;
-      disableAll(["area"]);
-      areaMeasurer.enabled = !wasEnabled;
-      setAreaEnabled(!wasEnabled);
-      highlighter.enabled = !areaMeasurer.enabled;
+      setLengthMode(mode);
 
-      if (!wasEnabled) {
-        button.classList.add("active");
+      if (!lengthEnabled) {
+        disableAll(["length"]);
+        lengthMeasurer.enabled = true;
+        setLengthEnabled(true);
+        highlighter.enabled = false;
       }
+
+      setShowLengthMenu(false);
     },
-    [components, disableAll],
+    [components, disableAll, lengthEnabled],
   );
+
+  const onLengthClick = useCallback(() => {
+    if (!components || !lengthEnabled) return;
+    const lengthMeasurer = components.get(OBF.LengthMeasurement);
+    const highlighter = components.get(OBF.Highlighter);
+    lengthMeasurer.enabled = false;
+    setLengthEnabled(false);
+    highlighter.enabled = true;
+  }, [components, lengthEnabled]);
+
+  const activateArea = useCallback(
+    (mode: string) => {
+      if (!components) return;
+      const areaMeasurer = components.get(OBF.AreaMeasurement);
+      const highlighter = components.get(OBF.Highlighter);
+
+      (areaMeasurer as any).mode = mode;
+      setAreaMode(mode);
+
+      if (!areaEnabled) {
+        disableAll(["area"]);
+        areaMeasurer.enabled = true;
+        setAreaEnabled(true);
+        highlighter.enabled = false;
+      }
+
+      setShowAreaMenu(false);
+    },
+    [components, disableAll, areaEnabled],
+  );
+
+  const onAreaClick = useCallback(() => {
+    if (!components || !areaEnabled) return;
+    const areaMeasurer = components.get(OBF.AreaMeasurement);
+    const highlighter = components.get(OBF.Highlighter);
+    areaMeasurer.enabled = false;
+    setAreaEnabled(false);
+    highlighter.enabled = true;
+  }, [components, areaEnabled]);
 
   const onSection = useCallback(
     (event: React.MouseEvent) => {
@@ -642,46 +657,126 @@ export default function ToolbarPanel({ components, world }: ToolbarPanelProps) {
     <div className="flex items-center justify-evenly p-3 bg-white border border-gray-200 shadow-sm rounded-lg w-full">
       {/* Length button */}
       <div
-        className={`toolbar-button flex flex-col items-center py-2 px-3 cursor-pointer transition-all duration-200 ease-in-out min-w-[60px] select-none hover:border-gray-300 hover:bg-gray-50 ${
-          lengthEnabled ? "active" : ""
-        }`}
-        onClick={onLength}
-        title={"length"}
+        className="relative pb-1"
+        onMouseEnter={() => setShowLengthMenu(true)}
+        onMouseLeave={() => setShowLengthMenu(false)}
       >
-        <Ruler
-          className={`w-5 h-5 mb-0.5 transition-colors duration-200 ease-in-out ${
-            lengthEnabled ? "text-[#3870D5]" : "text-gray-600"
+        {showLengthMenu && (
+          <div className="absolute bottom-full left-1/2 -translate-x-1/2 flex flex-col gap-1 bg-white border border-gray-200 shadow-lg rounded-md p-1 z-50 min-w-[80px]">
+            {(["free", "edge"] as const).map((mode) => (
+              <button
+                key={mode}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  activateLength(mode);
+                }}
+                className={`px-3 py-1.5 text-xs font-medium rounded transition-colors text-left whitespace-nowrap ${
+                  lengthMode === mode && lengthEnabled
+                    ? "bg-blue-50 text-[#3870D5]"
+                    : "text-gray-700 hover:bg-gray-100"
+                }`}
+              >
+                {mode}
+              </button>
+            ))}
+          </div>
+        )}
+        <div
+          role="button"
+          tabIndex={0}
+          className={`toolbar-button flex flex-col items-center py-2 px-3 transition-all duration-200 ease-in-out min-w-[60px] select-none ${
+            lengthEnabled
+              ? "cursor-pointer active hover:border-gray-300 hover:bg-gray-50"
+              : "cursor-default"
           }`}
-        />
-        <span
-          className={`button-label text-[10px] font-medium text-center leading-tight transition-colors duration-200 ease-in-out ${
-            lengthEnabled ? "text-[#3870D5]" : "text-gray-400"
-          }`}
+          onClick={(e) => {
+            e.stopPropagation();
+            onLengthClick();
+          }}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              e.stopPropagation();
+              onLengthClick();
+            }
+          }}
+          title="length"
         >
-          {"length"}
-        </span>
+          <Ruler
+            className={`w-5 h-5 mb-0.5 transition-colors duration-200 ease-in-out ${
+              lengthEnabled ? "text-[#3870D5]" : "text-gray-600"
+            }`}
+          />
+          <span
+            className={`button-label text-[10px] font-medium text-center leading-tight transition-colors duration-200 ease-in-out ${
+              lengthEnabled ? "text-[#3870D5]" : "text-gray-400"
+            }`}
+          >
+            {"length"}
+          </span>
+        </div>
       </div>
 
       {/* Area button */}
       <div
-        className={`toolbar-button flex flex-col items-center py-2 px-3 cursor-pointer transition-all duration-200 ease-in-out min-w-[60px] select-none hover:border-gray-300 hover:bg-gray-50 ${
-          areaEnabled ? "active" : ""
-        }`}
-        onClick={onArea}
-        title={"area"}
+        className="relative pb-1"
+        onMouseEnter={() => setShowAreaMenu(true)}
+        onMouseLeave={() => setShowAreaMenu(false)}
       >
-        <Minimize2
-          className={`w-5 h-5 mb-0.5 transition-colors duration-200 ease-in-out ${
-            areaEnabled ? "text-[#3870D5]" : "text-gray-600"
+        {showAreaMenu && availableAreaModes.length > 0 && (
+          <div className="absolute bottom-full left-1/2 -translate-x-1/2 flex flex-col gap-1 bg-white border border-gray-200 shadow-lg rounded-md p-1 z-50 min-w-[80px]">
+            {availableAreaModes.map((mode) => (
+              <button
+                key={mode}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  activateArea(mode);
+                }}
+                className={`px-3 py-1.5 text-xs font-medium rounded transition-colors text-left whitespace-nowrap ${
+                  areaMode === mode && areaEnabled
+                    ? "bg-blue-50 text-[#3870D5]"
+                    : "text-gray-700 hover:bg-gray-100"
+                }`}
+              >
+                {mode}
+              </button>
+            ))}
+          </div>
+        )}
+        <div
+          role="button"
+          tabIndex={0}
+          className={`toolbar-button flex flex-col items-center py-2 px-3 transition-all duration-200 ease-in-out min-w-[60px] select-none ${
+            areaEnabled
+              ? "cursor-pointer active hover:border-gray-300 hover:bg-gray-50"
+              : "cursor-default"
           }`}
-        />
-        <span
-          className={`button-label text-[10px] font-medium text-center leading-tight transition-colors duration-200 ease-in-out ${
-            areaEnabled ? "text-[#3870D5]" : "text-gray-400"
-          }`}
+          onClick={(e) => {
+            e.stopPropagation();
+            onAreaClick();
+          }}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              e.stopPropagation();
+              onAreaClick();
+            }
+          }}
+          title="area"
         >
-          {"area"}
-        </span>
+          <Minimize2
+            className={`w-5 h-5 mb-0.5 transition-colors duration-200 ease-in-out ${
+              areaEnabled ? "text-[#3870D5]" : "text-gray-600"
+            }`}
+          />
+          <span
+            className={`button-label text-[10px] font-medium text-center leading-tight transition-colors duration-200 ease-in-out ${
+              areaEnabled ? "text-[#3870D5]" : "text-gray-400"
+            }`}
+          >
+            {"area"}
+          </span>
+        </div>
       </div>
 
       {/* Section button */}

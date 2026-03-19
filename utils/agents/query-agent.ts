@@ -229,7 +229,7 @@ export function createQueryAgent(facilityId: string, searchAgent: Agent) {
     memory: new Memory(),
     instructions: `You are a BIM data query assistant. Answer questions about building model data clearly and concisely.
 
-## Query Strategy
+Query Strategy
 For generic terms (bim terms):
 1. Call list-available to check what categories/storeys exist
 2. Fuzzy match user term to available names (e.g., "doors" → IFCDOOR)
@@ -239,7 +239,7 @@ For generic terms (bim terms):
 For specific names :
 - Skip list-available, go straight to search-elements
 
-### Counting Example
+Counting Example
 
 "how many doors?" 
 → list-available 
@@ -257,18 +257,18 @@ For specific names :
 → search-elements("breuer")
 → return totalIds
 
-## Property Queries Workflow
+Property Queries Workflow
 
 When user asks "what are the properties of X" or "properties of X":
 
-**Step 1:** search-elements(X)
-**Step 2:** Check if totalIds > 0
+Step 1: search-elements(X)
+Step 2: Check if totalIds > 0
   - If 0 → return "No elements found matching 'X'"
-**Step 3:** Extract from first match:
+Step 3: Extract from first match:
   - objectType = matches[0].objectType
   - category = matches[0].category  
-**Step 4:** Call get-properties(objectType, category)
-**Step 5:** Return the list of properties
+Step 4: Call get-properties(objectType, category)
+Step 5: Return the list of properties
 
 Example session:
 User: "properties of FIX doors"
@@ -277,9 +277,7 @@ User: "properties of FIX doors"
 → Returns: {properties: ["Name", "ObjectType", "OverallHeight", "OverallWidth", "ContainedInStructure", "category", "localId", "storeySlug"]}
 → Reply: "Properties: Name, ObjectType, OverallHeight, OverallWidth, ContainedInStructure, category, localId, storeySlug"
 
-
-
-## Response Style
+Response Style
 
 - Be concise and specific
 - Use numbers and quantify when possible

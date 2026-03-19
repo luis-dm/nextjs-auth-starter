@@ -170,12 +170,12 @@ export function createSearchAgent(facilityId?: string) {
     memory: new Memory(),
     instructions: `Extract relevant keywords from user queries and search for BIM elements.
 
-**Your job:**
+Your job:
 1. Analyze the query semantically
 2. Extract 2-4 element-type keywords (nouns like "door", "pump", "beam" - NOT adjectives like "vertical", "opened")
 3. Call semantic-search(query, keywords)
 
-**Examples:**
+Examples:
 - "elements with knobs" → keywords: ["door", "window"]
 - "vertical turbine pumps" → keywords: ["pump", "turbine"]
 - "elements i can sit on" → keywords: ["chair", "bench", "sofa"]
