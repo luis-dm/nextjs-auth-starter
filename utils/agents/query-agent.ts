@@ -225,7 +225,9 @@ const createGetSchemaKeysTool = (workspace: Workspace) => ({
     keys: z.array(
       z.object({
         key: z.string(),
-        count: z.number().describe("How many elements in this category have this key"),
+        count: z
+          .number()
+          .describe("How many elements in this category have this key"),
       }),
     ),
     source: z.enum(["by_category", "global"]),
@@ -245,8 +247,12 @@ const createGetSchemaKeysTool = (workspace: Workspace) => ({
       schemaObject = JSON.parse(typeof raw === "string" ? raw : raw.toString());
     } catch {
       try {
-        const raw = await workspace.filesystem.readFile("schema/keys_global.json");
-        schemaObject = JSON.parse(typeof raw === "string" ? raw : raw.toString());
+        const raw = await workspace.filesystem.readFile(
+          "schema/keys_global.json",
+        );
+        schemaObject = JSON.parse(
+          typeof raw === "string" ? raw : raw.toString(),
+        );
         source = "global";
       } catch {
         return { category, keys: [], source: "by_category" as const };
@@ -281,21 +287,23 @@ const createAggregatePropertyTool = (workspace: Workspace) => ({
       .max(2)
       .describe(
         "One or two property key names to use, exactly as they appear in get-schema-keys output. " +
-        "Single key for direct aggregation. Two keys when a combiner is needed (e.g. multiply for area).",
+          "Single key for direct aggregation. Two keys when a combiner is needed (e.g. multiply for area).",
       ),
     combiner: z
       .enum(["single", "multiply", "add", "subtract", "divide"])
       .default("single")
       .describe(
         "How to combine two properties per element before aggregating. " +
-        "'single' when properties has exactly one key. " +
-        "'multiply' for area (height × width). " +
-        "'add' / 'subtract' / 'divide' for other derived values.",
+          "'single' when properties has exactly one key. " +
+          "'multiply' for area (height × width). " +
+          "'add' / 'subtract' / 'divide' for other derived values.",
       ),
     aggregation: z
       .enum(["sum", "average", "min", "max"])
       .default("average")
-      .describe("Statistical aggregation to apply across all matching elements"),
+      .describe(
+        "Statistical aggregation to apply across all matching elements",
+      ),
     objectType: z
       .string()
       .optional()
@@ -318,32 +326,70 @@ const createAggregatePropertyTool = (workspace: Workspace) => ({
     average: z.number().optional(),
     min: z.number().optional(),
     max: z.number().optional(),
-    skippedCount: z.number().describe("Elements with non-numeric or missing values that were excluded"),
+    skippedCount: z
+      .number()
+      .describe(
+        "Elements with non-numeric or missing values that were excluded",
+      ),
     error: z.string().optional(),
   }),
   execute: async (params: any) => {
     const category = params.inputData?.category || params.category;
-    const properties: string[] = params.inputData?.properties || params.properties || [];
+    const properties: string[] =
+      params.inputData?.properties || params.properties || [];
     const combiner = params.inputData?.combiner || params.combiner || "single";
-    const aggregation = params.inputData?.aggregation || params.aggregation || "average";
+    const aggregation =
+      params.inputData?.aggregation || params.aggregation || "average";
     const objectType = params.inputData?.objectType || params.objectType;
     const storeySlug = params.inputData?.storeySlug || params.storeySlug;
 
     if (!workspace.filesystem) throw new Error("Filesystem not available");
 
     if (properties.length === 0) {
-      return { category, properties, combiner, aggregation, objectType, storeySlug, elementCount: 0, skippedCount: 0, error: "No properties specified" };
+      return {
+        category,
+        properties,
+        combiner,
+        aggregation,
+        objectType,
+        storeySlug,
+        elementCount: 0,
+        skippedCount: 0,
+        error: "No properties specified",
+      };
     }
     if (combiner !== "single" && properties.length < 2) {
-      return { category, properties, combiner, aggregation, objectType, storeySlug, elementCount: 0, skippedCount: 0, error: `Combiner '${combiner}' requires two property keys` };
+      return {
+        category,
+        properties,
+        combiner,
+        aggregation,
+        objectType,
+        storeySlug,
+        elementCount: 0,
+        skippedCount: 0,
+        error: `Combiner '${combiner}' requires two property keys`,
+      };
     }
 
     let fileContent: string;
     try {
-      const raw = await workspace.filesystem.readFile(`index/by_category/${category}.jsonl`);
+      const raw = await workspace.filesystem.readFile(
+        `index/by_category/${category}.jsonl`,
+      );
       fileContent = typeof raw === "string" ? raw : raw.toString();
     } catch (err) {
-      return { category, properties, combiner, aggregation, objectType, storeySlug, elementCount: 0, skippedCount: 0, error: `Could not read index for ${category}: ${err instanceof Error ? err.message : String(err)}` };
+      return {
+        category,
+        properties,
+        combiner,
+        aggregation,
+        objectType,
+        storeySlug,
+        elementCount: 0,
+        skippedCount: 0,
+        error: `Could not read index for ${category}: ${err instanceof Error ? err.message : String(err)}`,
+      };
     }
 
     const values: number[] = [];
@@ -380,7 +426,10 @@ const createAggregatePropertyTool = (workspace: Workspace) => ({
       } else if (combiner === "subtract") {
         elementValue = nums[0] - nums[1];
       } else if (combiner === "divide") {
-        if (nums[1] === 0) { skippedCount++; continue; }
+        if (nums[1] === 0) {
+          skippedCount++;
+          continue;
+        }
         elementValue = nums[0] / nums[1];
       } else {
         elementValue = nums[0];
@@ -390,7 +439,18 @@ const createAggregatePropertyTool = (workspace: Workspace) => ({
     }
 
     if (values.length === 0) {
-      return { category, properties, combiner, aggregation, objectType, storeySlug, elementCount: 0, skippedCount, error: "No elements with valid numeric values for the requested properties" };
+      return {
+        category,
+        properties,
+        combiner,
+        aggregation,
+        objectType,
+        storeySlug,
+        elementCount: 0,
+        skippedCount,
+        error:
+          "No elements with valid numeric values for the requested properties",
+      };
     }
 
     const sum = values.reduce((a, b) => a + b, 0);
@@ -399,12 +459,29 @@ const createAggregatePropertyTool = (workspace: Workspace) => ({
     const max = Math.max(...values);
 
     const result =
-      aggregation === "sum" ? sum
-      : aggregation === "min" ? min
-      : aggregation === "max" ? max
-      : average;
+      aggregation === "sum"
+        ? sum
+        : aggregation === "min"
+          ? min
+          : aggregation === "max"
+            ? max
+            : average;
 
-    return { category, properties, combiner, aggregation, objectType, storeySlug, elementCount: values.length, result, sum, average, min, max, skippedCount };
+    return {
+      category,
+      properties,
+      combiner,
+      aggregation,
+      objectType,
+      storeySlug,
+      elementCount: values.length,
+      result,
+      sum,
+      average,
+      min,
+      max,
+      skippedCount,
+    };
   },
 });
 
@@ -418,16 +495,23 @@ const createAggregatePropertyByIdsTool = (workspace: Workspace) => ({
     "Use this when you already have IDs from search-elements (e.g. 'total area of W_2c windows'). " +
     "Call get-schema-keys with the category of the first element first to discover correct property key names.",
   inputSchema: z.object({
-    ids: z.array(z.number()).min(1).describe("Element IDs from search-elements allIds"),
+    ids: z
+      .array(z.number())
+      .min(1)
+      .describe("Element IDs from search-elements allIds"),
     properties: z
       .array(z.string())
       .min(1)
       .max(2)
-      .describe("One or two property key names, exactly as they appear in get-schema-keys output"),
+      .describe(
+        "One or two property key names, exactly as they appear in get-schema-keys output",
+      ),
     combiner: z
       .enum(["single", "multiply", "add", "subtract", "divide"])
       .default("single")
-      .describe("How to combine two properties per element. 'single' for one key, 'multiply' for area, etc."),
+      .describe(
+        "How to combine two properties per element. 'single' for one key, 'multiply' for area, etc.",
+      ),
     aggregation: z
       .enum(["sum", "average", "min", "max"])
       .default("average")
@@ -444,23 +528,47 @@ const createAggregatePropertyByIdsTool = (workspace: Workspace) => ({
     average: z.number().optional(),
     min: z.number().optional(),
     max: z.number().optional(),
-    skippedCount: z.number().describe("Elements with missing/non-numeric values that were excluded"),
-    skippedIds: z.array(z.number()).describe("IDs that could not be read or had no valid value"),
+    skippedCount: z
+      .number()
+      .describe("Elements with missing/non-numeric values that were excluded"),
+    skippedIds: z
+      .array(z.number())
+      .describe("IDs that could not be read or had no valid value"),
     error: z.string().optional(),
   }),
   execute: async (params: any) => {
     const ids: number[] = params.inputData?.ids || params.ids || [];
-    const properties: string[] = params.inputData?.properties || params.properties || [];
+    const properties: string[] =
+      params.inputData?.properties || params.properties || [];
     const combiner = params.inputData?.combiner || params.combiner || "single";
-    const aggregation = params.inputData?.aggregation || params.aggregation || "average";
+    const aggregation =
+      params.inputData?.aggregation || params.aggregation || "average";
 
     if (!workspace.filesystem) throw new Error("Filesystem not available");
 
     if (properties.length === 0) {
-      return { ids, properties, combiner, aggregation, elementCount: 0, skippedCount: 0, skippedIds: [], error: "No properties specified" };
+      return {
+        ids,
+        properties,
+        combiner,
+        aggregation,
+        elementCount: 0,
+        skippedCount: 0,
+        skippedIds: [],
+        error: "No properties specified",
+      };
     }
     if (combiner !== "single" && properties.length < 2) {
-      return { ids, properties, combiner, aggregation, elementCount: 0, skippedCount: 0, skippedIds: [], error: `Combiner '${combiner}' requires two property keys` };
+      return {
+        ids,
+        properties,
+        combiner,
+        aggregation,
+        elementCount: 0,
+        skippedCount: 0,
+        skippedIds: [],
+        error: `Combiner '${combiner}' requires two property keys`,
+      };
     }
 
     const values: number[] = [];
@@ -493,7 +601,10 @@ const createAggregatePropertyByIdsTool = (workspace: Workspace) => ({
       } else if (combiner === "subtract") {
         elementValue = nums[0] - nums[1];
       } else if (combiner === "divide") {
-        if (nums[1] === 0) { skippedIds.push(id); continue; }
+        if (nums[1] === 0) {
+          skippedIds.push(id);
+          continue;
+        }
         elementValue = nums[0] / nums[1];
       } else {
         elementValue = nums[0];
@@ -505,7 +616,17 @@ const createAggregatePropertyByIdsTool = (workspace: Workspace) => ({
     const skippedCount = skippedIds.length;
 
     if (values.length === 0) {
-      return { ids, properties, combiner, aggregation, elementCount: 0, skippedCount, skippedIds, error: "No elements with valid numeric values for the requested properties" };
+      return {
+        ids,
+        properties,
+        combiner,
+        aggregation,
+        elementCount: 0,
+        skippedCount,
+        skippedIds,
+        error:
+          "No elements with valid numeric values for the requested properties",
+      };
     }
 
     const sum = values.reduce((a, b) => a + b, 0);
@@ -514,12 +635,28 @@ const createAggregatePropertyByIdsTool = (workspace: Workspace) => ({
     const max = Math.max(...values);
 
     const result =
-      aggregation === "sum" ? sum
-      : aggregation === "min" ? min
-      : aggregation === "max" ? max
-      : average;
+      aggregation === "sum"
+        ? sum
+        : aggregation === "min"
+          ? min
+          : aggregation === "max"
+            ? max
+            : average;
 
-    return { ids, properties, combiner, aggregation, elementCount: values.length, result, sum, average, min, max, skippedCount, skippedIds };
+    return {
+      ids,
+      properties,
+      combiner,
+      aggregation,
+      elementCount: values.length,
+      result,
+      sum,
+      average,
+      min,
+      max,
+      skippedCount,
+      skippedIds,
+    };
   },
 });
 
