@@ -131,6 +131,11 @@ export function createBIMWorkflow(facilityId: string) {
 
       const result = await actionAgent.generate(inputData.message, {
         ...memoryConfig,
+        providerOptions: {
+          openai: {
+            reasoningEffort: "low",
+          },
+        },
       });
 
       console.log("Action result:", result.text);
