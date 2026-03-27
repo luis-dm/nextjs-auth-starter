@@ -165,8 +165,8 @@ export function BCFPanel({
     if (!marker) return;
 
     world?.scene?.three.remove(marker.sprite);
+    marker.sprite.material.map?.dispose?.();
     marker.sprite.material.dispose();
-    marker.sprite.geometry?.dispose?.();
     markerEntriesRef.current.delete(topicGuid);
   };
 
@@ -184,6 +184,7 @@ export function BCFPanel({
     const material = new THREE.SpriteMaterial({
       map: texture,
       transparent: true,
+      alphaTest: 0.35,
       depthTest: false,
       depthWrite: false,
       sizeAttenuation: true,
