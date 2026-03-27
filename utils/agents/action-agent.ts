@@ -191,6 +191,271 @@ const createListAvailableTool = (workspace: Workspace) => ({
   },
 });
 
+const createGetSchemaKeysTool = (workspace: Workspace) => ({
+  id: "get-schema-keys",
+  description:
+    "Return all property keys available for an IFC category from the schema index (with occurrence counts). " +
+    "Call this before filter-elements to discover the actual property key names in this model for a given category.",
+  inputSchema: z.object({
+    category: z.string().describe("IFC category (e.g., IFCWINDOW, IFCDOOR)"),
+  }),
+  outputSchema: z.object({
+    category: z.string(),
+    keys: z.array(
+      z.object({
+        key: z.string(),
+        count: z.number().describe("Number of elements that have this key"),
+      }),
+    ),
+    source: z.enum(["by_category", "global"]),
+  }),
+  execute: async (params: any) => {
+    const category = params.inputData?.category || params.category;
+    if (!workspace.filesystem) throw new Error("Filesystem not available");
+
+    let schemaObject: Record<string, number>;
+    let source: "by_category" | "global" = "by_category";
+
+    try {
+      const raw = await workspace.filesystem.readFile(
+        `schema/keys_by_category/${category}.json`,
+      );
+      schemaObject = JSON.parse(typeof raw === "string" ? raw : raw.toString());
+    } catch {
+      try {
+        const raw = await workspace.filesystem.readFile(
+          "schema/keys_global.json",
+        );
+        schemaObject = JSON.parse(
+          typeof raw === "string" ? raw : raw.toString(),
+        );
+        source = "global";
+      } catch {
+        return { category, keys: [], source: "by_category" as const };
+      }
+    }
+
+    const keys = Object.entries(schemaObject)
+      .filter(([key]) => !key.startsWith("_"))
+      .map(([key, count]) => ({ key, count: count as number }))
+      .sort((a, b) => b.count - a.count);
+
+    return { category, keys, source };
+  },
+});
+
+// Filter elements by any combination of: storey, objectType, and numeric property
+// conditions (including derived values like area = height × width).
+// Source is either a category JSONL (for generic terms) or a list of IDs from
+// search-elements (for name-based queries). All filters are ANDed together.
+const createFilterElementsTool = (workspace: Workspace) => ({
+  id: "filter-elements",
+  description:
+    "Filter BIM elements by multiple criteria: storey, objectType, and/or numeric property conditions. " +
+    "Always call get-schema-keys first to discover the actual property key names for the category. " +
+    "Values must be in model units (typically mm or mm²). The LLM must convert real-world units before passing. " +
+    "Returns matching element IDs ready for a viewer action.",
+  inputSchema: z.object({
+    category: z
+      .string()
+      .optional()
+      .describe("IFC category to read from. Provide this OR ids, not both."),
+    ids: z
+      .array(z.number())
+      .optional()
+      .describe(
+        "Specific element IDs to filter (from search-elements). Provide this OR category.",
+      ),
+    storeySlug: z
+      .string()
+      .optional()
+      .describe("Only include elements on this storey slug (e.g. '1fl', 'gl')"),
+    objectType: z
+      .string()
+      .optional()
+      .describe("Only include elements with this exact ObjectType"),
+    filters: z
+      .array(
+        z.object({
+          properties: z
+            .array(z.string())
+            .min(1)
+            .max(2)
+            .describe(
+              "One or two property key names exactly as returned by get-schema-keys",
+            ),
+          combiner: z
+            .enum(["single", "multiply", "add", "subtract", "divide"])
+            .default("single")
+            .describe(
+              "How to combine two properties into a single value. 'multiply' for area.",
+            ),
+          operator: z
+            .enum(["gt", "gte", "lt", "lte", "eq", "neq"])
+            .describe(
+              "Comparison operator: gt >, gte >=, lt <, lte <=, eq ==, neq !=",
+            ),
+          value: z
+            .number()
+            .describe(
+              "Threshold in model units. Convert real-world units (e.g. 5㎡ → 5000000 mm²).",
+            ),
+        }),
+      )
+      .min(1)
+      .describe(
+        "One or more numeric filter conditions — all must be satisfied (AND logic)",
+      ),
+  }),
+  outputSchema: z.object({
+    action: z.literal("filter"),
+    elementIds: z.array(z.number()),
+    count: z.number(),
+    skippedCount: z.number(),
+    appliedFilters: z.array(
+      z.object({
+        properties: z.array(z.string()),
+        combiner: z.string(),
+        operator: z.string(),
+        value: z.number(),
+      }),
+    ),
+    error: z.string().optional(),
+  }),
+  execute: async (params: any) => {
+    const category: string | undefined =
+      params.inputData?.category || params.category;
+    const ids: number[] | undefined = params.inputData?.ids || params.ids;
+    const storeySlug: string | undefined =
+      params.inputData?.storeySlug || params.storeySlug;
+    const objectType: string | undefined =
+      params.inputData?.objectType || params.objectType;
+    const filters: Array<{
+      properties: string[];
+      combiner: string;
+      operator: string;
+      value: number;
+    }> = params.inputData?.filters || params.filters || [];
+
+    if (!workspace.filesystem) throw new Error("Filesystem not available");
+    if (!category && (!ids || ids.length === 0)) {
+      return {
+        action: "filter" as const,
+        elementIds: [],
+        count: 0,
+        skippedCount: 0,
+        appliedFilters: filters,
+        error: "Provide either category or ids",
+      };
+    }
+
+    const compare = (
+      actual: number,
+      operator: string,
+      threshold: number,
+    ): boolean => {
+      switch (operator) {
+        case "gt":
+          return actual > threshold;
+        case "gte":
+          return actual >= threshold;
+        case "lt":
+          return actual < threshold;
+        case "lte":
+          return actual <= threshold;
+        case "eq":
+          return actual === threshold;
+        case "neq":
+          return actual !== threshold;
+        default:
+          return false;
+      }
+    };
+
+    const computeValue = (
+      element: Record<string, any>,
+      properties: string[],
+      combiner: string,
+    ): number | null => {
+      const nums = properties.map((key) => Number(element[key]));
+      if (nums.some((n) => !Number.isFinite(n))) return null;
+      if (combiner === "single" || properties.length === 1) return nums[0];
+      if (combiner === "multiply") return nums[0] * nums[1];
+      if (combiner === "add") return nums[0] + nums[1];
+      if (combiner === "subtract") return nums[0] - nums[1];
+      if (combiner === "divide")
+        return nums[1] === 0 ? null : nums[0] / nums[1];
+      return nums[0];
+    };
+
+    const matchesElement = (element: Record<string, any>): boolean => {
+      if (storeySlug && element.storeySlug !== storeySlug) return false;
+      if (objectType && element.ObjectType !== objectType) return false;
+      for (const f of filters) {
+        const val = computeValue(element, f.properties, f.combiner);
+        if (val === null || !compare(val, f.operator, f.value)) return false;
+      }
+      return true;
+    };
+
+    const matchedIds: number[] = [];
+    let skippedCount = 0;
+
+    if (category) {
+      let fileContent: string;
+      try {
+        const raw = await workspace.filesystem.readFile(
+          `index/by_category/${category}.jsonl`,
+        );
+        fileContent = typeof raw === "string" ? raw : raw.toString();
+      } catch (err) {
+        return {
+          action: "filter" as const,
+          elementIds: [],
+          count: 0,
+          skippedCount: 0,
+          appliedFilters: filters,
+          error: `Could not read index for ${category}: ${err instanceof Error ? err.message : String(err)}`,
+        };
+      }
+      for (const line of fileContent.split("\n")) {
+        if (!line.trim()) continue;
+        try {
+          const element = JSON.parse(line);
+          if (matchesElement(element))
+            matchedIds.push(element._localId ?? element.localId);
+          else skippedCount++;
+        } catch {
+          skippedCount++;
+        }
+      }
+    } else {
+      for (const id of ids!) {
+        try {
+          const raw = await workspace.filesystem.readFile(
+            `raw/by_id/${id}.json`,
+          );
+          const element = JSON.parse(
+            typeof raw === "string" ? raw : raw.toString(),
+          );
+          if (matchesElement(element)) matchedIds.push(id);
+          else skippedCount++;
+        } catch {
+          skippedCount++;
+        }
+      }
+    }
+
+    return {
+      action: "filter" as const,
+      elementIds: matchedIds,
+      count: matchedIds.length,
+      skippedCount,
+      appliedFilters: filters,
+    };
+  },
+});
+
 const createQuickActionTool = (workspace: Workspace) => ({
   id: "quick-action",
   description:
@@ -316,16 +581,41 @@ Examples:
 
 Never ask user for clarification! Just try search-elements if list-available fails.
 
-3. Complex filtering - Intersections or property filters
-For queries requiring multiple criteria:
-1. Use list-available to verify categories/storeys exist
-2. Run intersection.sh or custom filter scripts via skills
-3. Pass results to format-action
+3. Multi-criteria filtering (storey + property conditions)
 
-Example: "windows on first floor"
-1. list-available → verify IFCWINDOW exists and get floor slug
-2. Run intersection script → get IDs
-3. format-action with results
+Use filter-elements when the query has ANY of: a storey constraint, a numeric threshold, or a computed property condition (area, height, etc.).
+
+Always call get-schema-keys FIRST to discover the actual property key names for that model — they vary ("Height", "height", "OverallHeight", etc.).
+
+Model units are typically mm, so convert real-world values:
+  5㎡  → 5_000_000 mm²   (area = height_mm × width_mm)
+  3m   → 3_000 mm
+  10cm → 100 mm
+
+Path A — generic category term:
+  1. list-available → map term to IFC category + find storey slug
+  2. get-schema-keys(category) → pick property key(s)
+  3. filter-elements(category, storeySlug?, filters, ...)
+  4. Return elementIds with the requested action
+
+Path B — specific element name:
+  1. search-elements(name) → allIds + matches[0].category
+  2. get-schema-keys(category) → pick property key(s)
+  3. filter-elements(ids=allIds, storeySlug?, filters, ...)
+  4. Return elementIds with the requested action
+
+Example — "show furniture on 1st floor with area > 5㎡":
+  → list-available → IFCFURNISHINGELEMENT, slug "1fl"
+  → get-schema-keys(IFCFURNISHINGELEMENT) → finds "Length", "Width" keys
+  → filter-elements(category="IFCFURNISHINGELEMENT", storeySlug="1fl",
+      filters=[{properties:["Length","Width"], combiner:"multiply", operator:"gt", value:5000000}])
+  → return {action:"show", elementIds:[...]}
+
+Example — "isolate HC_コンクリート梁 taller than 500mm":
+  → search-elements("HC_コンクリート梁") → allIds, category="IFCBEAM"
+  → get-schema-keys(IFCBEAM) → finds "Height" key
+  → filter-elements(ids=allIds, filters=[{properties:["Height"], combiner:"single", operator:"gt", value:500}])
+  → return {action:"isolate", elementIds:[...]}
 
 IF ALL ELSE FAILS:
 - Try reading through the filesystem to find relevant files and extract IDs.
@@ -341,6 +631,8 @@ After quick-action or search-elements, return ONLY the tool's JSON output. No ex
       searchElements: createDelegateSearchTool(searchAgent),
       quickAction: createQuickActionTool(workspace),
       formatAction: createFormatActionTool(workspace),
+      getSchemaKeys: createGetSchemaKeysTool(workspace),
+      filterElements: createFilterElementsTool(workspace),
     },
   });
 }
