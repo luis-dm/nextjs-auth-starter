@@ -9,7 +9,7 @@ export function resizeHandler(world: {
 }) {
   const { postproduction } = world.renderer;
   postproduction.enabled = true;
-  postproduction.style = OBF.PostproductionAspect.COLOR_SHADOWS;
+  postproduction.style = OBF.PostproductionAspect.COLOR;
   const { aoPass, edgesPass } = world.renderer.postproduction;
   edgesPass.color = new THREE.Color(0x494b50);
   const aoParameters = {
