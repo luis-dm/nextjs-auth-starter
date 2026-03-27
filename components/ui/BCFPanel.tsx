@@ -91,7 +91,7 @@ export function BCFPanel({
   const buildMarkerTexture = (title: string) => {
     const canvas = document.createElement("canvas");
     const width = 1024;
-    const height = 320;
+    const height = 512;
     canvas.width = width;
     canvas.height = height;
 
@@ -100,52 +100,19 @@ export function BCFPanel({
       return new THREE.CanvasTexture(canvas);
     }
 
-    context.clearRect(0, 0, width, height);
-    context.fillStyle = "rgba(10, 10, 10, 0.96)";
-    context.strokeStyle = "rgba(255,255,255,0.95)";
+    context.fillStyle = "#0a0a0a";
+    context.fillRect(0, 0, width, height);
+
+    context.strokeStyle = "#ffffff";
     context.lineWidth = 10;
-
-    const radius = 44;
-    const rectX = 16;
-    const rectY = 16;
-    const rectWidth = width - 32;
-    const rectHeight = height - 32;
-
-    context.beginPath();
-    context.moveTo(rectX + radius, rectY);
-    context.lineTo(rectX + rectWidth - radius, rectY);
-    context.quadraticCurveTo(
-      rectX + rectWidth,
-      rectY,
-      rectX + rectWidth,
-      rectY + radius,
-    );
-    context.lineTo(rectX + rectWidth, rectY + rectHeight - radius);
-    context.quadraticCurveTo(
-      rectX + rectWidth,
-      rectY + rectHeight,
-      rectX + rectWidth - radius,
-      rectY + rectHeight,
-    );
-    context.lineTo(rectX + radius, rectY + rectHeight);
-    context.quadraticCurveTo(
-      rectX,
-      rectY + rectHeight,
-      rectX,
-      rectY + rectHeight - radius,
-    );
-    context.lineTo(rectX, rectY + radius);
-    context.quadraticCurveTo(rectX, rectY, rectX + radius, rectY);
-    context.closePath();
-    context.fill();
-    context.stroke();
+    context.strokeRect(14, 14, width - 28, height - 28);
 
     context.fillStyle = "#ffffff";
-    context.font = "bold 88px sans-serif";
+    context.font = "bold 112px sans-serif";
     context.textAlign = "center";
     context.textBaseline = "middle";
 
-    const maxChars = 24;
+    const maxChars = 20;
     const finalText =
       title.length > maxChars ? `${title.slice(0, maxChars - 1)}…` : title;
     context.fillText(finalText, width / 2, height / 2);
@@ -154,8 +121,6 @@ export function BCFPanel({
     texture.generateMipmaps = false;
     texture.minFilter = THREE.LinearFilter;
     texture.magFilter = THREE.LinearFilter;
-    texture.wrapS = THREE.ClampToEdgeWrapping;
-    texture.wrapT = THREE.ClampToEdgeWrapping;
     texture.needsUpdate = true;
     return texture;
   };
@@ -183,8 +148,7 @@ export function BCFPanel({
     const texture = buildMarkerTexture(title);
     const material = new THREE.SpriteMaterial({
       map: texture,
-      transparent: true,
-      alphaTest: 0.35,
+      transparent: false,
       depthTest: false,
       depthWrite: false,
       sizeAttenuation: true,
@@ -193,7 +157,7 @@ export function BCFPanel({
 
     const sprite = new THREE.Sprite(material);
     sprite.position.set(position.x, position.y + 0.15, position.z);
-    sprite.scale.set(1.8, 0.58, 1);
+    sprite.scale.set(2.1, 0.82, 1);
     sprite.renderOrder = 9999;
     sprite.userData = { topicGuid };
 
