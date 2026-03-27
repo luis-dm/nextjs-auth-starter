@@ -1,8 +1,13 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
-import { X } from "lucide-react";
+import * as THREE from "three";
 import toast from "react-hot-toast";
+import {
+  FragmentsManager,
+  RaycastUtils,
+  World,
+} from "@/utils/raycastUtils";
 
 interface FacilityUser {
   id: string;
@@ -13,16 +18,34 @@ interface FacilityUser {
 interface BCFPanelProps {
   isOpen: boolean;
   onClose: () => void;
+  onRequestOpen?: () => void;
   components?: any;
-  world?: any;
+  world?: World;
   userEmail?: string;
   facilityUsers?: FacilityUser[];
   facilityId?: string;
 }
 
+interface TopicMarkerData {
+  topicGuid: string;
+  title: string;
+  localId: number | null;
+  position: {
+    x: number;
+    y: number;
+    z: number;
+  };
+}
+
+interface TopicMarkerEntry {
+  data: TopicMarkerData;
+  sprite: THREE.Sprite;
+}
+
 export function BCFPanel({
   isOpen,
   onClose,
+  onRequestOpen,
   components,
   world,
   userEmail = "user@example.com",
@@ -43,8 +66,224 @@ export function BCFPanel({
   const usersRef = useRef<any>(null);
   const hasLoadedBCFRef = useRef(false);
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const markerSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const viewpointsRef = useRef<any>(null);
+  const markerEntriesRef = useRef<Map<string, TopicMarkerEntry>>(new Map());
+  const pendingDropPositionRef = useRef<{
+    position: THREE.Vector3;
+    localId: number | null;
+  } | null>(null);
+  const isHydratingTopicsRef = useRef(false);
+  const markerPointerDownRef = useRef<{ x: number; y: number } | null>(null);
+  const createButtonRef = useRef<HTMLButtonElement>(null);
+  const createDragOffsetRef = useRef({ x: 0, y: 0 });
+  const [isCreateDragging, setIsCreateDragging] = useState(false);
   const [snapshotUpdateTrigger, setSnapshotUpdateTrigger] = useState(0);
+
+  const getTopicTitle = (topic: any) => {
+    if (typeof topic?.title === "string" && topic.title.trim().length > 0) {
+      return topic.title;
+    }
+
+    if (typeof topic?.guid === "string") {
+      return `Topic ${topic.guid.slice(0, 8)}`;
+    }
+
+    return "Topic";
+  };
+
+  const buildMarkerTexture = (title: string) => {
+    const canvas = document.createElement("canvas");
+    const width = 512;
+    const height = 192;
+    canvas.width = width;
+    canvas.height = height;
+
+    const context = canvas.getContext("2d");
+    if (!context) {
+      return new THREE.CanvasTexture(canvas);
+    }
+
+    context.clearRect(0, 0, width, height);
+    context.fillStyle = "rgba(33, 150, 243, 0.95)";
+    context.strokeStyle = "rgba(255,255,255,0.95)";
+    context.lineWidth = 8;
+
+    const radius = 32;
+    const rectX = 16;
+    const rectY = 16;
+    const rectWidth = width - 32;
+    const rectHeight = height - 32;
+
+    context.beginPath();
+    context.moveTo(rectX + radius, rectY);
+    context.lineTo(rectX + rectWidth - radius, rectY);
+    context.quadraticCurveTo(
+      rectX + rectWidth,
+      rectY,
+      rectX + rectWidth,
+      rectY + radius,
+    );
+    context.lineTo(rectX + rectWidth, rectY + rectHeight - radius);
+    context.quadraticCurveTo(
+      rectX + rectWidth,
+      rectY + rectHeight,
+      rectX + rectWidth - radius,
+      rectY + rectHeight,
+    );
+    context.lineTo(rectX + radius, rectY + rectHeight);
+    context.quadraticCurveTo(rectX, rectY + rectHeight, rectX, rectY + rectHeight - radius);
+    context.lineTo(rectX, rectY + radius);
+    context.quadraticCurveTo(rectX, rectY, rectX + radius, rectY);
+    context.closePath();
+    context.fill();
+    context.stroke();
+
+    context.fillStyle = "#ffffff";
+    context.font = "bold 46px sans-serif";
+    context.textAlign = "center";
+    context.textBaseline = "middle";
+
+    const maxChars = 26;
+    const finalText =
+      title.length > maxChars ? `${title.slice(0, maxChars - 1)}…` : title;
+    context.fillText(finalText, width / 2, height / 2);
+
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.needsUpdate = true;
+    return texture;
+  };
+
+  const removeMarker = (topicGuid: string) => {
+    const marker = markerEntriesRef.current.get(topicGuid);
+    if (!marker) return;
+
+    world?.scene?.three.remove(marker.sprite);
+    marker.sprite.material.dispose();
+    marker.sprite.geometry?.dispose?.();
+    markerEntriesRef.current.delete(topicGuid);
+  };
+
+  const upsertMarker = (
+    topicGuid: string,
+    title: string,
+    position: THREE.Vector3,
+    localId: number | null,
+  ) => {
+    removeMarker(topicGuid);
+
+    if (!world?.scene?.three) return;
+
+    const texture = buildMarkerTexture(title);
+    const material = new THREE.SpriteMaterial({
+      map: texture,
+      transparent: true,
+      depthTest: true,
+      depthWrite: false,
+      sizeAttenuation: true,
+    });
+
+    const sprite = new THREE.Sprite(material);
+    sprite.position.set(position.x, position.y + 0.15, position.z);
+    sprite.scale.set(0.8, 0.3, 1);
+    sprite.renderOrder = 9999;
+    sprite.userData = { topicGuid };
+
+    world.scene.three.add(sprite);
+
+    markerEntriesRef.current.set(topicGuid, {
+      data: {
+        topicGuid,
+        title,
+        localId,
+        position: {
+          x: position.x,
+          y: position.y,
+          z: position.z,
+        },
+      },
+      sprite,
+    });
+  };
+
+  const saveMarkersToDatabase = async () => {
+    if (!facilityId) return;
+
+    try {
+      const markers = [...markerEntriesRef.current.values()].map(
+        (entry) => entry.data,
+      );
+
+      await fetch(`/api/facilities/${facilityId}/bcf-markers`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ markers }),
+      });
+    } catch (error) {
+      console.error("Error saving BCF topic markers:", error);
+    }
+  };
+
+  const debouncedSaveMarkers = () => {
+    if (markerSaveTimeoutRef.current) {
+      clearTimeout(markerSaveTimeoutRef.current);
+    }
+
+    markerSaveTimeoutRef.current = setTimeout(() => {
+      saveMarkersToDatabase();
+    }, 500);
+  };
+
+  const loadMarkersFromDatabase = async () => {
+    if (!facilityId) return;
+
+    try {
+      const response = await fetch(`/api/facilities/${facilityId}/bcf-markers`);
+      if (!response.ok) return;
+
+      const payload = await response.json();
+      if (!Array.isArray(payload?.markers)) return;
+
+      for (const marker of payload.markers as TopicMarkerData[]) {
+        if (
+          !marker?.topicGuid ||
+          !marker.position ||
+          typeof marker.position.x !== "number" ||
+          typeof marker.position.y !== "number" ||
+          typeof marker.position.z !== "number"
+        ) {
+          continue;
+        }
+
+        upsertMarker(
+          marker.topicGuid,
+          marker.title || "Topic",
+          new THREE.Vector3(
+            marker.position.x,
+            marker.position.y,
+            marker.position.z,
+          ),
+          typeof marker.localId === "number" ? marker.localId : null,
+        );
+      }
+    } catch (error) {
+      console.error("Error loading BCF topic markers:", error);
+    }
+  };
+
+  const openTopicDetails = (topicGuid: string) => {
+    const topic = bcfTopicsRef.current?.list?.get(topicGuid);
+    if (!topic) {
+      return;
+    }
+
+    if (!isOpen) {
+      onRequestOpen?.();
+    }
+
+    setSelectedTopic({ ...topic });
+    setIsDetailsPanelOpen(true);
+  };
 
   const saveBCFToDatabase = async () => {
     if (!bcfTopicsRef.current || !facilityId || isSaving) return;
@@ -267,6 +506,18 @@ export function BCFPanel({
             // Trigger update to ensure UI is refreshed
             setSnapshotUpdateTrigger((prev) => prev + 1);
           }
+
+          if (!isHydratingTopicsRef.current && pendingDropPositionRef.current) {
+            const dropped = pendingDropPositionRef.current;
+            upsertMarker(
+              topic.guid,
+              getTopicTitle(topic),
+              dropped.position,
+              dropped.localId,
+            );
+            pendingDropPositionRef.current = null;
+            debouncedSaveMarkers();
+          }
         });
 
         // When topic is updated, update its viewpoint snapshot
@@ -303,12 +554,7 @@ export function BCFPanel({
           row.addEventListener("click", () => {
             const { Guid } = row.data;
             if (!Guid) return;
-            const topic = bcfTopics.list.get(Guid);
-            if (!topic) return;
-
-            // Set the selected topic and open the panel
-            setSelectedTopic(topic);
-            setIsDetailsPanelOpen(true);
+            openTopicDetails(Guid);
           });
 
           row.style.cursor = "pointer";
@@ -321,7 +567,7 @@ export function BCFPanel({
         });
 
         // Update details when topics change
-        bcfTopics.list.onItemUpdated.add(() => {
+        bcfTopics.list.onItemUpdated.add(({ value: topic }: any) => {
           // Re-render details if a topic is selected
           if (selectedTopic) {
             const updatedTopic = bcfTopics.list.get(selectedTopic.guid);
@@ -329,6 +575,25 @@ export function BCFPanel({
               setSelectedTopic({ ...updatedTopic });
             }
           }
+
+          if (topic) {
+            const markerEntry = markerEntriesRef.current.get(topic.guid);
+            if (markerEntry && markerEntry.data.title !== getTopicTitle(topic)) {
+              const currentPosition = markerEntry.data.position;
+              upsertMarker(
+                topic.guid,
+                getTopicTitle(topic),
+                new THREE.Vector3(
+                  currentPosition.x,
+                  currentPosition.y,
+                  currentPosition.z,
+                ),
+                markerEntry.data.localId,
+              );
+              debouncedSaveMarkers();
+            }
+          }
+
           // Auto-save when topics are updated
           debouncedSave();
         });
@@ -339,7 +604,18 @@ export function BCFPanel({
         });
 
         bcfTopics.list.onItemDeleted.add(() => {
+          const topicGuids = new Set<string>(
+            [...bcfTopics.list.values()].map((topic: any) => topic.guid),
+          );
+
+          for (const topicGuid of markerEntriesRef.current.keys()) {
+            if (!topicGuids.has(topicGuid)) {
+              removeMarker(topicGuid);
+            }
+          }
+
           debouncedSave();
+          debouncedSaveMarkers();
         });
 
         // Setup form callbacks
@@ -361,10 +637,38 @@ export function BCFPanel({
         // Load BCF data from database AFTER everything is set up
         if (facilityId && !hasLoadedBCFRef.current) {
           hasLoadedBCFRef.current = true;
+          isHydratingTopicsRef.current = true;
           await loadBCFFromDatabase();
+          await loadMarkersFromDatabase();
+
+          const topicGuids = new Set<string>();
+          for (const topic of bcfTopics.list.values()) {
+            topicGuids.add(topic.guid);
+            const markerEntry = markerEntriesRef.current.get(topic.guid);
+            if (!markerEntry) continue;
+
+            const title = getTopicTitle(topic);
+            if (title !== markerEntry.data.title) {
+              const { position, localId } = markerEntry.data;
+              upsertMarker(
+                topic.guid,
+                title,
+                new THREE.Vector3(position.x, position.y, position.z),
+                localId,
+              );
+            }
+          }
+
+          for (const topicGuid of markerEntriesRef.current.keys()) {
+            if (!topicGuids.has(topicGuid)) {
+              removeMarker(topicGuid);
+            }
+          }
         }
       } catch (error) {
         console.error("Error initializing BCF:", error);
+      } finally {
+        isHydratingTopicsRef.current = false;
       }
     };
 
@@ -514,7 +818,94 @@ export function BCFPanel({
     renderTopicDetails();
   }, [selectedTopic, components, world, snapshotUpdateTrigger]);
 
-  const handleCreateTopic = () => {
+  useEffect(() => {
+    if (!world?.renderer?.three?.domElement || !world?.camera?.three) return;
+
+    const canvas = world.renderer.three.domElement;
+    const raycaster = new THREE.Raycaster();
+    const ndcPointer = new THREE.Vector2();
+
+    const onPointerDown = (event: PointerEvent) => {
+      markerPointerDownRef.current = { x: event.clientX, y: event.clientY };
+    };
+
+    const onClick = (event: MouseEvent) => {
+      const down = markerPointerDownRef.current;
+      if (down) {
+        const moved =
+          Math.hypot(event.clientX - down.x, event.clientY - down.y) > 8;
+        if (moved) {
+          markerPointerDownRef.current = null;
+          return;
+        }
+      }
+
+      markerPointerDownRef.current = null;
+
+      const markerSprites = [...markerEntriesRef.current.values()].map(
+        (entry) => entry.sprite,
+      );
+      if (markerSprites.length === 0) return;
+
+      const bounds = canvas.getBoundingClientRect();
+      ndcPointer.x = ((event.clientX - bounds.left) / bounds.width) * 2 - 1;
+      ndcPointer.y = -((event.clientY - bounds.top) / bounds.height) * 2 + 1;
+
+      raycaster.setFromCamera(ndcPointer, world.camera!.three);
+      const hits = raycaster.intersectObjects(markerSprites, true);
+      if (hits.length === 0) return;
+
+      const hitObject = hits[0].object as THREE.Object3D;
+      const topicGuid = hitObject.userData?.topicGuid;
+      if (!topicGuid) return;
+
+      openTopicDetails(topicGuid);
+    };
+
+    canvas.addEventListener("pointerdown", onPointerDown);
+    canvas.addEventListener("click", onClick);
+
+    return () => {
+      canvas.removeEventListener("pointerdown", onPointerDown);
+      canvas.removeEventListener("click", onClick);
+    };
+  }, [world, isOpen]);
+
+  useEffect(() => {
+    if (!isCreateDragging) return;
+
+    document.addEventListener("mousemove", handleCreateButtonDragMove);
+    document.addEventListener("mouseup", handleCreateButtonDragEnd);
+    document.addEventListener("touchmove", handleCreateButtonDragMove, {
+      passive: false,
+    });
+    document.addEventListener("touchend", handleCreateButtonDragEnd);
+
+    return () => {
+      document.removeEventListener("mousemove", handleCreateButtonDragMove);
+      document.removeEventListener("mouseup", handleCreateButtonDragEnd);
+      document.removeEventListener("touchmove", handleCreateButtonDragMove);
+      document.removeEventListener("touchend", handleCreateButtonDragEnd);
+    };
+  }, [isCreateDragging]);
+
+  useEffect(() => {
+    return () => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+
+      if (markerSaveTimeoutRef.current) {
+        clearTimeout(markerSaveTimeoutRef.current);
+      }
+
+      for (const topicGuid of markerEntriesRef.current.keys()) {
+        removeMarker(topicGuid);
+      }
+    };
+  }, []);
+
+  const openCreateTopicDialog = () => {
     if (!topicFormRef.current) return;
 
     // Show form in a simple way (you could also create a modal)
@@ -544,6 +935,122 @@ export function BCFPanel({
         onSubmit: closeDialog,
       });
     }
+  };
+
+  const getEventCoords = (
+    event: MouseEvent | TouchEvent | React.MouseEvent | React.TouchEvent,
+  ) => {
+    if ("touches" in event) {
+      const touch =
+        "changedTouches" in event && event.changedTouches.length > 0
+          ? event.changedTouches[0]
+          : event.touches[0];
+
+      return { x: touch.clientX, y: touch.clientY };
+    }
+
+    return { x: event.clientX, y: event.clientY };
+  };
+
+  const beginCreateTopicAtDrop = async (clientX: number, clientY: number) => {
+    if (
+      !world?.camera?.three ||
+      !world?.renderer?.three?.domElement ||
+      !components
+    ) {
+      toast.error("Viewer is not ready yet");
+      return;
+    }
+
+    try {
+      const OBC = await import("@thatopen/components");
+      const fragments = components.get(
+        OBC.FragmentsManager,
+      ) as FragmentsManager;
+
+      const raycastResult = await RaycastUtils.performRaycast(
+        clientX,
+        clientY,
+        world.camera.three,
+        world.renderer.three.domElement,
+        fragments,
+      );
+
+      if (!raycastResult?.result?.point) {
+        toast.error("Drop on a model element to create a topic marker");
+        return;
+      }
+
+      pendingDropPositionRef.current = {
+        position: raycastResult.result.point.clone(),
+        localId: raycastResult.result.localId ?? null,
+      };
+
+      openCreateTopicDialog();
+    } catch (error) {
+      console.error("Failed to create topic from drag-drop:", error);
+      toast.error("Could not place topic marker");
+    }
+  };
+
+  const handleCreateButtonDragStart = (
+    event: React.MouseEvent | React.TouchEvent,
+  ) => {
+    if (!createButtonRef.current) return;
+
+    const coords = getEventCoords(event);
+    const rect = createButtonRef.current.getBoundingClientRect();
+    createDragOffsetRef.current = {
+      x: coords.x - rect.left,
+      y: coords.y - rect.top,
+    };
+
+    setIsCreateDragging(true);
+
+    if (createButtonRef.current) {
+      createButtonRef.current.style.pointerEvents = "none";
+      createButtonRef.current.style.position = "fixed";
+      createButtonRef.current.style.left = `${rect.left}px`;
+      createButtonRef.current.style.top = `${rect.top}px`;
+      createButtonRef.current.style.right = "auto";
+      createButtonRef.current.style.zIndex = "1000000000";
+    }
+
+    event.preventDefault();
+    event.stopPropagation();
+  };
+
+  const handleCreateButtonDragMove = (event: MouseEvent | TouchEvent) => {
+    if (!createButtonRef.current) return;
+
+    const coords = getEventCoords(event);
+    const left = coords.x - createDragOffsetRef.current.x;
+    const top = coords.y - createDragOffsetRef.current.y;
+
+    createButtonRef.current.style.left = `${left}px`;
+    createButtonRef.current.style.top = `${top}px`;
+
+    event.preventDefault();
+  };
+
+  const handleCreateButtonDragEnd = async (event: MouseEvent | TouchEvent) => {
+    if (!isCreateDragging || !createButtonRef.current) return;
+
+    const coords = getEventCoords(event);
+    const button = createButtonRef.current;
+
+    button.style.pointerEvents = "";
+    button.style.position = "";
+    button.style.left = "";
+    button.style.top = "";
+    button.style.right = "";
+    button.style.zIndex = "";
+
+    setIsCreateDragging(false);
+
+    await beginCreateTopicAtDrop(coords.x, coords.y);
+
+    event.preventDefault();
   };
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -605,7 +1112,13 @@ export function BCFPanel({
               className="w-full px-3 py-2 border bg-white border-gray-200 rounded-lg text-sm text-black placeholder:text-gray-500 focus:outline-none focus:border-[#2196f3] focus:ring-1 focus:ring-[#2196f3]"
             />
             <button
-              onClick={handleCreateTopic}
+              ref={createButtonRef}
+              onMouseDown={handleCreateButtonDragStart}
+              onTouchStart={handleCreateButtonDragStart}
+              onClick={(event) => {
+                event.preventDefault();
+                toast("Drag and drop this button on a model element");
+              }}
               className="flex items-center justify-center px-4 py-2 border border-gray-200 bg-white rounded-[20px] cursor-pointer text-gray-700 text-sm transition-all duration-200 ease-in-out hover:bg-gray-100 hover:border-gray-300"
             >
               <span className="material-icons text-lg mr-2">add</span>

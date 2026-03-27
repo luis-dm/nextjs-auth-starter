@@ -328,6 +328,7 @@ export default function ViewerPage() {
         <BCFPanel
           isOpen={isBCFTopicsOpen}
           onClose={handleBCFTopicsClose}
+          onRequestOpen={() => setIsBCFTopicsOpen(true)}
           components={componentsRef.current || undefined}
           world={worldRef.current || undefined}
           userEmail={session?.user?.email || undefined}
