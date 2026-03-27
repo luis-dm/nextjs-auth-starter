@@ -74,6 +74,7 @@ export function BCFPanel({
   const isHydratingTopicsRef = useRef(false);
   const createButtonRef = useRef<HTMLButtonElement>(null);
   const createDragOffsetRef = useRef({ x: 0, y: 0 });
+  const createDragIndicatorRef = useRef<HTMLDivElement | null>(null);
   const [isCreateDragging, setIsCreateDragging] = useState(false);
   const [snapshotUpdateTrigger, setSnapshotUpdateTrigger] = useState(0);
 
@@ -105,19 +106,117 @@ export function BCFPanel({
     } as any;
   };
 
+  const clearCreateDragIndicator = () => {
+    if (createDragIndicatorRef.current?.parentNode) {
+      createDragIndicatorRef.current.parentNode.removeChild(
+        createDragIndicatorRef.current,
+      );
+    }
+    createDragIndicatorRef.current = null;
+  };
+
+  const ensureCreateDragIndicator = () => {
+    if (createDragIndicatorRef.current) {
+      return createDragIndicatorRef.current;
+    }
+
+    const indicator = document.createElement("div");
+    indicator.style.position = "fixed";
+    indicator.style.width = "40px";
+    indicator.style.height = "40px";
+    indicator.style.borderRadius = "999px";
+    indicator.style.backgroundColor = "#0a0a0a";
+    indicator.style.border = "2px solid #ffffff";
+    indicator.style.color = "#ffffff";
+    indicator.style.display = "flex";
+    indicator.style.alignItems = "center";
+    indicator.style.justifyContent = "center";
+    indicator.style.boxShadow = "0 6px 16px rgba(0,0,0,0.3)";
+    indicator.style.fontSize = "24px";
+    indicator.style.fontWeight = "700";
+    indicator.style.zIndex = "1000000000";
+    indicator.style.pointerEvents = "none";
+    indicator.textContent = "+";
+
+    document.body.appendChild(indicator);
+    createDragIndicatorRef.current = indicator;
+    return indicator;
+  };
+
+  const resetFormFields = (root: ParentNode) => {
+    const inputs = root.querySelectorAll("input");
+    inputs.forEach((element) => {
+      const input = element as HTMLInputElement;
+      if (input.type === "checkbox" || input.type === "radio") {
+        input.checked = false;
+        return;
+      }
+
+      if (
+        input.type === "button" ||
+        input.type === "submit" ||
+        input.type === "hidden"
+      ) {
+        return;
+      }
+
+      input.value = "";
+    });
+
+    const textareas = root.querySelectorAll("textarea");
+    textareas.forEach((element) => {
+      const textarea = element as HTMLTextAreaElement;
+      textarea.value = "";
+    });
+
+    const selects = root.querySelectorAll("select");
+    selects.forEach((element) => {
+      const select = element as HTMLSelectElement;
+      select.selectedIndex = 0;
+    });
+
+    const elements = Array.from(root.querySelectorAll("*"));
+    for (const element of elements) {
+      const shadowRoot = (element as HTMLElement).shadowRoot;
+      if (!shadowRoot) continue;
+      resetFormFields(shadowRoot);
+    }
+  };
+
+  const findTitleInput = (root: ParentNode): HTMLInputElement | null => {
+    const allInputs = Array.from(root.querySelectorAll("input"));
+    for (const input of allInputs) {
+      const candidate = input as HTMLInputElement;
+      const idText = `${candidate.id || ""} ${candidate.name || ""} ${candidate.ariaLabel || ""}`.toLowerCase();
+      if (idText.includes("title") || candidate.type === "text") {
+        return candidate;
+      }
+    }
+
+    const elements = Array.from(root.querySelectorAll("*"));
+    for (const element of elements) {
+      const shadowRoot = (element as HTMLElement).shadowRoot;
+      if (!shadowRoot) continue;
+      const found = findTitleInput(shadowRoot);
+      if (found) return found;
+    }
+
+    return null;
+  };
+
   const createMarkerElement = (topicGuid: string, title: string) => {
     const markerDiv = document.createElement("div");
     markerDiv.style.display = "flex";
     markerDiv.style.alignItems = "center";
     markerDiv.style.justifyContent = "center";
-    markerDiv.style.padding = "14px 24px";
+    markerDiv.style.padding = "4px 8px";
     markerDiv.style.border = "2px solid #ffffff";
     markerDiv.style.borderRadius = "999px";
     markerDiv.style.backgroundColor = "#0a0a0a";
     markerDiv.style.color = "#ffffff";
     markerDiv.style.fontFamily = "sans-serif";
     markerDiv.style.fontWeight = "700";
-    markerDiv.style.fontSize = "24px";
+    markerDiv.style.fontSize = "11px";
     markerDiv.style.lineHeight = "1";
     markerDiv.style.boxShadow = "0 6px 16px rgba(0, 0, 0, 0.35)";
     markerDiv.style.cursor = "pointer";
@@ -854,6 +953,25 @@ export function BCFPanel({
   const openCreateTopicDialog = () => {
     if (!topicFormRef.current) return;
 
+    if (CUIRef.current && components) {
+      const [topicForm, updateTopicForm] = CUIRef.current.forms.topic({
+        components,
+        styles: { users: usersRef.current },
+      });
+      topicFormRef.current = topicForm;
+      updateTopicFormRef.current = updateTopicForm;
+    }
+
+    const formElement = topicFormRef.current as HTMLElement;
+    if (!formElement) return;
+
+    resetFormFields(formElement);
+    const titleInput = findTitleInput(formElement);
+    if (titleInput) {
+      titleInput.value = "";
+      titleInput.placeholder = "BCF Topic";
+    }
+
     // Show form in a simple way (you could also create a modal)
     const formDialog = document.createElement("dialog");
     formDialog.style.cssText = `
@@ -865,7 +983,7 @@ export function BCFPanel({
       transform: translate(-50%, -50%);
       box-shadow: 0 4px 20px rgba(0,0,0,0.15);
     `;
-    formDialog.appendChild(topicFormRef.current);
+    formDialog.appendChild(formElement);
     document.body.appendChild(formDialog);
     formDialog.showModal();
 
@@ -877,7 +995,10 @@ export function BCFPanel({
 
     if (updateTopicFormRef.current) {
       updateTopicFormRef.current({
-        onCancel: closeDialog,
+        onCancel: () => {
+          pendingDropPositionRef.current = null;
+          closeDialog();
+        },
         onSubmit: closeDialog,
       });
     }
@@ -953,14 +1074,9 @@ export function BCFPanel({
 
     setIsCreateDragging(true);
 
-    if (createButtonRef.current) {
-      createButtonRef.current.style.pointerEvents = "none";
-      createButtonRef.current.style.position = "fixed";
-      createButtonRef.current.style.left = `${rect.left}px`;
-      createButtonRef.current.style.top = `${rect.top}px`;
-      createButtonRef.current.style.right = "auto";
-      createButtonRef.current.style.zIndex = "1000000000";
-    }
+    const indicator = ensureCreateDragIndicator();
+    indicator.style.left = `${coords.x - createDragOffsetRef.current.x}px`;
+    indicator.style.top = `${coords.y - createDragOffsetRef.current.y}px`;
 
     event.preventDefault();
     event.stopPropagation();
@@ -973,8 +1089,9 @@ export function BCFPanel({
     const left = coords.x - createDragOffsetRef.current.x;
     const top = coords.y - createDragOffsetRef.current.y;
 
-    createButtonRef.current.style.left = `${left}px`;
-    createButtonRef.current.style.top = `${top}px`;
+    const indicator = ensureCreateDragIndicator();
+    indicator.style.left = `${left}px`;
+    indicator.style.top = `${top}px`;
 
     event.preventDefault();
   };
@@ -983,14 +1100,7 @@ export function BCFPanel({
     if (!isCreateDragging || !createButtonRef.current) return;
 
     const coords = getEventCoords(event);
-    const button = createButtonRef.current;
-
-    button.style.pointerEvents = "";
-    button.style.position = "";
-    button.style.left = "";
-    button.style.top = "";
-    button.style.right = "";
-    button.style.zIndex = "";
+    clearCreateDragIndicator();
 
     setIsCreateDragging(false);
 
