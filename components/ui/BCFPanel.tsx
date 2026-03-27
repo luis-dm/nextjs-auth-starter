@@ -90,8 +90,8 @@ export function BCFPanel({
 
   const buildMarkerTexture = (title: string) => {
     const canvas = document.createElement("canvas");
-    const width = 512;
-    const height = 192;
+    const width = 1024;
+    const height = 320;
     canvas.width = width;
     canvas.height = height;
 
@@ -101,11 +101,11 @@ export function BCFPanel({
     }
 
     context.clearRect(0, 0, width, height);
-    context.fillStyle = "rgba(33, 150, 243, 0.95)";
+    context.fillStyle = "rgba(10, 10, 10, 0.96)";
     context.strokeStyle = "rgba(255,255,255,0.95)";
-    context.lineWidth = 8;
+    context.lineWidth = 10;
 
-    const radius = 32;
+    const radius = 44;
     const rectX = 16;
     const rectY = 16;
     const rectWidth = width - 32;
@@ -141,16 +141,21 @@ export function BCFPanel({
     context.stroke();
 
     context.fillStyle = "#ffffff";
-    context.font = "bold 46px sans-serif";
+    context.font = "bold 88px sans-serif";
     context.textAlign = "center";
     context.textBaseline = "middle";
 
-    const maxChars = 26;
+    const maxChars = 24;
     const finalText =
       title.length > maxChars ? `${title.slice(0, maxChars - 1)}…` : title;
     context.fillText(finalText, width / 2, height / 2);
 
     const texture = new THREE.CanvasTexture(canvas);
+    texture.generateMipmaps = false;
+    texture.minFilter = THREE.LinearFilter;
+    texture.magFilter = THREE.LinearFilter;
+    texture.wrapS = THREE.ClampToEdgeWrapping;
+    texture.wrapT = THREE.ClampToEdgeWrapping;
     texture.needsUpdate = true;
     return texture;
   };
@@ -179,14 +184,15 @@ export function BCFPanel({
     const material = new THREE.SpriteMaterial({
       map: texture,
       transparent: true,
-      depthTest: true,
+      depthTest: false,
       depthWrite: false,
       sizeAttenuation: true,
+      toneMapped: false,
     });
 
     const sprite = new THREE.Sprite(material);
     sprite.position.set(position.x, position.y + 0.15, position.z);
-    sprite.scale.set(0.8, 0.3, 1);
+    sprite.scale.set(1.8, 0.58, 1);
     sprite.renderOrder = 9999;
     sprite.userData = { topicGuid };
 
