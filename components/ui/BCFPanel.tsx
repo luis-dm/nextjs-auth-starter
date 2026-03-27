@@ -187,7 +187,8 @@ export function BCFPanel({
     const allInputs = Array.from(root.querySelectorAll("input"));
     for (const input of allInputs) {
       const candidate = input as HTMLInputElement;
-      const idText = `${candidate.id || ""} ${candidate.name || ""} ${candidate.ariaLabel || ""}`.toLowerCase();
+      const idText =
+        `${candidate.id || ""} ${candidate.name || ""} ${candidate.ariaLabel || ""}`.toLowerCase();
       if (idText.includes("title") || candidate.type === "text") {
         return candidate;
       }
