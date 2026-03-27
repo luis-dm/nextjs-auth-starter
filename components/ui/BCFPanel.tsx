@@ -3,11 +3,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 import toast from "react-hot-toast";
-import {
-  FragmentsManager,
-  RaycastUtils,
-  World,
-} from "@/utils/raycastUtils";
+import { FragmentsManager, RaycastUtils, World } from "@/utils/raycastUtils";
 
 interface FacilityUser {
   id: string;
@@ -132,7 +128,12 @@ export function BCFPanel({
       rectY + rectHeight,
     );
     context.lineTo(rectX + radius, rectY + rectHeight);
-    context.quadraticCurveTo(rectX, rectY + rectHeight, rectX, rectY + rectHeight - radius);
+    context.quadraticCurveTo(
+      rectX,
+      rectY + rectHeight,
+      rectX,
+      rectY + rectHeight - radius,
+    );
     context.lineTo(rectX, rectY + radius);
     context.quadraticCurveTo(rectX, rectY, rectX + radius, rectY);
     context.closePath();
@@ -281,7 +282,7 @@ export function BCFPanel({
       onRequestOpen?.();
     }
 
-    setSelectedTopic({ ...topic });
+    setSelectedTopic(topic);
     setIsDetailsPanelOpen(true);
   };
 
@@ -572,13 +573,16 @@ export function BCFPanel({
           if (selectedTopic) {
             const updatedTopic = bcfTopics.list.get(selectedTopic.guid);
             if (updatedTopic) {
-              setSelectedTopic({ ...updatedTopic });
+              setSelectedTopic(updatedTopic);
             }
           }
 
           if (topic) {
             const markerEntry = markerEntriesRef.current.get(topic.guid);
-            if (markerEntry && markerEntry.data.title !== getTopicTitle(topic)) {
+            if (
+              markerEntry &&
+              markerEntry.data.title !== getTopicTitle(topic)
+            ) {
               const currentPosition = markerEntry.data.position;
               upsertMarker(
                 topic.guid,
