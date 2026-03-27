@@ -581,6 +581,7 @@ export function BCFPanel({
             "Construction Documentation",
             "Bidding",
             "Construction",
+            "Operations and Maintenance",
             "Closeout",
           ]),
           version: "3",
