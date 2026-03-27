@@ -122,21 +122,29 @@ export function BCFPanel({
 
     const indicator = document.createElement("div");
     indicator.style.position = "fixed";
+    indicator.style.left = "0";
+    indicator.style.top = "0";
+    indicator.style.transform = "translate(-50%, -50%)";
     indicator.style.width = "40px";
     indicator.style.height = "40px";
     indicator.style.borderRadius = "999px";
     indicator.style.backgroundColor = "#0a0a0a";
     indicator.style.border = "2px solid #ffffff";
-    indicator.style.color = "#ffffff";
-    indicator.style.display = "flex";
-    indicator.style.alignItems = "center";
-    indicator.style.justifyContent = "center";
+    indicator.style.display = "grid";
+    indicator.style.placeItems = "center";
     indicator.style.boxShadow = "0 6px 16px rgba(0,0,0,0.3)";
-    indicator.style.fontSize = "24px";
-    indicator.style.fontWeight = "700";
     indicator.style.zIndex = "1000000000";
     indicator.style.pointerEvents = "none";
-    indicator.textContent = "+";
+
+    const plus = document.createElement("span");
+    plus.textContent = "+";
+    plus.style.color = "#ffffff";
+    plus.style.fontSize = "24px";
+    plus.style.fontWeight = "700";
+    plus.style.lineHeight = "1";
+    plus.style.display = "block";
+    plus.style.transform = "translateY(-1px)";
+    indicator.appendChild(plus);
 
     document.body.appendChild(indicator);
     createDragIndicatorRef.current = indicator;
@@ -970,7 +978,6 @@ export function BCFPanel({
     const titleInput = findTitleInput(formElement);
     if (titleInput) {
       titleInput.value = "";
-      titleInput.placeholder = "BCF Topic";
     }
 
     // Show form in a simple way (you could also create a modal)
@@ -1067,17 +1074,13 @@ export function BCFPanel({
     if (!createButtonRef.current) return;
 
     const coords = getEventCoords(event);
-    const rect = createButtonRef.current.getBoundingClientRect();
-    createDragOffsetRef.current = {
-      x: coords.x - rect.left,
-      y: coords.y - rect.top,
-    };
+    createDragOffsetRef.current = { x: 0, y: 0 };
 
     setIsCreateDragging(true);
 
     const indicator = ensureCreateDragIndicator();
-    indicator.style.left = `${coords.x - createDragOffsetRef.current.x}px`;
-    indicator.style.top = `${coords.y - createDragOffsetRef.current.y}px`;
+    indicator.style.left = `${coords.x}px`;
+    indicator.style.top = `${coords.y}px`;
 
     event.preventDefault();
     event.stopPropagation();
@@ -1087,12 +1090,10 @@ export function BCFPanel({
     if (!createButtonRef.current) return;
 
     const coords = getEventCoords(event);
-    const left = coords.x - createDragOffsetRef.current.x;
-    const top = coords.y - createDragOffsetRef.current.y;
 
     const indicator = ensureCreateDragIndicator();
-    indicator.style.left = `${left}px`;
-    indicator.style.top = `${top}px`;
+    indicator.style.left = `${coords.x}px`;
+    indicator.style.top = `${coords.y}px`;
 
     event.preventDefault();
   };
