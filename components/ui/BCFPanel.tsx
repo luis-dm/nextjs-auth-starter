@@ -3,6 +3,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 import toast from "react-hot-toast";
+import * as OBF from "@thatopen/components-front";
 import { FragmentsManager, RaycastUtils, World } from "@/utils/raycastUtils";
 
 interface FacilityUser {
@@ -35,7 +36,7 @@ interface TopicMarkerData {
 
 interface TopicMarkerEntry {
   data: TopicMarkerData;
-  sprite: THREE.Sprite;
+  markerKey: string;
 }
 
 export function BCFPanel({
@@ -64,13 +65,13 @@ export function BCFPanel({
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const markerSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const viewpointsRef = useRef<any>(null);
+  const markerComponentRef = useRef<OBF.Marker | null>(null);
   const markerEntriesRef = useRef<Map<string, TopicMarkerEntry>>(new Map());
   const pendingDropPositionRef = useRef<{
     position: THREE.Vector3;
     localId: number | null;
   } | null>(null);
   const isHydratingTopicsRef = useRef(false);
-  const markerPointerDownRef = useRef<{ x: number; y: number } | null>(null);
   const createButtonRef = useRef<HTMLButtonElement>(null);
   const createDragOffsetRef = useRef({ x: 0, y: 0 });
   const [isCreateDragging, setIsCreateDragging] = useState(false);
@@ -88,50 +89,67 @@ export function BCFPanel({
     return "Topic";
   };
 
-  const buildMarkerTexture = (title: string) => {
-    const canvas = document.createElement("canvas");
-    const width = 1024;
-    const height = 512;
-    canvas.width = width;
-    canvas.height = height;
-
-    const context = canvas.getContext("2d");
-    if (!context) {
-      return new THREE.CanvasTexture(canvas);
+  const getMarkerWorld = () => {
+    if (!world?.scene?.three || !world?.camera?.three || !world?.renderer) {
+      return null;
     }
 
-    context.fillStyle = "#0a0a0a";
-    context.fillRect(0, 0, width, height);
+    return {
+      scene: { three: world.scene.three },
+      camera: {
+        three: world.camera.three,
+        controls: world.camera.controls || null,
+        hasCameraControls: () => true,
+      },
+      renderer: world.renderer,
+    } as any;
+  };
 
-    context.strokeStyle = "#ffffff";
-    context.lineWidth = 10;
-    context.strokeRect(14, 14, width - 28, height - 28);
+  const createMarkerElement = (topicGuid: string, title: string) => {
+    const markerDiv = document.createElement("div");
+    markerDiv.style.display = "flex";
+    markerDiv.style.alignItems = "center";
+    markerDiv.style.justifyContent = "center";
+    markerDiv.style.padding = "14px 24px";
+    markerDiv.style.border = "2px solid #ffffff";
+    markerDiv.style.borderRadius = "999px";
+    markerDiv.style.backgroundColor = "#0a0a0a";
+    markerDiv.style.color = "#ffffff";
+    markerDiv.style.fontFamily = "sans-serif";
+    markerDiv.style.fontWeight = "700";
+    markerDiv.style.fontSize = "24px";
+    markerDiv.style.lineHeight = "1";
+    markerDiv.style.boxShadow = "0 6px 16px rgba(0, 0, 0, 0.35)";
+    markerDiv.style.cursor = "pointer";
+    markerDiv.style.whiteSpace = "nowrap";
+    markerDiv.style.pointerEvents = "all";
 
-    context.fillStyle = "#ffffff";
-    context.font = "bold 112px sans-serif";
-    context.textAlign = "center";
-    context.textBaseline = "middle";
-
-    const maxChars = 20;
+    const maxChars = 24;
     const finalText =
       title.length > maxChars ? `${title.slice(0, maxChars - 1)}…` : title;
-    context.fillText(finalText, width / 2, height / 2);
+    markerDiv.textContent = finalText;
 
-    const texture = new THREE.CanvasTexture(canvas);
-    texture.generateMipmaps = false;
-    texture.minFilter = THREE.LinearFilter;
-    texture.magFilter = THREE.LinearFilter;
-    texture.needsUpdate = true;
-    return texture;
+    markerDiv.addEventListener("pointerdown", (event) => {
+      event.stopPropagation();
+    });
+
+    markerDiv.addEventListener("click", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      openTopicDetails(topicGuid);
+    });
+
+    return markerDiv;
   };
 
   const removeMarker = (topicGuid: string) => {
     const marker = markerEntriesRef.current.get(topicGuid);
     if (!marker) return;
 
-    world?.scene?.three.remove(marker.sprite);
-    marker.sprite.material.map?.dispose?.();
-    marker.sprite.material.dispose();
+    if (markerComponentRef.current) {
+      markerComponentRef.current.delete(marker.markerKey);
+    }
+
     markerEntriesRef.current.delete(topicGuid);
   };
 
@@ -143,25 +161,24 @@ export function BCFPanel({
   ) => {
     removeMarker(topicGuid);
 
-    if (!world?.scene?.three) return;
+    if (!markerComponentRef.current || !BUIRef.current) return;
 
-    const texture = buildMarkerTexture(title);
-    const material = new THREE.SpriteMaterial({
-      map: texture,
-      transparent: false,
-      depthTest: false,
-      depthWrite: false,
-      sizeAttenuation: true,
-      toneMapped: false,
-    });
+    const markerWorld = getMarkerWorld();
+    if (!markerWorld) return;
 
-    const sprite = new THREE.Sprite(material);
-    sprite.position.set(position.x, position.y + 0.15, position.z);
-    sprite.scale.set(2.1, 0.82, 1);
-    sprite.renderOrder = 9999;
-    sprite.userData = { topicGuid };
+    const markerElement = createMarkerElement(topicGuid, title);
+    const markerUI = BUIRef.current.Component.create(
+      () => BUIRef.current.html`${markerElement}`,
+    );
 
-    world.scene.three.add(sprite);
+    const markerKey = markerComponentRef.current.create(
+      markerWorld,
+      markerUI,
+      position.clone(),
+      false,
+    );
+
+    if (!markerKey) return;
 
     markerEntriesRef.current.set(topicGuid, {
       data: {
@@ -174,7 +191,7 @@ export function BCFPanel({
           z: position.z,
         },
       },
-      sprite,
+      markerKey,
     });
   };
 
@@ -379,6 +396,7 @@ export function BCFPanel({
       try {
         const BUI = await import("@thatopen/ui");
         const OBC = await import("@thatopen/components");
+        const OBF = await import("@thatopen/components-front");
         const CUI = await import("@thatopen/ui-obc");
 
         // Store refs for later use
@@ -391,6 +409,10 @@ export function BCFPanel({
         // Setup BCF Topics
         const bcfTopics = components.get(OBC.BCFTopics);
         bcfTopicsRef.current = bcfTopics;
+
+        const markerComponent = components.get(OBF.Marker) as OBF.Marker;
+        markerComponent.threshold = 30;
+        markerComponentRef.current = markerComponent;
 
         // Build users object from facility members
         const users: any = {};
@@ -794,59 +816,6 @@ export function BCFPanel({
   }, [selectedTopic, components, world, snapshotUpdateTrigger]);
 
   useEffect(() => {
-    if (!world?.renderer?.three?.domElement || !world?.camera?.three) return;
-
-    const canvas = world.renderer.three.domElement;
-    const raycaster = new THREE.Raycaster();
-    const ndcPointer = new THREE.Vector2();
-
-    const onPointerDown = (event: PointerEvent) => {
-      markerPointerDownRef.current = { x: event.clientX, y: event.clientY };
-    };
-
-    const onClick = (event: MouseEvent) => {
-      const down = markerPointerDownRef.current;
-      if (down) {
-        const moved =
-          Math.hypot(event.clientX - down.x, event.clientY - down.y) > 8;
-        if (moved) {
-          markerPointerDownRef.current = null;
-          return;
-        }
-      }
-
-      markerPointerDownRef.current = null;
-
-      const markerSprites = [...markerEntriesRef.current.values()].map(
-        (entry) => entry.sprite,
-      );
-      if (markerSprites.length === 0) return;
-
-      const bounds = canvas.getBoundingClientRect();
-      ndcPointer.x = ((event.clientX - bounds.left) / bounds.width) * 2 - 1;
-      ndcPointer.y = -((event.clientY - bounds.top) / bounds.height) * 2 + 1;
-
-      raycaster.setFromCamera(ndcPointer, world.camera!.three);
-      const hits = raycaster.intersectObjects(markerSprites, true);
-      if (hits.length === 0) return;
-
-      const hitObject = hits[0].object as THREE.Object3D;
-      const topicGuid = hitObject.userData?.topicGuid;
-      if (!topicGuid) return;
-
-      openTopicDetails(topicGuid);
-    };
-
-    canvas.addEventListener("pointerdown", onPointerDown);
-    canvas.addEventListener("click", onClick);
-
-    return () => {
-      canvas.removeEventListener("pointerdown", onPointerDown);
-      canvas.removeEventListener("click", onClick);
-    };
-  }, [world, isOpen]);
-
-  useEffect(() => {
     if (!isCreateDragging) return;
 
     document.addEventListener("mousemove", handleCreateButtonDragMove);
@@ -874,9 +843,11 @@ export function BCFPanel({
         clearTimeout(markerSaveTimeoutRef.current);
       }
 
-      for (const topicGuid of markerEntriesRef.current.keys()) {
+      for (const topicGuid of [...markerEntriesRef.current.keys()]) {
         removeMarker(topicGuid);
       }
+
+      markerComponentRef.current = null;
     };
   }, []);
 
