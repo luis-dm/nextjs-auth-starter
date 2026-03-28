@@ -20,7 +20,12 @@ export function uiHandlers(
   const highlighter = components.get(OBF.Highlighter);
   highlighter.setup({
     world,
-    selectMaterialDefinition: null,
+    selectMaterialDefinition: {
+      color: new THREE.Color("#6b7280"),
+      renderedFaces: 1,
+      opacity: 1,
+      transparent: false,
+    },
   });
 
   highlighter.events.select.onHighlight.add((modelIdMap) => {
