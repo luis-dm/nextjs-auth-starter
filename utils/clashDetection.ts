@@ -45,47 +45,16 @@ interface ElementMeshData {
 export class ClashDetector {
   private components: OBC.Components;
   private fragments: OBC.FragmentsManager;
-  private outliner?: OBF.Outliner;
-  private clashItemsMap?: OBC.ModelIdMap;
-  private previousOutlinerStyle?: {
-    color: THREE.Color;
-    fillColor: THREE.Color;
-    fillOpacity: number;
-  };
+  private highlighter?: OBF.Highlighter;
 
   constructor(components: OBC.Components) {
     this.components = components;
     this.fragments = components.get(OBC.FragmentsManager);
     try {
-      this.outliner = components.get(OBF.Outliner);
+      this.highlighter = components.get(OBF.Highlighter);
     } catch (e) {
-      console.warn("Outliner not available");
+      console.warn("Highlighter not available");
     }
-  }
-
-  private getReadyOutliner(): OBF.Outliner | null {
-    if (!this.outliner) {
-      return null;
-    }
-
-    if (!this.outliner.world) {
-      try {
-        const worlds = this.components.get(OBC.Worlds);
-        const worldsList = [...worlds.list.values()];
-        if (worldsList.length > 0) {
-          this.outliner.world = worldsList[0];
-        }
-      } catch (error) {
-        console.warn("Unable to resolve world for outliner:", error);
-      }
-    }
-
-    if (!this.outliner.world) {
-      console.warn("Outliner world is not available yet");
-      return null;
-    }
-
-    return this.outliner;
   }
 
   /**
@@ -340,19 +309,16 @@ export class ClashDetector {
   }
 
   /**
-   * Outline clashing elements in red
+   * Highlight clashing elements in red
    */
   highlightClashes(clashes: ClashResult[]): void {
-    const outliner = this.getReadyOutliner();
-    if (!outliner) {
-      console.warn("Outliner not available");
+    if (!this.highlighter) {
+      console.warn("Highlighter not available");
       return;
     }
 
-    if (this.clashItemsMap) {
-      outliner.removeItems(this.clashItemsMap);
-      this.clashItemsMap = undefined;
-    }
+    // Clear previous highlights
+    this.highlighter.clear();
 
     // Collect all clashing item IDs per model
     const clashingItems = new Map<string, Set<number>>();
@@ -379,40 +345,27 @@ export class ClashDetector {
       selectionMap[modelId] = itemIds;
     });
 
-    this.previousOutlinerStyle = {
-      color: outliner.color.clone(),
-      fillColor: outliner.fillColor.clone(),
-      fillOpacity: outliner.fillOpacity,
-    };
+    // Define custom red material style
+    const redStyle = "clash-highlight";
+    this.highlighter!.styles.set(redStyle, {
+      color: new THREE.Color("#ef4444"), // Red
+      renderedFaces: 1,
+      opacity: 0.8,
+      transparent: true,
+    });
 
-    outliner.color = new THREE.Color("#ef4444");
-    outliner.fillColor = new THREE.Color("#ef4444");
-    outliner.fillOpacity = 0.35;
-    outliner.enabled = true;
-
-    outliner.addItems(selectionMap);
-    this.clashItemsMap = selectionMap;
+    // Highlight using the highlightByID method
+    this.highlighter!.highlightByID(redStyle, selectionMap);
   }
 
   /**
    * Clear clash highlights
    */
   clearHighlights(): void {
-    const outliner = this.getReadyOutliner();
-    if (!outliner) {
+    if (!this.highlighter) {
       return;
     }
-
-    if (this.clashItemsMap) {
-      outliner.removeItems(this.clashItemsMap);
-      this.clashItemsMap = undefined;
-    }
-
-    if (this.previousOutlinerStyle) {
-      outliner.color = this.previousOutlinerStyle.color;
-      outliner.fillColor = this.previousOutlinerStyle.fillColor;
-      outliner.fillOpacity = this.previousOutlinerStyle.fillOpacity;
-      this.previousOutlinerStyle = undefined;
-    }
+    // Clear the custom clash highlight style
+    this.highlighter.clear("clash-highlight");
   }
 }
