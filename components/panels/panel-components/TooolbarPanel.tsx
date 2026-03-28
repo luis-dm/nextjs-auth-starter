@@ -712,7 +712,7 @@ export default function ToolbarPanel({ components, world }: ToolbarPanelProps) {
               lengthEnabled ? "text-[#3870D5]" : "text-gray-400"
             }`}
           >
-            {"length"}
+            {"Length"}
           </span>
         </div>
       </div>
@@ -774,7 +774,7 @@ export default function ToolbarPanel({ components, world }: ToolbarPanelProps) {
               areaEnabled ? "text-[#3870D5]" : "text-gray-400"
             }`}
           >
-            {"area"}
+            {"Area"}
           </span>
         </div>
       </div>
@@ -797,7 +797,7 @@ export default function ToolbarPanel({ components, world }: ToolbarPanelProps) {
             sectionEnabled ? "text-[#3870D5]" : "text-gray-400"
           }`}
         >
-          {"section"}
+          {"Section"}
         </span>
       </div>
 
@@ -809,7 +809,7 @@ export default function ToolbarPanel({ components, world }: ToolbarPanelProps) {
       >
         <Ghost className="w-5 h-5 mb-0.5 text-gray-600 transition-colors duration-200 ease-in-out" />
         <span className="button-label text-[10px] font-medium text-gray-400 text-center leading-tight transition-colors duration-200 ease-in-out">
-          {"transparent"}
+          {"Transparent"}
         </span>
       </div>
 
@@ -821,7 +821,7 @@ export default function ToolbarPanel({ components, world }: ToolbarPanelProps) {
       >
         <Video className="w-5 h-5 mb-0.5 text-gray-600 transition-colors duration-200 ease-in-out" />
         <span className="button-label text-[10px] font-medium text-gray-400 text-center leading-tight transition-colors duration-200 ease-in-out">
-          {"first-person"}
+          {"First Person"}
         </span>
       </div>
 
@@ -834,7 +834,7 @@ export default function ToolbarPanel({ components, world }: ToolbarPanelProps) {
         >
           <Focus className="w-5 h-5 mb-0.5 text-gray-600 transition-colors duration-200 ease-in-out" />
           <span className="button-label text-[10px] font-medium text-gray-400 text-center leading-tight transition-colors duration-200 ease-in-out">
-            {"focus"}
+            {"Focus"}
           </span>
         </div>
       )}
@@ -847,7 +847,7 @@ export default function ToolbarPanel({ components, world }: ToolbarPanelProps) {
       >
         <Maximize className="w-5 h-5 mb-0.5 text-gray-600 transition-colors duration-200 ease-in-out" />
         <span className="button-label text-[10px] font-medium text-gray-400 text-center leading-tight transition-colors duration-200 ease-in-out">
-          {"isolate"}
+          {"Isolate"}
         </span>
       </div>
 
@@ -860,7 +860,7 @@ export default function ToolbarPanel({ components, world }: ToolbarPanelProps) {
         >
           <Minimize className="w-5 h-5 mb-0.5 text-gray-600 transition-colors duration-200 ease-in-out" />
           <span className="button-label text-[10px] font-medium text-gray-400 text-center leading-tight transition-colors duration-200 ease-in-out">
-            {"unisolate"}
+            {"Unisolate"}
           </span>
         </div>
       )}
@@ -873,7 +873,7 @@ export default function ToolbarPanel({ components, world }: ToolbarPanelProps) {
       >
         <EyeOff className="w-5 h-5 mb-0.5 text-gray-600 transition-colors duration-200 ease-in-out" />
         <span className="button-label text-[10px] font-medium text-gray-400 text-center leading-tight transition-colors duration-200 ease-in-out">
-          {"hide"}
+          {"Hide"}
         </span>
       </div>
 
@@ -886,7 +886,7 @@ export default function ToolbarPanel({ components, world }: ToolbarPanelProps) {
         >
           <Eye className="w-5 h-5 mb-0.5 text-gray-600 transition-colors duration-200 ease-in-out" />
           <span className="button-label text-[10px] font-medium text-gray-400 text-center leading-tight transition-colors duration-200 ease-in-out">
-            {"unhide"}
+            {"Unhide"}
           </span>
         </div>
       )}
@@ -899,7 +899,7 @@ export default function ToolbarPanel({ components, world }: ToolbarPanelProps) {
       >
         <Eye className="w-5 h-5 mb-0.5 text-gray-600 transition-colors duration-200 ease-in-out" />
         <span className="button-label text-[10px] font-medium text-gray-400 text-center leading-tight transition-colors duration-200 ease-in-out">
-          {"reset-view"}
+          {"Reset View"}
         </span>
       </div>
     </div>
