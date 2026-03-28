@@ -14,12 +14,10 @@ interface GraphPanelProps {
 export function GraphPanel({ isOpen, onClose, components }: GraphPanelProps) {
   const pieChartRef = useRef<HTMLDivElement>(null);
   const attributePieChartRef = useRef<HTMLDivElement>(null);
-  const barChartRef = useRef<HTMLDivElement>(null);
   const [pieChart, setPieChart] = useState<BUI.Chart | null>(null);
   const [attributePieChart, setAttributePieChart] = useState<BUI.Chart | null>(
     null,
   );
-  const [barChart, setBarChart] = useState<BUI.Chart | null>(null);
   const [labels, setLabels] = useState<BUI.ChartLegend | null>(null);
 
   // Helper function to build model ID map from fragments
@@ -107,19 +105,8 @@ export function GraphPanel({ isOpen, onClose, components }: GraphPanelProps) {
         components,
       });
 
-      const [attrBarChart, updateAttrBar] = CUI.charts.attributesChart({
-        type: "bar",
-        addLabels: false,
-        attribute: /empty/,
-        category: /empty/,
-        modelId: "",
-        components,
-      });
-
       attrPieChart.label = "Attribute Pie Chart Data";
-      attrBarChart.label = "Attribute Bar Chart Data";
       setAttributePieChart(attrPieChart);
-      setBarChart(attrBarChart);
 
       // Create interactive labels
       const legendElement = BUI.Component.create(() => {
@@ -158,12 +145,6 @@ export function GraphPanel({ isOpen, onClose, components }: GraphPanelProps) {
         }
       });
 
-      attrBarChart.addEventListener("data-loaded", () => {
-        if (!legendElement.charts.includes(attrBarChart)) {
-          legendElement.charts = [...legendElement.charts, attrBarChart];
-        }
-      });
-
       // Listen for fragment loading to populate charts
       const fragments = components.get(OBC.FragmentsManager);
       const onFragmentLoaded = async ({ value: model }: any) => {
@@ -181,12 +162,6 @@ export function GraphPanel({ isOpen, onClose, components }: GraphPanelProps) {
           updateCatPie({ modelIdMap });
 
           updateAttrPie({
-            attribute: /^Name$/,
-            category: /COLUMN/,
-            modelId: model.modelId,
-          });
-
-          updateAttrBar({
             attribute: /^Name$/,
             category: /COLUMN/,
             modelId: model.modelId,
@@ -210,12 +185,6 @@ export function GraphPanel({ isOpen, onClose, components }: GraphPanelProps) {
 
             for (const [, model] of fragments.list) {
               updateAttrPie({
-                attribute: /^Name$/,
-                category: /COLUMN/,
-                modelId: model.modelId,
-              });
-
-              updateAttrBar({
                 attribute: /^Name$/,
                 category: /COLUMN/,
                 modelId: model.modelId,
@@ -254,14 +223,6 @@ export function GraphPanel({ isOpen, onClose, components }: GraphPanelProps) {
       attributePieChartRef.current.appendChild(attributePieChart);
     }
   }, [attributePieChart]);
-
-  // Append the bar chart to its container when ready
-  useEffect(() => {
-    if (barChart && barChartRef.current) {
-      barChartRef.current.innerHTML = "";
-      barChartRef.current.appendChild(barChart);
-    }
-  }, [barChart]);
 
   // Append labels to their container
   useEffect(() => {
@@ -329,21 +290,17 @@ export function GraphPanel({ isOpen, onClose, components }: GraphPanelProps) {
               <h3 className="text-sm font-medium text-gray-700 mb-2">
                 Categories Pie Chart
               </h3>
-              <div ref={pieChartRef} className="mb-6" />
+              <div ref={pieChartRef} className="mb-6 min-h-80" />
             </div>
 
             <div className="mb-4">
               <h3 className="text-sm font-medium text-gray-700 mb-2">
                 Attribute Pie Chart (Name / COLUMN)
               </h3>
-              <div ref={attributePieChartRef} className="mb-6" />
-            </div>
-
-            <div className="mb-4">
-              <h3 className="text-sm font-medium text-gray-700 mb-2">
-                Attribute Bar Chart (Name / COLUMN)
-              </h3>
-              <div ref={barChartRef} className="mb-6" />
+              <div
+                ref={attributePieChartRef}
+                className="mb-6 min-h-80"
+              />
             </div>
 
             <div id="graph-labels-container" className="mb-6" />
