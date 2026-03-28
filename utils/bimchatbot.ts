@@ -22,6 +22,14 @@ export class BimChatbot {
     this.fragments = components.get(OBC.FragmentsManager);
   }
 
+  private async refreshViewer(): Promise<void> {
+    try {
+      await this.fragments.core.update(true);
+    } catch (error) {
+      console.warn("Failed to refresh viewer after chatbot action:", error);
+    }
+  }
+
   async selectElements(elementIds: number[]): Promise<void> {
     try {
       console.log("BimChatbot.selectElements called with:", elementIds);
@@ -46,6 +54,7 @@ export class BimChatbot {
 
       // Apply selection
       await highlighter.highlightByID("select", selection);
+      await this.refreshViewer();
 
       console.log(`Selected ${elementIds.length} elements`);
     } catch (error) {
@@ -67,6 +76,7 @@ export class BimChatbot {
 
       // Apply hiding
       await hider.set(false, toHide);
+      await this.refreshViewer();
 
       // Dispatch visibility changed event
       dispatchVisibilityChanged({
@@ -96,6 +106,7 @@ export class BimChatbot {
 
       // Apply showing
       await hider.set(true, toShow);
+      await this.refreshViewer();
 
       // Dispatch visibility changed event
       dispatchVisibilityChanged({
@@ -126,6 +137,7 @@ export class BimChatbot {
       // Apply isolation: hide everything first, then show only selected
       await hider.set(false); // Hide all
       await hider.set(true, toIsolate); // Show only isolated elements
+      await this.refreshViewer();
 
       console.log(`Isolated ${elementIds.length} elements`);
     } catch (error) {
@@ -347,7 +359,7 @@ export class BimChatbot {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ structure, facilityId, download: true }),
+        body: JSON.stringify({ structure, facilityId }),
       });
 
       if (!response.ok) {
