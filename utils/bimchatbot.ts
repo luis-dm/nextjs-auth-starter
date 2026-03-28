@@ -319,9 +319,6 @@ export class BimChatbot {
       this.spatialStructure as IFCNode,
     );
 
-    // Download enhanced structure as JSON before building filesystem
-    // this.downloadEnhancedStructure(facilityId);
-
     // Build the BIM filesystem from the enhanced structure
     await this.buildBimFilesystem(this.enhancedStructure, facilityId);
 
@@ -329,24 +326,6 @@ export class BimChatbot {
 
     return this.enhancedStructure;
   }
-
-  // private downloadEnhancedStructure(facilityId: string): void {
-  //   try {
-  //     const json = JSON.stringify(this.enhancedStructure, null, 2);
-  //     const blob = new Blob([json], { type: "application/json" });
-  //     const url = URL.createObjectURL(blob);
-  //     const a = document.createElement("a");
-  //     a.href = url;
-  //     a.download = `enhanced_structure_${facilityId}_${Date.now()}.json`;
-  //     document.body.appendChild(a);
-  //     a.click();
-  //     document.body.removeChild(a);
-  //     URL.revokeObjectURL(url);
-  //     console.log("Enhanced structure downloaded successfully");
-  //   } catch (error) {
-  //     console.error("Error downloading enhanced structure:", error);
-  //   }
-  // }
 
   private async buildBimFilesystem(
     structure: IFCNode,
@@ -370,24 +349,8 @@ export class BimChatbot {
         return;
       }
 
-      // Check if response is a file download (zip)
-      const contentType = response.headers.get("Content-Type");
-      if (contentType === "application/zip") {
-        console.log("Downloading BIM filesystem as zip...");
-        const blob = await response.blob();
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = `bim_fs_${facilityId}_${Date.now()}.zip`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        window.URL.revokeObjectURL(url);
-        console.log("BIM filesystem downloaded successfully");
-      } else {
-        const result = await response.json();
-        console.log("BIM filesystem built successfully:", result);
-      }
+      const result = await response.json();
+      console.log("BIM filesystem built successfully:", result);
 
       this.isFilesystemReady = true;
     } catch (error) {

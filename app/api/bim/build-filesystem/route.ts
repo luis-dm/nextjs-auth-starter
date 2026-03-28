@@ -45,7 +45,7 @@ export async function POST(req: NextRequest) {
     }
 
     const tempFile = path.join(
-      os.tmpdir(),
+      aiDir,
       `enhanced_structure_${facilityId}_${Date.now()}.json`,
     );
     fs.writeFileSync(tempFile, JSON.stringify(structure, null, 2));
@@ -89,7 +89,7 @@ export async function POST(req: NextRequest) {
       console.warn("Skills folder not found at:", sourceSkillsPath);
     }
 
-    console.log("Zip download disabled; returning JSON response only.");
+    console.log("Returning JSON response.");
 
     return NextResponse.json({
       success: true,
