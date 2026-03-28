@@ -9,15 +9,26 @@ export function uiHandlers(
   world: OBC.World,
   viewport: HTMLElement,
 ) {
+  const outliner = components.get(OBF.Outliner);
+  if (world.renderer instanceof OBF.PostproductionRenderer) {
+    world.renderer.postproduction.enabled = true;
+  }
+  outliner.world = world;
+  outliner.color = new THREE.Color(0x000000);
+  outliner.enabled = true;
+
   const highlighter = components.get(OBF.Highlighter);
   highlighter.setup({
     world,
-    selectMaterialDefinition: {
-      color: new THREE.Color("#6b7280"),
-      renderedFaces: 1,
-      opacity: 1,
-      transparent: false,
-    },
+    selectMaterialDefinition: null,
+  });
+
+  highlighter.events.select.onHighlight.add((modelIdMap) => {
+    outliner.addItems(modelIdMap);
+  });
+
+  highlighter.events.select.onClear.add((modelIdMap) => {
+    outliner.removeItems(modelIdMap);
   });
 
   const hoverer = components.get(OBF.Hoverer);
