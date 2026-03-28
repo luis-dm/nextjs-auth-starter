@@ -39,7 +39,7 @@ const updateClashResults = () => {
             <span class="text-xs font-bold ${
               clash.distance > 0.05 ? "text-red-600" : "text-orange-500"
             }">
-              ${(clash.distance * 1000).toFixed(1)}mm
+              ${(clash.distance * 1000).toFixed(1)}
             </span>
           </div>
           <div class="text-xs text-gray-600 space-y-1">
@@ -220,7 +220,7 @@ export const createClashPanel = (
           <!-- Settings Section -->
           <div class="space-y-2">
             <div class="flex items-center justify-between">
-              <label class="text-xs font-medium text-gray-700">Tolerance (mm)</label>
+              <label class="text-xs font-medium text-gray-700">Tolerance</label>
               <input 
                 type="number" 
                 value="10" 

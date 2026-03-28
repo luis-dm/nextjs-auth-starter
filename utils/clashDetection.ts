@@ -45,15 +45,21 @@ interface ElementMeshData {
 export class ClashDetector {
   private components: OBC.Components;
   private fragments: OBC.FragmentsManager;
-  private highlighter?: OBF.Highlighter;
+  private outliner?: OBF.Outliner;
+  private clashItemsMap?: OBC.ModelIdMap;
+  private previousOutlinerStyle?: {
+    color: THREE.Color;
+    fillColor: THREE.Color;
+    fillOpacity: number;
+  };
 
   constructor(components: OBC.Components) {
     this.components = components;
     this.fragments = components.get(OBC.FragmentsManager);
     try {
-      this.highlighter = components.get(OBF.Highlighter);
+      this.outliner = components.get(OBF.Outliner);
     } catch (e) {
-      console.warn("Highlighter not available");
+      console.warn("Outliner not available");
     }
   }
 
@@ -309,16 +315,18 @@ export class ClashDetector {
   }
 
   /**
-   * Highlight clashing elements in red
+   * Outline clashing elements in red
    */
   highlightClashes(clashes: ClashResult[]): void {
-    if (!this.highlighter) {
-      console.warn("Highlighter not available");
+    if (!this.outliner) {
+      console.warn("Outliner not available");
       return;
     }
 
-    // Clear previous highlights
-    this.highlighter.clear();
+    if (this.clashItemsMap) {
+      this.outliner.removeItems(this.clashItemsMap);
+      this.clashItemsMap = undefined;
+    }
 
     // Collect all clashing item IDs per model
     const clashingItems = new Map<string, Set<number>>();
@@ -345,27 +353,39 @@ export class ClashDetector {
       selectionMap[modelId] = itemIds;
     });
 
-    // Define custom red material style
-    const redStyle = "clash-highlight";
-    this.highlighter!.styles.set(redStyle, {
-      color: new THREE.Color("#ef4444"), // Red
-      renderedFaces: 1,
-      opacity: 0.8,
-      transparent: true,
-    });
+    this.previousOutlinerStyle = {
+      color: this.outliner.color.clone(),
+      fillColor: this.outliner.fillColor.clone(),
+      fillOpacity: this.outliner.fillOpacity,
+    };
 
-    // Highlight using the highlightByID method
-    this.highlighter!.highlightByID(redStyle, selectionMap);
+    this.outliner.color = new THREE.Color("#ef4444");
+    this.outliner.fillColor = new THREE.Color("#ef4444");
+    this.outliner.fillOpacity = 0.35;
+    this.outliner.enabled = true;
+
+    this.outliner.addItems(selectionMap);
+    this.clashItemsMap = selectionMap;
   }
 
   /**
    * Clear clash highlights
    */
   clearHighlights(): void {
-    if (!this.highlighter) {
+    if (!this.outliner) {
       return;
     }
-    // Clear the custom clash highlight style
-    this.highlighter.clear("clash-highlight");
+
+    if (this.clashItemsMap) {
+      this.outliner.removeItems(this.clashItemsMap);
+      this.clashItemsMap = undefined;
+    }
+
+    if (this.previousOutlinerStyle) {
+      this.outliner.color = this.previousOutlinerStyle.color;
+      this.outliner.fillColor = this.previousOutlinerStyle.fillColor;
+      this.outliner.fillOpacity = this.previousOutlinerStyle.fillOpacity;
+      this.previousOutlinerStyle = undefined;
+    }
   }
 }
