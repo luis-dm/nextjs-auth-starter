@@ -1176,12 +1176,11 @@ export function BCFPanel({
               onTouchStart={handleCreateButtonDragStart}
               onClick={(event) => {
                 event.preventDefault();
-                toast("Drag and drop this button on a model element");
               }}
               className="flex items-center justify-center px-4 py-2 border border-gray-200 bg-white rounded-[20px] cursor-pointer text-gray-700 text-sm transition-all duration-200 ease-in-out hover:bg-gray-100 hover:border-gray-300"
             >
               <span className="material-icons text-lg mr-2">add</span>
-              Create Topic
+              Drag to Create Topic
             </button>
             {isSaving && (
               <p className="text-xs text-gray-500 text-center mt-1">
