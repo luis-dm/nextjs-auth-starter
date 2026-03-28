@@ -14,7 +14,9 @@ export function uiHandlers(
     world.renderer.postproduction.enabled = true;
   }
   outliner.world = world;
-  outliner.color = new THREE.Color(0x000000);
+  outliner.color = new THREE.Color("#000000");
+  outliner.fillColor = new THREE.Color("#6b7280");
+  outliner.fillOpacity = 1;
   outliner.enabled = true;
 
   const highlighter = components.get(OBF.Highlighter);
