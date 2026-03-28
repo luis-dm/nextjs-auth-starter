@@ -13,12 +13,13 @@ interface GraphPanelProps {
 
 export function GraphPanel({ isOpen, onClose, components }: GraphPanelProps) {
   const pieChartRef = useRef<HTMLDivElement>(null);
+  const attributePieChartRef = useRef<HTMLDivElement>(null);
   const barChartRef = useRef<HTMLDivElement>(null);
   const [pieChart, setPieChart] = useState<BUI.Chart | null>(null);
+  const [attributePieChart, setAttributePieChart] =
+    useState<BUI.Chart | null>(null);
   const [barChart, setBarChart] = useState<BUI.Chart | null>(null);
   const [labels, setLabels] = useState<BUI.ChartLegend | null>(null);
-  const updatePieRef = useRef<any>(null);
-  const updateBarRef = useRef<any>(null);
 
   // Helper function to build model ID map from fragments
   const buildModelIdMap = async (components: OBC.Components) => {
@@ -95,7 +96,29 @@ export function GraphPanel({ isOpen, onClose, components }: GraphPanelProps) {
 
       catPieChart.label = "Categories Distribution";
       setPieChart(catPieChart);
-      updatePieRef.current = updateCatPie;
+
+      const [attrPieChart, updateAttrPie] = CUI.charts.attributesChart({
+        type: "pie",
+        addLabels: false,
+        attribute: /empty/,
+        category: /empty/,
+        modelId: "",
+        components,
+      });
+
+      const [attrBarChart, updateAttrBar] = CUI.charts.attributesChart({
+        type: "bar",
+        addLabels: false,
+        attribute: /empty/,
+        category: /empty/,
+        modelId: "",
+        components,
+      });
+
+      attrPieChart.label = "Attribute Pie Chart Data";
+      attrBarChart.label = "Attribute Bar Chart Data";
+      setAttributePieChart(attrPieChart);
+      setBarChart(attrBarChart);
 
       // Create interactive labels
       const legendElement = BUI.Component.create(() => {
@@ -123,7 +146,21 @@ export function GraphPanel({ isOpen, onClose, components }: GraphPanelProps) {
 
       // Connect charts to labels when data loads
       catPieChart.addEventListener("data-loaded", () => {
-        legendElement.charts = [...legendElement.charts, catPieChart];
+        if (!legendElement.charts.includes(catPieChart)) {
+          legendElement.charts = [...legendElement.charts, catPieChart];
+        }
+      });
+
+      attrPieChart.addEventListener("data-loaded", () => {
+        if (!legendElement.charts.includes(attrPieChart)) {
+          legendElement.charts = [...legendElement.charts, attrPieChart];
+        }
+      });
+
+      attrBarChart.addEventListener("data-loaded", () => {
+        if (!legendElement.charts.includes(attrBarChart)) {
+          legendElement.charts = [...legendElement.charts, attrBarChart];
+        }
       });
 
       // Listen for fragment loading to populate charts
@@ -141,6 +178,18 @@ export function GraphPanel({ isOpen, onClose, components }: GraphPanelProps) {
 
           console.log("GraphPanel: Updating pie chart...");
           updateCatPie({ modelIdMap });
+
+          updateAttrPie({
+            attribute: /^Name$/,
+            category: /COLUMN/,
+            modelId: model.modelId,
+          });
+
+          updateAttrBar({
+            attribute: /^Name$/,
+            category: /COLUMN/,
+            modelId: model.modelId,
+          });
         } catch (error) {
           console.error("GraphPanel: Error updating charts:", error);
         }
@@ -157,6 +206,20 @@ export function GraphPanel({ isOpen, onClose, components }: GraphPanelProps) {
 
             console.log("GraphPanel: Updating pie chart...");
             updateCatPie({ modelIdMap });
+
+            for (const [, model] of fragments.list) {
+              updateAttrPie({
+                attribute: /^Name$/,
+                category: /COLUMN/,
+                modelId: model.modelId,
+              });
+
+              updateAttrBar({
+                attribute: /^Name$/,
+                category: /COLUMN/,
+                modelId: model.modelId,
+              });
+            }
           })
           .catch((error) => {
             console.error(
@@ -182,6 +245,14 @@ export function GraphPanel({ isOpen, onClose, components }: GraphPanelProps) {
       pieChartRef.current.appendChild(pieChart);
     }
   }, [pieChart]);
+
+  // Append the attribute pie chart to its container when ready
+  useEffect(() => {
+    if (attributePieChart && attributePieChartRef.current) {
+      attributePieChartRef.current.innerHTML = "";
+      attributePieChartRef.current.appendChild(attributePieChart);
+    }
+  }, [attributePieChart]);
 
   // Append the bar chart to its container when ready
   useEffect(() => {
@@ -259,6 +330,22 @@ export function GraphPanel({ isOpen, onClose, components }: GraphPanelProps) {
               </h3>
               <div ref={pieChartRef} className="mb-6" />
             </div>
+
+            <div className="mb-4">
+              <h3 className="text-sm font-medium text-gray-700 mb-2">
+                Attribute Pie Chart (Name / COLUMN)
+              </h3>
+              <div ref={attributePieChartRef} className="mb-6" />
+            </div>
+
+            <div className="mb-4">
+              <h3 className="text-sm font-medium text-gray-700 mb-2">
+                Attribute Bar Chart (Name / COLUMN)
+              </h3>
+              <div ref={barChartRef} className="mb-6" />
+            </div>
+
+            <div id="graph-labels-container" className="mb-6" />
           </div>
         </div>
       </div>
