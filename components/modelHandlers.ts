@@ -16,7 +16,7 @@ export function uiHandlers(
   outliner.world = world;
   outliner.color = new THREE.Color("#000000");
   outliner.fillColor = new THREE.Color("#6b7280");
-  outliner.fillOpacity = 1;
+  outliner.fillOpacity = 0.5;
   outliner.thickness = 1;
   outliner.enabled = true;
 
