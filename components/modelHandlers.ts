@@ -17,6 +17,7 @@ export function uiHandlers(
   outliner.color = new THREE.Color("#000000");
   outliner.fillColor = new THREE.Color("#6b7280");
   outliner.fillOpacity = 1;
+  outliner.thickness = 1;
   outliner.enabled = true;
 
   const highlighter = components.get(OBF.Highlighter);

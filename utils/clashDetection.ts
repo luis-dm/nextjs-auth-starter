@@ -63,6 +63,31 @@ export class ClashDetector {
     }
   }
 
+  private getReadyOutliner(): OBF.Outliner | null {
+    if (!this.outliner) {
+      return null;
+    }
+
+    if (!this.outliner.world) {
+      try {
+        const worlds = this.components.get(OBC.Worlds);
+        const worldsList = [...worlds.list.values()];
+        if (worldsList.length > 0) {
+          this.outliner.world = worldsList[0];
+        }
+      } catch (error) {
+        console.warn("Unable to resolve world for outliner:", error);
+      }
+    }
+
+    if (!this.outliner.world) {
+      console.warn("Outliner world is not available yet");
+      return null;
+    }
+
+    return this.outliner;
+  }
+
   /**
    * Run clash detection on all loaded models
    */
@@ -318,13 +343,14 @@ export class ClashDetector {
    * Outline clashing elements in red
    */
   highlightClashes(clashes: ClashResult[]): void {
-    if (!this.outliner) {
+    const outliner = this.getReadyOutliner();
+    if (!outliner) {
       console.warn("Outliner not available");
       return;
     }
 
     if (this.clashItemsMap) {
-      this.outliner.removeItems(this.clashItemsMap);
+      outliner.removeItems(this.clashItemsMap);
       this.clashItemsMap = undefined;
     }
 
@@ -354,17 +380,17 @@ export class ClashDetector {
     });
 
     this.previousOutlinerStyle = {
-      color: this.outliner.color.clone(),
-      fillColor: this.outliner.fillColor.clone(),
-      fillOpacity: this.outliner.fillOpacity,
+      color: outliner.color.clone(),
+      fillColor: outliner.fillColor.clone(),
+      fillOpacity: outliner.fillOpacity,
     };
 
-    this.outliner.color = new THREE.Color("#ef4444");
-    this.outliner.fillColor = new THREE.Color("#ef4444");
-    this.outliner.fillOpacity = 0.35;
-    this.outliner.enabled = true;
+    outliner.color = new THREE.Color("#ef4444");
+    outliner.fillColor = new THREE.Color("#ef4444");
+    outliner.fillOpacity = 0.35;
+    outliner.enabled = true;
 
-    this.outliner.addItems(selectionMap);
+    outliner.addItems(selectionMap);
     this.clashItemsMap = selectionMap;
   }
 
@@ -372,19 +398,20 @@ export class ClashDetector {
    * Clear clash highlights
    */
   clearHighlights(): void {
-    if (!this.outliner) {
+    const outliner = this.getReadyOutliner();
+    if (!outliner) {
       return;
     }
 
     if (this.clashItemsMap) {
-      this.outliner.removeItems(this.clashItemsMap);
+      outliner.removeItems(this.clashItemsMap);
       this.clashItemsMap = undefined;
     }
 
     if (this.previousOutlinerStyle) {
-      this.outliner.color = this.previousOutlinerStyle.color;
-      this.outliner.fillColor = this.previousOutlinerStyle.fillColor;
-      this.outliner.fillOpacity = this.previousOutlinerStyle.fillOpacity;
+      outliner.color = this.previousOutlinerStyle.color;
+      outliner.fillColor = this.previousOutlinerStyle.fillColor;
+      outliner.fillOpacity = this.previousOutlinerStyle.fillOpacity;
       this.previousOutlinerStyle = undefined;
     }
   }
