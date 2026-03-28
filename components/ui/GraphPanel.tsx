@@ -297,10 +297,7 @@ export function GraphPanel({ isOpen, onClose, components }: GraphPanelProps) {
               <h3 className="text-sm font-medium text-gray-700 mb-2">
                 Attribute Pie Chart (Name / COLUMN)
               </h3>
-              <div
-                ref={attributePieChartRef}
-                className="mb-6 min-h-80"
-              />
+              <div ref={attributePieChartRef} className="mb-6 min-h-80" />
             </div>
 
             <div id="graph-labels-container" className="mb-6" />
