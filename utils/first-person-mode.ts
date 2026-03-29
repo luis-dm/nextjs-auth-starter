@@ -88,6 +88,30 @@ const getElementName = async (
   return RaycastUtils.getElementName(model, localId);
 };
 
+const clearCurrentHighlight = async () => {
+  if (highlighter) {
+    await highlighter.clear("select");
+  }
+
+  if (fragments && fragments.list.size > 0) {
+    try {
+      const model = fragments.list.values().next().value;
+      if (model?.resetHighlight) {
+        await model.resetHighlight();
+      }
+      if (fragments.core) {
+        await fragments.core.update(true);
+      }
+    } catch (error) {
+      console.warn("Error clearing highlights:", error);
+    }
+  }
+
+  if (elementNameDisplay) {
+    elementNameDisplay.style.display = "none";
+  }
+};
+
 // Handle click events for highlighting elements
 const onFirstPersonClick = async () => {
   if (!isFirstPersonActive || !currentWorld) return;
@@ -96,31 +120,7 @@ const onFirstPersonClick = async () => {
 
   if (!raycastEntry) {
     // No raycast result - clear all highlights and hide element name
-
-    // Clear highlighter selection
-    if (highlighter) {
-      await highlighter.clear("select");
-    }
-
-    // Clear highlights from the fragment model
-    if (fragments && fragments.list.size > 0) {
-      try {
-        const model = fragments.list.values().next().value;
-        if (model?.resetHighlight) {
-          await model.resetHighlight();
-        }
-        if (fragments.core) {
-          await fragments.core.update(true);
-        }
-      } catch (error) {
-        console.warn("Error clearing highlights:", error);
-      }
-    }
-
-    // Hide element name display
-    if (elementNameDisplay) {
-      elementNameDisplay.style.display = "none";
-    }
+    await clearCurrentHighlight();
 
     return;
   }
@@ -248,6 +248,11 @@ const onKeyDown = (event: KeyboardEvent) => {
     case "Escape":
       // Exit first person mode immediately
       exitFirstPersonMode();
+      break;
+    case "KeyX":
+      // Clear current highlight/selection
+      event.preventDefault();
+      clearCurrentHighlight();
       break;
     case "KeyR":
       // Reset first-person camera position
@@ -510,6 +515,7 @@ const createControlsInfo = (t?: (key: string) => string) => {
           "fp-actions-space",
           "SPACE - Highlight element at reticle & show name",
         )}<br>
+        • ${getText("fp-actions-clear", "X - Clear highlight selection")}<br>
         • ${getText("fp-actions-reset", "R - Reset camera position")}<br>
         • ${getText("fp-actions-speed", "-/+ - Decrease/Increase speed")}<br>
         • ${getText("fp-actions-exit", "ESC - Exit first person mode")}
