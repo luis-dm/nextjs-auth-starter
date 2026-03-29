@@ -558,6 +558,29 @@ export function createActionAgent(facilityId: string, searchAgent: Agent) {
 
 Strategy: Try quick path first, fallback to search
 
+0. Ultra-fast common generic term mapping (skip list-available for these)
+If the user query uses common generic BIM terms, map directly to IFC category and run quick-action immediately:
+- windows/window -> IFCWINDOW
+- doors/door -> IFCDOOR
+- slabs/slab/floors/floor -> IFCSLAB
+- walls/wall -> IFCWALL
+- columns/column -> IFCCOLUMN
+- beams/beam -> IFCBEAM
+- roofs/roof -> IFCROOF
+- stairs/stair -> IFCSTAIR
+- railings/railing -> IFCRAILING
+- spaces/space/rooms/room -> IFCSPACE
+- furniture/furnishings -> IFCFURNISHINGELEMENT
+- pipes/pipe -> IFCPIPESEGMENT
+- ducts/duct -> IFCDUCTSEGMENT
+- valves/valve -> IFCVALVE
+- equipment/mechanical equipment -> IFCMECHANICALEQUIPMENT
+
+When one of these clear mappings matches, do NOT call list-available first.
+Go straight to quick-action with index/by_category/<IFC_TYPE>.jsonl.
+
+If quick-action fails (file missing/empty), then fallback to list-available, then search-elements.
+
 For generic terms:
 1. Call list-available to check if it's a category/storey
 2. If found → use quick-action
