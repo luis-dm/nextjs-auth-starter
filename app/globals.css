@@ -91,7 +91,7 @@
   --color-midgray: #ccdae8;
 }
 
-.dark {
+/* .dark {
   --bim-ui_main-base: #fff;
   --bim-ui_accent-base: #3870d5;
   --bim-ui_gray-0: hsl(220, 20%, 8%);
@@ -136,7 +136,7 @@
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.556 0 0);
-}
+} */
 
 @layer base {
   * {
