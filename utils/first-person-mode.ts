@@ -492,6 +492,7 @@ const createControlsInfo = (t?: (key: string) => string) => {
       )}</strong></div>
       <div style="margin-bottom: 6px; color: #ccc;">
         • ${getText("fp-movement-desc", "W/A/S/D or Arrow Keys - Move")}
+        • ${getText("fp-movement-desc", "Q/E - Move Up/Down")}
       </div>
       <div style="margin-bottom: 4px;"><strong>${getText(
         "fp-camera",
@@ -509,7 +510,6 @@ const createControlsInfo = (t?: (key: string) => string) => {
           "fp-actions-space",
           "SPACE - Highlight element at reticle & show name",
         )}<br>
-        • ${getText("fp-actions-note", "N - Create note at reticle position")}<br>
         • ${getText("fp-actions-reset", "R - Reset camera position")}<br>
         • ${getText("fp-actions-speed", "-/+ - Decrease/Increase speed")}<br>
         • ${getText("fp-actions-exit", "ESC - Exit first person mode")}
