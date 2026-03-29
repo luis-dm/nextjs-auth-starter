@@ -420,22 +420,16 @@ export class BimChatbot {
               console.log("BimChatbot: About to call selectElements");
               await this.selectElements(data.elementIds);
               console.log("BimChatbot: selectElements completed successfully");
-              return (
-                data.response || `Selected ${data.elementIds.length} elements`
-              );
+              return `Selected ${data.elementIds.length} elements`;
             case "hide":
               await this.hideElements(data.elementIds);
-              return data.response || `Hid ${data.elementIds.length} elements`;
+              return `Hid ${data.elementIds.length} elements`;
             case "show":
               await this.showElements(data.elementIds);
-              return (
-                data.response || `Showed ${data.elementIds.length} elements`
-              );
+              return `Showed ${data.elementIds.length} elements`;
             case "isolate":
               await this.isolateElements(data.elementIds);
-              return (
-                data.response || `Isolated ${data.elementIds.length} elements`
-              );
+              return `Isolated ${data.elementIds.length} elements`;
             default:
               console.log("BimChatbot: Unknown action:", data.action);
               return data.response || "Action completed";
