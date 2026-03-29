@@ -43,18 +43,16 @@
 
 :root {
   --radius: 0.625rem;
-  --bim-ui_main-base: #000;
-  --bim-ui_accent-base: #000;
+  --bim-ui_main-base: #fff;
+  --bim-ui_accent-base: #3870d5;
   --bim-ui_gray-0: hsl(220, 20%, 8%);
   --bim-ui_gray-1: hsl(116, 90%, 53%);
-  --bim-ui_gray-2: rgb(247, 248, 250);
-  --bim-ui_gray-4: hsl(0, 0%, 64%);
-  /* Subheading */
-  --bim-ui_gray-6: hsl(0, 0%, 4%);
-  /* Headers: (BCF) */
-  --bim-ui_gray-8: hsl(0, 0%, 0%);
-  --bim-ui_gray-9: hsl(0, 0%, 0%);
-  --bim-ui_gray-10: hsl(0, 0%, 59%);
+  --bim-ui_gray-2: hsl(220, 20%, 14%);
+  --bim-ui_gray-4: hsl(220, 12%, 28%);
+  --bim-ui_gray-6: hsl(220, 10%, 62%);
+  --bim-ui_gray-8: hsl(0, 0%, 88%);
+  --bim-ui_gray-9: hsl(0, 0%, 92%);
+  --bim-ui_gray-10: hsl(0, 0%, 96%);
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.145 0 0);
   --popover: oklch(1 0 0);
@@ -91,6 +89,19 @@
   --color-midblue: #3870d5;
   --color-darkgray: #8899aa;
   --color-midgray: #ccdae8;
+}
+
+.dark {
+  --bim-ui_main-base: #fff;
+  --bim-ui_accent-base: #3870d5;
+  --bim-ui_gray-0: hsl(220, 20%, 8%);
+  --bim-ui_gray-1: hsl(116, 90%, 53%);
+  --bim-ui_gray-2: hsl(220, 20%, 14%);
+  --bim-ui_gray-4: hsl(220, 12%, 28%);
+  --bim-ui_gray-6: hsl(220, 10%, 62%);
+  --bim-ui_gray-8: hsl(0, 0%, 88%);
+  --bim-ui_gray-9: hsl(0, 0%, 92%);
+  --bim-ui_gray-10: hsl(0, 0%, 96%);
 }
 
 .dark .light {
