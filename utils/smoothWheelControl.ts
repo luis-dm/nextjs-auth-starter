@@ -3,9 +3,9 @@ import * as OBC from "@thatopen/components";
 import * as THREE from "three";
 
 const TRACKPAD_PINCH_STEP = 5.5;
-const MOUSE_WHEEL_STEP = 0.5;
-const TRACKPAD_SCROLL_STEP = 0.5;
-const DEFAULT_STEP = 0.5;
+const MOUSE_WHEEL_STEP = 2;
+const TRACKPAD_SCROLL_STEP = 2;
+const DEFAULT_STEP = 2;
 
 export interface SmoothWheelControlConfig {
   shiftBoost?: number;
