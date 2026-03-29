@@ -122,9 +122,17 @@ export default function ToolbarPanel({ components, world }: ToolbarPanelProps) {
     if (!components) return;
     const areaMeasurer = components.get(OBF.AreaMeasurement);
     if ((areaMeasurer as any).modes) {
-      setAvailableAreaModes((areaMeasurer as any).modes);
-      if ((areaMeasurer as any).mode) {
-        setAreaMode((areaMeasurer as any).mode);
+      const allowedModes = ["free", "face"];
+      const modes = ((areaMeasurer as any).modes as string[]).filter((mode) =>
+        allowedModes.includes(mode),
+      );
+      setAvailableAreaModes(modes);
+
+      const currentMode = (areaMeasurer as any).mode as string | undefined;
+      if (currentMode && allowedModes.includes(currentMode)) {
+        setAreaMode(currentMode);
+      } else if (modes.length > 0) {
+        setAreaMode(modes[0]);
       }
     }
   }, [components]);
