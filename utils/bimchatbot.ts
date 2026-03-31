@@ -155,21 +155,21 @@ export class BimChatbot {
         const model = Array.from(this.fragments.list.values())[0];
         if (model && model.getItemsData) {
           // Get bounding box for this element
-          try {
-            const boxes = await model.getBoxes([node.localId]);
-            if (boxes && boxes.length > 0) {
-              const box = boxes[0];
-              (node as any).bbox = {
-                min: { x: box.min.x, y: box.min.y, z: box.min.z },
-                max: { x: box.max.x, y: box.max.y, z: box.max.z },
-              };
-            }
-          } catch (bboxError) {
-            console.warn(
-              `Failed to get bounding box for element ${node.localId}:`,
-              bboxError,
-            );
-          }
+          // try {
+          //   const boxes = await model.getBoxes([node.localId]);
+          //   if (boxes && boxes.length > 0) {
+          //     const box = boxes[0];
+          //     (node as any).bbox = {
+          //       min: { x: box.min.x, y: box.min.y, z: box.min.z },
+          //       max: { x: box.max.x, y: box.max.y, z: box.max.z },
+          //     };
+          //   }
+          // } catch (bboxError) {
+          //   console.warn(
+          //     `Failed to get bounding box for element ${node.localId}:`,
+          //     bboxError,
+          //   );
+          // }
 
           // Get properties for this element using the same pattern as generatePropertiesTSV
           const itemsData = await model.getItemsData([node.localId], {
