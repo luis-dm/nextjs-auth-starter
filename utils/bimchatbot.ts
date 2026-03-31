@@ -154,6 +154,23 @@ export class BimChatbot {
       try {
         const model = Array.from(this.fragments.list.values())[0];
         if (model && model.getItemsData) {
+          // Get bounding box for this element
+          try {
+            const boxes = await model.getBoxes([node.localId]);
+            if (boxes && boxes.length > 0) {
+              const box = boxes[0];
+              (node as any).bbox = {
+                min: { x: box.min.x, y: box.min.y, z: box.min.z },
+                max: { x: box.max.x, y: box.max.y, z: box.max.z },
+              };
+            }
+          } catch (bboxError) {
+            console.warn(
+              `Failed to get bounding box for element ${node.localId}:`,
+              bboxError,
+            );
+          }
+
           // Get properties for this element using the same pattern as generatePropertiesTSV
           const itemsData = await model.getItemsData([node.localId], {
             attributesDefault: true,
@@ -324,7 +341,36 @@ export class BimChatbot {
 
     console.log("Enhanced spatial structure loaded and filesystem built");
 
+    // Download the enhanced structure as JSON
+    this.downloadEnhancedStructure(facilityId);
+
     return this.enhancedStructure;
+  }
+
+  private downloadEnhancedStructure(facilityId: string): void {
+    try {
+      // Convert the enhanced structure to JSON
+      const jsonString = JSON.stringify(this.enhancedStructure, null, 2);
+      
+      // Create a blob and download link
+      const blob = new Blob([jsonString], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${facilityId}_enhanced_structure.json`;
+      
+      // Trigger download
+      document.body.appendChild(link);
+      link.click();
+      
+      // Cleanup
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      
+      console.log('Enhanced structure downloaded successfully');
+    } catch (error) {
+      console.error('Error downloading enhanced structure:', error);
+    }
   }
 
   private async buildBimFilesystem(
