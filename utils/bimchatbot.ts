@@ -36,6 +36,43 @@ export class BimChatbot {
     return Number(value.toFixed(BimChatbot.BBOX_DECIMALS));
   }
 
+  private toCompactBBoxTuple(box: {
+    min: { x: number; y: number; z: number };
+    max: { x: number; y: number; z: number };
+  }): [number, number, number, number, number, number] | null {
+    const values = [box.min.x, box.min.y, box.min.z, box.max.x, box.max.y, box.max.z];
+    const hasNonFinite = values.some((value) => !Number.isFinite(value));
+
+    if (hasNonFinite) {
+      return null;
+    }
+
+    return [
+      this.compactCoord(box.min.x),
+      this.compactCoord(box.min.y),
+      this.compactCoord(box.min.z),
+      this.compactCoord(box.max.x),
+      this.compactCoord(box.max.y),
+      this.compactCoord(box.max.z),
+    ];
+  }
+
+  private collectLocalIds(nodes: IFCNode[]): number[] {
+    const ids: number[] = [];
+
+    for (const node of nodes) {
+      if (typeof node.localId === "number") {
+        ids.push(node.localId);
+      }
+
+      if (Array.isArray(node.children) && node.children.length > 0) {
+        ids.push(...this.collectLocalIds(node.children));
+      }
+    }
+
+    return ids;
+  }
+
   async selectElements(elementIds: number[]): Promise<void> {
     try {
       console.log("BimChatbot.selectElements called with:", elementIds);
@@ -162,17 +199,24 @@ export class BimChatbot {
         if (model && model.getItemsData) {
           // Get bounding box for this element
           try {
+            let compactBBox: [number, number, number, number, number, number] | null = null;
+
             const boxes = await model.getBoxes([node.localId]);
             if (boxes && boxes.length > 0) {
-              const box = boxes[0];
-              node.bbox = [
-                this.compactCoord(box.min.x),
-                this.compactCoord(box.min.y),
-                this.compactCoord(box.min.z),
-                this.compactCoord(box.max.x),
-                this.compactCoord(box.max.y),
-                this.compactCoord(box.max.z),
-              ];
+              compactBBox = this.toCompactBBoxTuple(boxes[0]);
+            }
+
+            // Fallback for aggregate elements (e.g. curtain walls/storeys) whose own bbox is invalid.
+            if (!compactBBox && Array.isArray(node.children) && node.children.length > 0 && model.getMergedBox) {
+              const childLocalIds = this.collectLocalIds(node.children);
+              if (childLocalIds.length > 0) {
+                const mergedBox = await model.getMergedBox(childLocalIds);
+                compactBBox = this.toCompactBBoxTuple(mergedBox as any);
+              }
+            }
+
+            if (compactBBox) {
+              node.bbox = compactBBox;
             }
           } catch (bboxError) {
             console.warn(
