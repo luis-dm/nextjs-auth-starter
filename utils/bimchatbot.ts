@@ -7,6 +7,7 @@ interface IFCNode {
   localId?: number;
   children?: IFCNode[];
   properties?: Record<string, unknown>;
+  bbox?: [number, number, number, number, number, number];
 }
 
 export class BimChatbot {
@@ -16,6 +17,7 @@ export class BimChatbot {
   private enhancedStructure: any = null;
   private isFilesystemReady: boolean = false;
   private threadId: string | null = null;
+  private static readonly BBOX_DECIMALS = 4;
 
   constructor(components: OBC.Components) {
     this.components = components;
@@ -28,6 +30,10 @@ export class BimChatbot {
     } catch (error) {
       console.warn("Failed to refresh viewer after chatbot action:", error);
     }
+  }
+
+  private compactCoord(value: number): number {
+    return Number(value.toFixed(BimChatbot.BBOX_DECIMALS));
   }
 
   async selectElements(elementIds: number[]): Promise<void> {
@@ -159,10 +165,14 @@ export class BimChatbot {
             const boxes = await model.getBoxes([node.localId]);
             if (boxes && boxes.length > 0) {
               const box = boxes[0];
-              (node as any).bbox = {
-                min: { x: box.min.x, y: box.min.y, z: box.min.z },
-                max: { x: box.max.x, y: box.max.y, z: box.max.z },
-              };
+              node.bbox = [
+                this.compactCoord(box.min.x),
+                this.compactCoord(box.min.y),
+                this.compactCoord(box.min.z),
+                this.compactCoord(box.max.x),
+                this.compactCoord(box.max.y),
+                this.compactCoord(box.max.z),
+              ];
             }
           } catch (bboxError) {
             console.warn(
