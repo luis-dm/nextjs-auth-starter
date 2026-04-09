@@ -28,8 +28,9 @@ const initWebIfc = async (): Promise<void> => {
   await webIfc.Init();
 
   serializer = new FRAGS.IfcImporter();
-  // serializer.addAllAttributes();
-  serializer.addAllRelations();
+  serializer.addAllAttributes();
+  serializer.includeUniqueAttributes = true;
+  // serializer.addAllRelations();
   serializer.wasm = {
     absolute: true,
     path: "https://unpkg.com/web-ifc@0.0.75/",
