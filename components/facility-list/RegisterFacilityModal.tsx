@@ -16,6 +16,7 @@ interface ConversionResult {
 }
 
 const WEB_IFC_WASM_PATH = "https://unpkg.com/web-ifc@0.0.77/";
+const FRAGMENTS_WORKER_PATH = "/workers/worker.mjs";
 let ifcComponents: OBC.Components | null = null;
 let ifcLoader: OBC.IfcLoader | null = null;
 
@@ -23,6 +24,11 @@ let ifcLoader: OBC.IfcLoader | null = null;
 const initIfcLoader = async (): Promise<void> => {
   if (!ifcComponents) {
     ifcComponents = new OBC.Components();
+  }
+
+  const fragmentsManager = ifcComponents.get(OBC.FragmentsManager);
+  if (!fragmentsManager.initialized) {
+    fragmentsManager.init(FRAGMENTS_WORKER_PATH);
   }
 
   if (!ifcLoader) {
