@@ -40,7 +40,14 @@ export class BimChatbot {
     min: { x: number; y: number; z: number };
     max: { x: number; y: number; z: number };
   }): [number, number, number, number, number, number] | null {
-    const values = [box.min.x, box.min.y, box.min.z, box.max.x, box.max.y, box.max.z];
+    const values = [
+      box.min.x,
+      box.min.y,
+      box.min.z,
+      box.max.x,
+      box.max.y,
+      box.max.z,
+    ];
     const hasNonFinite = values.some((value) => !Number.isFinite(value));
 
     if (hasNonFinite) {
@@ -199,7 +206,9 @@ export class BimChatbot {
         if (model && model.getItemsData) {
           // Get bounding box for this element
           try {
-            let compactBBox: [number, number, number, number, number, number] | null = null;
+            let compactBBox:
+              | [number, number, number, number, number, number]
+              | null = null;
 
             const boxes = await model.getBoxes([node.localId]);
             if (boxes && boxes.length > 0) {
@@ -207,7 +216,12 @@ export class BimChatbot {
             }
 
             // Fallback for aggregate elements (e.g. curtain walls/storeys) whose own bbox is invalid.
-            if (!compactBBox && Array.isArray(node.children) && node.children.length > 0 && model.getMergedBox) {
+            if (
+              !compactBBox &&
+              Array.isArray(node.children) &&
+              node.children.length > 0 &&
+              model.getMergedBox
+            ) {
               const childLocalIds = this.collectLocalIds(node.children);
               if (childLocalIds.length > 0) {
                 const mergedBox = await model.getMergedBox(childLocalIds);

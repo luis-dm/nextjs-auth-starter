@@ -16,11 +16,11 @@
     "@mastra/pg": "^1.7.1",
     "@prisma/adapter-pg": "^6.2.0",
     "@prisma/client": "^6.2.0",
-    "@thatopen/components": "^3.3.1",
-    "@thatopen/components-front": "^3.3.1",
-    "@thatopen/fragments": "^3.3.3",
-    "@thatopen/ui": "^3.3.3",
-    "@thatopen/ui-obc": "^3.3.3",
+    "@thatopen/components": "^3.4.0",
+    "@thatopen/components-front": "^3.4.0",
+    "@thatopen/fragments": "^3.4.1",
+    "@thatopen/ui": "^3.4.0",
+    "@thatopen/ui-obc": "^3.4.0",
     "archiver": "^7.0.1",
     "bcryptjs": "^3.0.2",
     "lucide-react": "^0.503.0",
@@ -32,9 +32,9 @@
     "react-hot-toast": "^2.6.0",
     "resend": "^6.9.1",
     "sass": "^1.97.3",
-    "three": "^0.178.0",
+    "three": "^0.182.0",
     "three-mesh-bvh": "^0.9.9",
-    "web-ifc": "^0.0.75"
+    "web-ifc": "^0.0.77"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.1.17",
