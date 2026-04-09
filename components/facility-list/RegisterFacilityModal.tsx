@@ -2,8 +2,7 @@
 
 import { useState, useRef } from "react";
 import { X, Upload } from "lucide-react";
-import * as WEBIFC from "web-ifc";
-import * as FRAGS from "@thatopen/fragments";
+import * as OBC from "@thatopen/components";
 import toast from "react-hot-toast";
 import {
   buildTypePropertyIndex,
@@ -14,27 +13,25 @@ interface ConversionResult {
   fragmentBytes: ArrayBuffer;
   conversionTimeMs: number;
   fileSizeInMB: number;
-  modelID: number;
 }
 
-let webIfc: WEBIFC.IfcAPI | null = null;
-let serializer: FRAGS.IfcImporter | null = null;
-let currentModelID: number | null = null;
+const WEB_IFC_WASM_PATH = "https://unpkg.com/web-ifc@0.0.77/";
+let ifcComponents: OBC.Components | null = null;
+let ifcLoader: OBC.IfcLoader | null = null;
 
-// Initialize WebIFC and serializer
-const initWebIfc = async (): Promise<void> => {
-  webIfc = new WEBIFC.IfcAPI();
-  webIfc.SetWasmPath("https://unpkg.com/web-ifc@0.0.75/", true);
-  await webIfc.Init();
+// Initialize IfcLoader
+const initIfcLoader = async (): Promise<void> => {
+  if (!ifcComponents) {
+    ifcComponents = new OBC.Components();
+  }
 
-  serializer = new FRAGS.IfcImporter();
-  serializer.addAllAttributes();
-  serializer.includeUniqueAttributes = true;
-  // serializer.addAllRelations();
-  serializer.wasm = {
-    absolute: true,
-    path: "https://unpkg.com/web-ifc@0.0.75/",
-  };
+  if (!ifcLoader) {
+    ifcLoader = ifcComponents.get(OBC.IfcLoader);
+    await ifcLoader.setup({
+      autoSetWasm: false,
+      wasm: { absolute: true, path: WEB_IFC_WASM_PATH },
+    });
+  }
 };
 
 // Function to simulate progress for visual feedback
@@ -71,15 +68,16 @@ const convertIFC = async (
     onFinish?: () => void;
   } = {},
 ): Promise<ConversionResult | null> => {
-  if (!webIfc || !serializer) {
-    await initWebIfc();
+  if (!ifcLoader) {
+    await initIfcLoader();
   }
 
-  if (!webIfc || !serializer) {
-    throw new Error("Failed to initialize WebIFC");
+  if (!ifcLoader) {
+    throw new Error("Failed to initialize IfcLoader");
   }
 
   let progressInterval: number | null = null;
+  let loadedModel: Awaited<ReturnType<OBC.IfcLoader["load"]>> | null = null;
   if (callbacks.onProgress) {
     progressInterval = simulateProgress((progress) => {
       if (callbacks.onProgress) {
@@ -98,32 +96,16 @@ const convertIFC = async (
 
     console.log("Processing IFC file...");
     const ifcBytes = new Uint8Array(ifcBuffer);
+    const modelName = file.name.replace(/\.ifc$/i, "") || "model";
 
-    // Load the model in web-ifc
-    try {
-      if (currentModelID !== null) {
-        try {
-          webIfc.CloseModel(currentModelID);
-        } catch (e) {
-          console.warn("Failed to close previous model:", e);
-        }
-      }
+    loadedModel = await ifcLoader.load(ifcBytes, true, modelName, {
+      instanceCallback: (importer) => {
+        importer.addAllAttributes();
+        importer.addAllRelations();
+      },
+    });
 
-      currentModelID = webIfc.OpenModel(ifcBytes);
-      console.log(`IFC model loaded with ID: ${currentModelID}`);
-    } catch (e) {
-      console.error("Error loading IFC model into web-ifc:", e);
-      throw e;
-    }
-
-    // Convert the IFC bytes to fragments
-    const processInput = { bytes: ifcBytes };
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const result = await serializer.process(processInput as any);
-    const fragmentBytes =
-      result instanceof Uint8Array
-        ? (result.buffer as ArrayBuffer)
-        : (result as ArrayBuffer);
+    const fragmentBytes = await loadedModel.getBuffer();
 
     const endTime = performance.now();
     const conversionTimeMs = Math.round(endTime - startTime);
@@ -139,12 +121,19 @@ const convertIFC = async (
       fragmentBytes,
       conversionTimeMs,
       fileSizeInMB,
-      modelID: currentModelID,
     };
   } catch (error) {
     console.error("Error converting IFC:", error);
     return null;
   } finally {
+    if (loadedModel) {
+      try {
+        await loadedModel.dispose();
+      } catch (error) {
+        console.warn("Error disposing converted model:", error);
+      }
+    }
+
     if (progressInterval) {
       clearInterval(progressInterval);
     }

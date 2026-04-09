@@ -121,7 +121,7 @@ export default function ClashPage() {
       const ifcLoader = components.get(OBC.IfcLoader);
       await ifcLoader.setup({
         autoSetWasm: false,
-        wasm: { absolute: true, path: "https://unpkg.com/web-ifc@0.0.69/" },
+        wasm: { absolute: true, path: "https://unpkg.com/web-ifc@0.0.77/" },
       });
 
       // Set up panels - models and clash detection
