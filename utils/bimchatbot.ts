@@ -410,7 +410,7 @@ export class BimChatbot {
     console.log("Enhanced spatial structure loaded and filesystem built");
 
     // Download the enhanced structure as JSON
-    this.downloadEnhancedStructure(facilityId);
+    // this.downloadEnhancedStructure(facilityId);
 
     return this.enhancedStructure;
   }
