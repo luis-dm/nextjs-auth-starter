@@ -28,7 +28,7 @@ const initWebIfc = async (): Promise<void> => {
   await webIfc.Init();
 
   serializer = new FRAGS.IfcImporter();
-  serializer.addAllAttributes();
+  // serializer.addAllAttributes();
   serializer.addAllRelations();
   serializer.wasm = {
     absolute: true,
