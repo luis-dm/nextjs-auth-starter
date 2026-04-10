@@ -22,9 +22,6 @@ interface PropertiesTable extends HTMLElement {
   preserveStructureOnFilter: boolean;
   downloadData: (fileName?: string, format?: "json" | "tsv" | "csv") => void;
   tsv: string;
-  loadFunction?: () => Promise<any[]>;
-  loadData: (force?: boolean) => Promise<boolean>;
-  data?: any[];
 }
 
 export function PropertiesPanel({
@@ -35,7 +32,6 @@ export function PropertiesPanel({
   const [propsTable, setPropsTable] = useState<PropertiesTable | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const containerRef = useRef<HTMLDivElement>(null);
-  const currentModelIdMapRef = useRef<ModelIdMap>({});
 
   // Initialize the properties table
   useEffect(() => {
@@ -50,54 +46,41 @@ export function PropertiesPanel({
     });
 
     table.preserveStructureOnFilter = true;
-
-    // Store the original loadFunction
-    const originalLoadFunction = table.loadFunction;
-
-    // Override loadFunction to append TypePropertyIndex data
-    table.loadFunction = async () => {
-      // First, get all the default data (hierarchical structure)
-      const defaultRows = originalLoadFunction
-        ? await originalLoadFunction()
-        : [];
-
-      // Then append TypePropertyIndex data
-      const typeIndexRows: any[] = [];
-
-      for (const [modelId, localIds] of Object.entries(
-        currentModelIdMapRef.current,
-      )) {
-        const model = fragments.core.models.list.get(modelId);
-        if (!model) continue;
-
-        const typeIndex = getTypeIndex(model.modelId);
-        if (!typeIndex) continue;
-
-        for (const localId of localIds) {
-          const typeProps = getTypeProperties(typeIndex, localId);
-          for (const row of typeProps) {
-            typeIndexRows.push({ data: row });
-          }
-        }
-      }
-
-      // Combine default rows + TypePropertyIndex rows
-      return [...defaultRows, ...typeIndexRows];
-    };
-
     setPropsTable(table);
 
     // Set up highlighter events
-    const onHighlight = (modelIdMap: ModelIdMap) => {
-      currentModelIdMapRef.current = modelIdMap;
-      // First update the table's internal modelIdMap
+    const onHighlight = async (modelIdMap: ModelIdMap) => {
+      // First, let the default table load its data (with hierarchical structure)
       updateTable({ modelIdMap });
-      // Then trigger a reload with our custom loadFunction
-      void table.loadData(true);
+
+      // Then append TypePropertyIndex data after a small delay
+      setTimeout(async () => {
+        const typeIndexRows: any[] = [];
+
+        for (const [modelId, localIds] of Object.entries(modelIdMap)) {
+          const model = fragments.core.models.list.get(modelId);
+          if (!model) continue;
+
+          const typeIndex = getTypeIndex(model.modelId);
+          if (!typeIndex) continue;
+
+          for (const localId of localIds) {
+            const typeProps = getTypeProperties(typeIndex, localId);
+            for (const row of typeProps) {
+              typeIndexRows.push({ data: row });
+            }
+          }
+        }
+
+        // Append TypePropertyIndex data to the existing table data
+        if (typeIndexRows.length > 0 && (table as any).data) {
+          const currentData = (table as any).data || [];
+          (table as any).data = [...currentData, ...typeIndexRows];
+        }
+      }, 100); // Wait for default data to load
     };
 
     const onClear = () => {
-      currentModelIdMapRef.current = {};
       updateTable({ modelIdMap: {} });
     };
 
