@@ -22,8 +22,6 @@ interface PropertiesTable extends HTMLElement {
   preserveStructureOnFilter: boolean;
   downloadData: (fileName?: string, format?: "json" | "tsv" | "csv") => void;
   tsv: string;
-  loadFunction?: () => Promise<any[]>;
-  loadData: (force?: boolean) => Promise<boolean>;
 }
 
 export function PropertiesPanel({
@@ -34,7 +32,6 @@ export function PropertiesPanel({
   const [propsTable, setPropsTable] = useState<PropertiesTable | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const containerRef = useRef<HTMLDivElement>(null);
-  const currentModelIdMapRef = useRef<ModelIdMap>({});
 
   // Initialize the properties table
   useEffect(() => {
@@ -43,100 +40,48 @@ export function PropertiesPanel({
     const highlighter = components.get(OBF.Highlighter);
     const fragments = components.get(OBC.FragmentsManager);
 
-    const [table] = CUI.tables.itemsData({
+    const [table, updateTable] = CUI.tables.itemsData({
       components,
       modelIdMap: {},
     });
 
     table.preserveStructureOnFilter = true;
-
-    // Custom load function to combine fragment data + TypePropertyIndex
-    table.loadFunction = async () => {
-      const rows: any[] = [];
-
-      for (const [modelId, localIds] of Object.entries(
-        currentModelIdMapRef.current,
-      )) {
-        const model = fragments.core.models.list.get(modelId);
-        if (!model) continue;
-
-        for (const localId of localIds) {
-          // Get fragment attributes with IsDefinedBy relations (property sets)
-          const [itemData] = await model.getItemsData([localId], {
-            attributesDefault: true,
-            relationsDefault: { attributes: false, relations: false },
-            relations: {
-              IsDefinedBy: { attributes: true, relations: true },
-            },
-          });
-
-          if (!itemData) continue;
-
-          // First, add ALL basic attributes from the fragment
-          for (const [key, attr] of Object.entries(itemData)) {
-            // Skip relations for now (we'll handle IsDefinedBy separately)
-            if (
-              key === "IsDefinedBy" ||
-              key === "expressID" ||
-              typeof attr !== "object" ||
-              !attr
-            )
-              continue;
-
-            const value = (attr as any).value;
-            if (value !== null && value !== undefined && value !== "") {
-              rows.push({
-                data: {
-                  Name: key,
-                  Value: String(value),
-                },
-              });
-            }
-          }
-
-          // Add property sets from fragment (IsDefinedBy)
-          if (itemData && Array.isArray((itemData as any).IsDefinedBy)) {
-            for (const pset of (itemData as any).IsDefinedBy) {
-              const psetName = pset.Name?.value ?? "";
-
-              if (Array.isArray(pset.HasProperties)) {
-                for (const prop of pset.HasProperties) {
-                  rows.push({
-                    data: {
-                      Name: `${psetName} / ${prop.Name?.value ?? ""}`,
-                      Value: prop.NominalValue?.value ?? "",
-                    },
-                  });
-                }
-              }
-            }
-          }
-
-          // Add type properties + materials from TypePropertyIndex
-          const typeIndex = getTypeIndex(model.modelId);
-          if (typeIndex) {
-            const typeProps = getTypeProperties(typeIndex, localId);
-            for (const row of typeProps) {
-              rows.push({ data: row });
-            }
-          }
-        }
-      }
-
-      return rows;
-    };
-
     setPropsTable(table);
 
     // Set up highlighter events
-    const onHighlight = (modelIdMap: ModelIdMap) => {
-      currentModelIdMapRef.current = modelIdMap;
-      void table.loadData(true);
+    const onHighlight = async (modelIdMap: ModelIdMap) => {
+      // First, let the default table load its data (with hierarchical structure)
+      updateTable({ modelIdMap });
+      
+      // Then append TypePropertyIndex data after a small delay
+      setTimeout(async () => {
+        const typeIndexRows: any[] = [];
+        
+        for (const [modelId, localIds] of Object.entries(modelIdMap)) {
+          const model = fragments.core.models.list.get(modelId);
+          if (!model) continue;
+          
+          const typeIndex = getTypeIndex(model.modelId);
+          if (!typeIndex) continue;
+          
+          for (const localId of localIds) {
+            const typeProps = getTypeProperties(typeIndex, localId);
+            for (const row of typeProps) {
+              typeIndexRows.push({ data: row });
+            }
+          }
+        }
+        
+        // Append TypePropertyIndex data to the existing table data
+        if (typeIndexRows.length > 0 && (table as any).data) {
+          const currentData = (table as any).data || [];
+          (table as any).data = [...currentData, ...typeIndexRows];
+        }
+      }, 100); // Wait for default data to load
     };
 
     const onClear = () => {
-      currentModelIdMapRef.current = {};
-      void table.loadData(true);
+      updateTable({ modelIdMap: {} });
     };
 
     highlighter.events.select.onHighlight.add(onHighlight);
