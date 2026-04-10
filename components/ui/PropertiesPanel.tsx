@@ -22,6 +22,8 @@ interface PropertiesTable extends HTMLElement {
   preserveStructureOnFilter: boolean;
   downloadData: (fileName?: string, format?: "json" | "tsv" | "csv") => void;
   tsv: string;
+  loadFunction?: () => Promise<any[]>;
+  loadData: (force?: boolean) => Promise<boolean>;
 }
 
 export function PropertiesPanel({
@@ -32,6 +34,7 @@ export function PropertiesPanel({
   const [propsTable, setPropsTable] = useState<PropertiesTable | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const containerRef = useRef<HTMLDivElement>(null);
+  const currentModelIdMapRef = useRef<ModelIdMap>({});
 
   // Initialize the properties table
   useEffect(() => {
@@ -40,52 +43,76 @@ export function PropertiesPanel({
     const highlighter = components.get(OBF.Highlighter);
     const fragments = components.get(OBC.FragmentsManager);
 
-    const [table, updateTable] = CUI.tables.itemsData({
+    const [table] = CUI.tables.itemsData({
       components,
       modelIdMap: {},
     });
 
     table.preserveStructureOnFilter = true;
+
+    // Custom load function to combine fragment data + TypePropertyIndex
+    table.loadFunction = async () => {
+      const rows: any[] = [];
+
+      for (const [modelId, localIds] of Object.entries(
+        currentModelIdMapRef.current,
+      )) {
+        const model = fragments.core.models.list.get(modelId);
+        if (!model) continue;
+
+        for (const localId of localIds) {
+          // Get fragment attributes with IsDefinedBy relations (property sets)
+          const [itemData] = await model.getItemsData([localId], {
+            attributesDefault: true,
+            relationsDefault: { attributes: false, relations: false },
+            relations: {
+              IsDefinedBy: { attributes: true, relations: true },
+            },
+          });
+
+          // Add property sets from fragment
+          if (itemData && Array.isArray((itemData as any).IsDefinedBy)) {
+            for (const pset of (itemData as any).IsDefinedBy) {
+              const psetName = pset.Name?.value ?? "";
+
+              if (Array.isArray(pset.HasProperties)) {
+                for (const prop of pset.HasProperties) {
+                  rows.push({
+                    data: {
+                      Name: `${psetName} / ${prop.Name?.value ?? ""}`,
+                      Value: prop.NominalValue?.value ?? "",
+                    },
+                  });
+                }
+              }
+            }
+          }
+
+          // Add type properties + materials from TypePropertyIndex
+          const typeIndex = getTypeIndex(model.modelId);
+          if (typeIndex) {
+            const typeProps = getTypeProperties(typeIndex, localId);
+            for (const row of typeProps) {
+              rows.push({ data: row });
+            }
+          }
+        }
+      }
+
+      return rows;
+    };
+
     setPropsTable(table);
 
     // Set up highlighter events
     const onHighlight = (modelIdMap: ModelIdMap) => {
-      updateTable({ modelIdMap });
-      
-      // Inject TypePropertyIndex data (type properties + materials)
-      setTimeout(() => {
-        for (const [modelId, localIds] of Object.entries(modelIdMap)) {
-          const model = fragments.core.models.list.get(modelId);
-          if (!model) continue;
-          
-          const typeIndex = getTypeIndex(model.modelId);
-          if (!typeIndex) {
-            console.warn(`No TypePropertyIndex found for model ${model.modelId}`);
-            continue;
-          }
-          
-          for (const localId of localIds) {
-            const typeProps = getTypeProperties(typeIndex, localId);
-            
-            // Append TypePropertyIndex rows to the existing table data
-            if (typeProps.length > 0 && (table as any).data) {
-              const existingData = (table as any).data || [];
-              const enhancedData = [
-                ...existingData,
-                ...typeProps.map(prop => ({
-                  Name: prop.Name,
-                  Value: prop.Value,
-                }))
-              ];
-              (table as any).data = enhancedData;
-            }
-          }
-        }
-      }, 50); // Small delay to let fragment data load first
+      currentModelIdMapRef.current = modelIdMap;
+      void table.loadData(true);
     };
 
     const onClear = () => {
-      updateTable({ modelIdMap: {} });
+      currentModelIdMapRef.current = {};
+      void table.loadData(true);
     };
 
     highlighter.events.select.onHighlight.add(onHighlight);
