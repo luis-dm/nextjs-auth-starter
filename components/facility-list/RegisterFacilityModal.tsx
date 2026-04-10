@@ -107,7 +107,7 @@ const convertIFC = async (
     loadedModel = await ifcLoader.load(ifcBytes, true, modelName, {
       instanceCallback: (importer) => {
         importer.addAllAttributes();
-        // importer.addAllRelations();
+        importer.addAllRelations();
       },
     });
 
