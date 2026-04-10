@@ -70,7 +70,31 @@ export function PropertiesPanel({
             },
           });
 
-          // Add property sets from fragment
+          if (!itemData) continue;
+
+          // First, add ALL basic attributes from the fragment
+          for (const [key, attr] of Object.entries(itemData)) {
+            // Skip relations for now (we'll handle IsDefinedBy separately)
+            if (
+              key === "IsDefinedBy" ||
+              key === "expressID" ||
+              typeof attr !== "object" ||
+              !attr
+            )
+              continue;
+
+            const value = (attr as any).value;
+            if (value !== null && value !== undefined && value !== "") {
+              rows.push({
+                data: {
+                  Name: key,
+                  Value: String(value),
+                },
+              });
+            }
+          }
+
+          // Add property sets from fragment (IsDefinedBy)
           if (itemData && Array.isArray((itemData as any).IsDefinedBy)) {
             for (const pset of (itemData as any).IsDefinedBy) {
               const psetName = pset.Name?.value ?? "";
