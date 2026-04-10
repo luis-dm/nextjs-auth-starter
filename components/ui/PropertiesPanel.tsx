@@ -4,6 +4,8 @@ import React, { useState, useEffect, useRef } from "react";
 import * as CUI from "@thatopen/ui-obc";
 import * as OBC from "@thatopen/components";
 import * as OBF from "@thatopen/components-front";
+import { getTypeIndex } from "@/utils/ifcTypeIndexCache";
+import { getTypeProperties } from "@/utils/ifcTypeIndex";
 
 interface PropertiesPanelProps {
   isOpen: boolean;
@@ -36,6 +38,7 @@ export function PropertiesPanel({
     if (!components) return;
 
     const highlighter = components.get(OBF.Highlighter);
+    const fragments = components.get(OBC.FragmentsManager);
 
     const [table, updateTable] = CUI.tables.itemsData({
       components,
@@ -48,6 +51,37 @@ export function PropertiesPanel({
     // Set up highlighter events
     const onHighlight = (modelIdMap: ModelIdMap) => {
       updateTable({ modelIdMap });
+      
+      // Inject TypePropertyIndex data (type properties + materials)
+      setTimeout(() => {
+        for (const [modelId, localIds] of Object.entries(modelIdMap)) {
+          const model = fragments.core.models.list.get(modelId);
+          if (!model) continue;
+          
+          const typeIndex = getTypeIndex(model.modelId);
+          if (!typeIndex) {
+            console.warn(`No TypePropertyIndex found for model ${model.modelId}`);
+            continue;
+          }
+          
+          for (const localId of localIds) {
+            const typeProps = getTypeProperties(typeIndex, localId);
+            
+            // Append TypePropertyIndex rows to the existing table data
+            if (typeProps.length > 0 && (table as any).data) {
+              const existingData = (table as any).data || [];
+              const enhancedData = [
+                ...existingData,
+                ...typeProps.map(prop => ({
+                  Name: prop.Name,
+                  Value: prop.Value,
+                }))
+              ];
+              (table as any).data = enhancedData;
+            }
+          }
+        }
+      }, 50); // Small delay to let fragment data load first
     };
 
     const onClear = () => {
