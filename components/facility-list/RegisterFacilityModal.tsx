@@ -104,12 +104,8 @@ const convertIFC = async (
     const ifcBytes = new Uint8Array(ifcBuffer);
     const modelName = file.name.replace(/\.ifc$/i, "") || "model";
 
-    loadedModel = await ifcLoader.load(ifcBytes, true, modelName, {
-      instanceCallback: (importer) => {
-        importer.addAllAttributes();
-        importer.addAllRelations();
-      },
-    });
+    // Load with default attributes & relations (includes materials via AssociatesMaterial)
+    loadedModel = await ifcLoader.load(ifcBytes, true, modelName);
 
     const fragmentBytes = await loadedModel.getBuffer();
 
