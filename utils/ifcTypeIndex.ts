@@ -16,6 +16,7 @@ export interface TypePropertyIndex {
   materialLayerSetUsages?: Record<number, number>; // usageId → layerSetId (intermediate objects)
   materialLists?: Record<number, number[]>; // listId → materialIds[] (list of materials)
   occurrenceToMaterial?: Record<number, number>; // elementId → materialId or layerSetId or usageId
+  occurrenceToPsets?: Record<number, number[]>; // elementId → psetIds[] (instance-level psets)
 }
 
 /**
@@ -87,8 +88,12 @@ const decodeIfcString = (value: string): string =>
 export const buildTypePropertyIndex = (source: string): TypePropertyIndex => {
   const records = new Map<number, string>();
 
+  // Join multiline records before parsing
+  const normalized = source.replace(/\r?\n/g, "\n");
+  const singleLine = normalized.replace(/;\n/g, ";\n").replace(/\n(?!#)/g, " ");
+
   // Parse all IFC records into a map
-  for (const rawLine of source.split(/\r?\n/)) {
+  for (const rawLine of singleLine.split("\n")) {
     const line = rawLine.trim();
     const match = line.match(/^#(\d+)=(.+);$/);
     if (match) {
@@ -114,6 +119,7 @@ export const buildTypePropertyIndex = (source: string): TypePropertyIndex => {
   const materialLayerSetUsages = new Map<number, number>(); // Usage ID → LayerSet ID
   const materialLists = new Map<number, number[]>(); // List ID → array of Material IDs
   const occurrenceToMaterial = new Map<number, number>();
+  const occurrencePsetIds = new Map<number, number[]>();
 
   // Parse each record type
   for (const [id, body] of records) {
@@ -146,18 +152,20 @@ export const buildTypePropertyIndex = (source: string): TypePropertyIndex => {
       continue;
     }
 
-    // Parse IFCRELDEFINESBYTYPE (links occurrences to types)
-    if (body.startsWith("IFCRELDEFINESBYTYPE(")) {
-      const inner = body.slice("IFCRELDEFINESBYTYPE(".length, -1);
+    // Parse IFCRELDEFINESBYPROPERTIES (links psets directly to element instances)
+    if (body.startsWith("IFCRELDEFINESBYPROPERTIES(")) {
+      const inner = body.slice("IFCRELDEFINESBYPROPERTIES(".length, -1);
       const args = splitIfcArgs(inner);
       const relatedObjectsToken = args[4];
-      const relatingTypeToken = args[5];
-      const typeMatch = relatingTypeToken?.match(/^#(\d+)$/);
-      if (!relatedObjectsToken || !typeMatch) continue;
+      const relatingPropertyToken = args[5];
+      const psetMatch = relatingPropertyToken?.match(/^#(\d+)$/);
+      if (!relatedObjectsToken || !psetMatch) continue;
 
-      const typeId = Number(typeMatch[1]);
+      const psetId = Number(psetMatch[1]);
       for (const occurrenceId of parseIfcList(relatedObjectsToken)) {
-        occurrenceTypeIds.set(occurrenceId, typeId);
+        const existing = occurrencePsetIds.get(occurrenceId) ?? [];
+        existing.push(psetId);
+        occurrencePsetIds.set(occurrenceId, existing);
       }
       continue;
     }
@@ -313,6 +321,7 @@ export const buildTypePropertyIndex = (source: string): TypePropertyIndex => {
     materialLayerSetUsages: Object.fromEntries(materialLayerSetUsages),
     materialLists: Object.fromEntries(materialLists),
     occurrenceToMaterial: Object.fromEntries(occurrenceToMaterial),
+    occurrenceToPsets: Object.fromEntries(occurrencePsetIds),
   };
 
   return index;
