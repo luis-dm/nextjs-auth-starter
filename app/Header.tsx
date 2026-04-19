@@ -37,7 +37,7 @@ export default function Header() {
           href="/"
           className="text-3xl font-bold text-gray-800 hover:text-gray-500 transition-colors"
         >
-          OpenBIM
+          SYMBIM
         </Link>
         <div className="flex items-center space-x-4">
           {session ? (

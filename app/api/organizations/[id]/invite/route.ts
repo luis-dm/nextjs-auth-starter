@@ -76,7 +76,7 @@ export async function POST(
         const inviteLink = `${process.env.NEXTAUTH_URL}/join/${token}`;
 
         await resend.emails.send({
-          from: "OpenBIM <noreply@openbim.app>",
+          from: "SYMBIM <noreply@SYMBIM.app>",
           to: email.trim(),
           subject: `${user.name || "Someone"} invited you to join ${membership.organization.name}`,
           html: `
@@ -99,7 +99,7 @@ export async function POST(
                 </div>
                 <div class="content">
                   <p>Hi there,</p>
-                  <p><strong>${user.name || "Someone"}</strong> has invited you to join the organization <strong>${membership.organization.name}</strong> on OpenBIM.</p>
+                  <p><strong>${user.name || "Someone"}</strong> has invited you to join the organization <strong>${membership.organization.name}</strong> on SYMBIM.</p>
                   <p>Click the button below to accept the invitation and get started:</p>
                   <div style="text-align: center;">
                     <a href="${inviteLink}" class="button">Accept Invitation</a>
@@ -108,7 +108,7 @@ export async function POST(
                   <p style="color: #6b7280; font-size: 14px;">If you didn't expect this invitation, you can safely ignore this email.</p>
                 </div>
                 <div class="footer">
-                  <p>© ${new Date().getFullYear()} OpenBIM. All rights reserved.</p>
+                  <p>© ${new Date().getFullYear()} SYMBIM. All rights reserved.</p>
                 </div>
               </div>
             </body>

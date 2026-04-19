@@ -5,7 +5,7 @@ import Providers from "./providers";
 import { Toaster } from "react-hot-toast";
 
 export const metadata = {
-  title: "OpenBIM",
+  title: "SYMBIM",
   description: "BIM App",
 };
 
