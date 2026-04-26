@@ -80,13 +80,14 @@
   --color-midgray: #ccdae8;
   --color-yellow: #f4a237;
   --bim-label--c: var(--color-gray-800) !important;
+  --bim-ui_bg-contrast-20: oklch(94.912% 0.00011 271.152) !important;
   --bim-ui_bg-contrast-80: var(--color-gray-800) !important;
   --bim-ui_bg-contrast-100: var(--color-gray-800) !important;
 }
 
 .dark {
   --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
+  --foreground: ;
   --card: oklch(0.205 0 0);
   --card-foreground: oklch(0.985 0 0);
   --popover: oklch(0.205 0 0);
