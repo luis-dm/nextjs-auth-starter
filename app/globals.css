@@ -87,7 +87,8 @@
   --bim-button--bgc: oklch(95.213% 0.00011 271.152);
   --bim-input--bgc: oklch(95.213% 0.00011 271.152);
   --bim-ui_main-base: oklch(0% 0 0);
-  --bim-input--olc: oklch(0% 0 0);
+  --bim-ui_accent-base: oklch(0% 0 0);
+  /* --bim-input--olc: oklch(0% 0 0); */
 }
 
 .dark {
