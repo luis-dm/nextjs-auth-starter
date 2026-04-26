@@ -80,12 +80,14 @@
   --color-midgray: #ccdae8;
   --color-yellow: #f4a237;
   --bim-label--c: var(--color-gray-800) !important;
-  --bim-ui_bg-contrast-20: oklch(100% 0.00011 271.152) mportant;
+  --bim-ui_bg-contrast-20: oklch(100% 0.00011 271.152) !important;
+  --bim-ui_bg-contrast-50: oklch(95.213% 0.00011 271.152);
   --bim-ui_bg-contrast-80: var(--color-gray-800) !important;
   --bim-ui_bg-contrast-100: var(--color-gray-800) !important;
   --bim-button--bgc: oklch(95.213% 0.00011 271.152);
   --bim-input--bgc: oklch(95.213% 0.00011 271.152);
   --bim-ui_main-base: oklch(0% 0 0);
+  --bim-input--olc: oklch(0% 0 0);
 }
 
 .dark {
