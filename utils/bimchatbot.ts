@@ -141,7 +141,6 @@ export class BimChatbot {
       throw error;
     }
   }
-
   async showElements(elementIds: number[]): Promise<void> {
     try {
       const hider = this.components.get(OBC.Hider);
@@ -171,7 +170,6 @@ export class BimChatbot {
       throw error;
     }
   }
-
   async isolateElements(elementIds: number[]): Promise<void> {
     try {
       const hider = this.components.get(OBC.Hider);
@@ -370,7 +368,6 @@ export class BimChatbot {
 
     return node;
   }
-
   private async loadSpatialStructure(): Promise<void> {
     try {
       const models = Array.from(this.fragments.list.values());
@@ -393,7 +390,6 @@ export class BimChatbot {
       this.spatialStructure = {} as IFCNode;
     }
   }
-
   async getDetailedSpatialStructure(facilityId: string): Promise<any> {
     if (!this.spatialStructure) {
       await this.loadSpatialStructure();
@@ -413,32 +409,6 @@ export class BimChatbot {
     // this.downloadEnhancedStructure(facilityId);
 
     return this.enhancedStructure;
-  }
-
-  private downloadEnhancedStructure(facilityId: string): void {
-    try {
-      // Convert the enhanced structure to JSON
-      const jsonString = JSON.stringify(this.enhancedStructure, null, 2);
-
-      // Create a blob and download link
-      const blob = new Blob([jsonString], { type: "application/json" });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = `${facilityId}_enhanced_structure.json`;
-
-      // Trigger download
-      document.body.appendChild(link);
-      link.click();
-
-      // Cleanup
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-
-      console.log("Enhanced structure downloaded successfully");
-    } catch (error) {
-      console.error("Error downloading enhanced structure:", error);
-    }
   }
 
   private async buildBimFilesystem(
@@ -593,5 +563,31 @@ export class BimChatbot {
   // Get current thread ID
   getThreadId(): string | null {
     return this.threadId;
+  }
+
+  private downloadEnhancedStructure(facilityId: string): void {
+    try {
+      // Convert the enhanced structure to JSON
+      const jsonString = JSON.stringify(this.enhancedStructure, null, 2);
+
+      // Create a blob and download link
+      const blob = new Blob([jsonString], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `${facilityId}_enhanced_structure.json`;
+
+      // Trigger download
+      document.body.appendChild(link);
+      link.click();
+
+      // Cleanup
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      console.log("Enhanced structure downloaded successfully");
+    } catch (error) {
+      console.error("Error downloading enhanced structure:", error);
+    }
   }
 }
