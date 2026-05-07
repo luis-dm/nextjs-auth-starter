@@ -13,7 +13,7 @@ async function sendVerificationEmail(
   const verifyLink = `${process.env.NEXTAUTH_URL}/verify-email/${token}`;
 
   await resend.emails.send({
-    from: "SYMBIM <noreply@SYMBIM.app>",
+    from: "SYMBIM <noreply@openbim.app>",
     to: [email],
     subject: "Verify your email address",
     html: `

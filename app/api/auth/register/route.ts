@@ -18,7 +18,7 @@ async function sendVerificationEmail(
 
   try {
     const result = await resend.emails.send({
-      from: "SYMBIM <noreply@SYMBIM.app>",
+      from: "SYMBIM <noreply@openbim.app>",
       to: [email],
       subject: "Verify your email address",
       html: `
@@ -79,7 +79,7 @@ async function sendInviteEmail(
 
   try {
     const result = await resend.emails.send({
-      from: "SYMBIM <noreply@SYMBIM.app>",
+      from: "SYMBIM <noreply@openbim.app>",
       to: [email],
       subject: `You've been invited to join ${organizationName}`,
       html: `
