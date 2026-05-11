@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
-import { X, User, Crown } from "lucide-react";
+import { X, User, Crown, Download } from "lucide-react";
 import toast from "react-hot-toast";
 
 interface FacilityMember {
@@ -98,6 +98,13 @@ export default function FacilityDetailsModal({
 
   if (!isOpen) return null;
 
+  const handleDownloadTypePropertyIndex = () => {
+    const link = document.createElement("a");
+    link.href = `/api/facilities/${facilityId}/type-property-index`;
+    link.download = `type-property-index-${facilityId}.json`;
+    link.click();
+  };
+
   const formattedDate = facility?.createdAt
     ? new Date(facility.createdAt).toLocaleDateString("en-US", {
         year: "numeric",
@@ -165,6 +172,21 @@ export default function FacilityDetailsModal({
                     </p>
                   )}
                 </div>
+
+                {facility.typePropertyIndex && (
+                  <div>
+                    <label className="text-sm font-medium text-gray-500">
+                      Type Property Index
+                    </label>
+                    <button
+                      onClick={handleDownloadTypePropertyIndex}
+                      className="mt-1 flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+                    >
+                      <Download className="w-4 h-4" />
+                      Download JSON
+                    </button>
+                  </div>
+                )}
 
                 <div>
                   <label className="text-sm font-medium text-gray-500">
